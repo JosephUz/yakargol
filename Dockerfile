@@ -1,4 +1,4 @@
-# Yakar Gol: tek süreç, tek port (statik dosyalar). Derleme adımı yok.
+# Yakar Gol: tek süreç, tek port (statik dosyalar + WebSocket odaları). Derleme adımı yok.
 FROM node:22-alpine
 
 ENV NODE_ENV=production
@@ -10,6 +10,7 @@ RUN npm ci --omit=dev --no-audit --no-fund
 
 COPY server.mjs game.js index.html style.css ./
 COPY src ./src
+COPY server ./server
 
 ENV HOST=0.0.0.0 PORT=5186
 EXPOSE 5186

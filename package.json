@@ -15,7 +15,8 @@
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
-    "three": "0.180.0"
+    "three": "0.180.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2"

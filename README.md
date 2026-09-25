@@ -1,7 +1,8 @@
 # Yakar Gol
 
 Three.js ile tarayıcıda çalışan, omuz kamerasından oynanan **5v5 mahalle futbolu + yakar top**. Bir insan ve dört takım
-botu, beş rakip bota karşı; her takımda bir bot kaleci var. Ağ üzerinden çok oyunculu mod henüz yok.
+botu, beş rakip bota karşı; her takımda bir bot kaleci var. Webde **çok oyunculu** oynanır: oda kurulur, en çok on kişi
+istediği koltuğa oturur, boş koltukları botlar oynar (bkz. Çok oyunculu).
 
 ## Başlatma
 
@@ -13,15 +14,32 @@ Port değiştirmek için PowerShell'de `$env:PORT=5187; npm start`.
 `docker compose down` kapatır. Kaynak değişince yalnızca `--build` yeter, bağımlılık katmanı önbellekten gelir.
 Sunucu oyun dosyalarını `no-store` ile verir; `/health` yanıtındaki `surum` alanı ayakta olan yapının damgasıdır.
 
-**Cloudflare Tunnel (yakargol.josephuz.com)**: `.env.example` dosyasını `.env` olarak kopyalayıp `TUNNEL_TOKEN=...` yaz ve
+**Yayın**: oyun dosyaları Cloudflare Worker'da statik site olarak durur (`npm run deploy:web`, `wrangler.jsonc` →
+yakargol.josephuz.com). Evdeki PC yalnızca çevrim içi sunucudur (WebSocket odaları, çevrim içi sayısı).
+
+**Cloudflare Tunnel (yakargol-sunucu.josephuz.com)**: `.env.example` dosyasını `.env` olarak kopyalayıp `TUNNEL_TOKEN=...` yaz ve
 `docker compose --profile tunnel up -d --build`: `cloudflared` (`yakargol-tunnel`) oyun sağlıklı olunca tünele bağlanır.
 Tünel konteyneri oyunun ağ alanını paylaşır (`network_mode: service:game`), bu yüzden Zero Trust → Networks → Tunnels →
-tünel → **Published application routes** içindeki rota `yakargol.josephuz.com` → `http://localhost:5186` olarak kalır.
+tünel → **Published application routes** içindeki rota `yakargol-sunucu.josephuz.com` → `http://localhost:5186` olarak kalır.
 `.env` git'e ve Docker imajına girmez. Güncelleme için aynı komut yeter; tüneli kapatmak için `docker compose --profile tunnel down`.
 
 **Testler**: `npm test` kural testlerini (Node, tarayıcısız) koşar. Tarayıcı dumanı testi çalışan sunucuya bağlanır:
 `node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran görüntüleri `artifacts/`.
-Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak).
+Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak). Çevrim içi için
+`node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar top nişanı, mola; uygulama kipinde "Yakında").
+
+## Çok oyunculu
+
+Giriş ekranında ad yazılır, **Oda kur** ya da **Odaya katıl** (kod ya da `?oda=KOD` linki). Lobide iki takımın beşer
+koltuğu vardır (her takımın beşincisi kaleci): herkes boş (bot) koltuğa tıklayıp oturur, **yönetici** (kuran) oyuncuları
+sürükleyip bırakır ya da oyuncuya sonra koltuğa tıklar; dolu koltukta ikisi yer değiştirir. Maçı yönetici başlatır; maç
+sürerken de odaya girilir (boş koltuğa). Maçı sunucu koşturur (`server/rooms.mjs`, tarayıcıdakiyle aynı `world.js`),
+sayfa girdiyi yollar, gelen durumu ara değerle çizer, kendi oyuncunu gecikmesiz göstermek için yerel girdiden kısa bir
+öne kayma ekler (`src/net/`). Yakar top nişanı herkes için maçı dondurur, uçuş herkes için ağır çekimdir. Mola maçı
+durdurmaz; kopan oyuncunun koltuğunu o sürede bot oynar, aynı sekmeyle geri dönünce yerine oturur. Maç bitince oda
+lobiye döner. Giriş ekranı sunucuya bağlıyken çevrim içi sayısını yazar; sunucu (PC ya da tünel) kapalıysa oda düğmeleri
+**Yakında** olur. Android uygulamasında çok oyunculu kapalıdır (`config.js` → `ONLINE`), düğmeler hep "Yakında"; uygulama
+çevrim içi sayısına sinyalle (`/presence`) katılır.
 
 **Android APK (Android Studio gerekmez)**: JDK 21 ve Android SDK komut satırı araçları yeter. Bu bilgisayarda
 `%USERPROFILE%android` altında taşınabilir olarak kurulu (`jdk-21…`, `sdk`: platform-tools, platforms;android-36,
@@ -32,7 +50,7 @@ Store için `apk/YakarGol.aab` ve incelemek için `apk/YakarGol-debug.apk`. Yay�
 yayınlanamaz). APK'yı telefona atıp açmak yeter ("bilinmeyen kaynaklardan yükleme" izni istenir; Samsung'da önce
 Ayarlar → Güvenlik ve gizlilik → **Otomatik Engelleyici** kapatılmalı). USB hata ayıklama açık telefona doğrudan kurmak için
 `npm run apk -- --install`. Uygulama oyunu kendi içinden açar (internetsiz oynanır), yatay ve tam ekrandır, Android
-geri tuşu mola / devam olur; çevrim içi sinyali canlı sunucuya gider. Kimlik `com.josephuz.yakargol` (Play Store'da
+geri tuşu mola / devam olur; çok oyunculu "Yakında", çevrim içi sinyali canlı sunucuya gider. Kimlik `com.josephuz.yakargol` (Play Store'da
 değiştirilemez). Simge ve açılış görseli `node scripts/icons.mjs` ile üretilir; Play Store görselleri `store/`.
 
 ## Tuşlar
@@ -111,7 +129,10 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | --- | --- |
 | `index.html`, `style.css` | Tam ekran düzen: sahne, tabela, oyuncu kartı, karakterin sırtındaki gösterge, ekranlar (giriş, yardım, mola, maç sonu) |
 | `game.js` | Giriş; `src/main.js`'i yükler (import map: `three` → `/vendor/three.module.js`), hata olursa okunur mesaj |
-| `server.mjs` | Statik sunucu: oyun dosyaları, `src/`, `/vendor` (three paketi), `/health` |
+| `server.mjs` | Sunucu: oyun dosyaları, `src/`, `/vendor` (three paketi), `/health`, `/presence`, WebSocket |
+| `server/rooms.mjs` | Odalar: koltuklar, yönetici taşıması, otoriter maç döngüsü, yakar top sineması, geri bağlanma |
+| `src/net/protocol.js`, `src/net/snapshot.js`, `src/net/client.js` | Ağ sözlüğü, durum paketi, çevrim içi istemci (ara değer, öne kayma) |
+| `src/lobby.js`, `src/platform.js` | Giriş ekranı oda düğmeleri ve lobi; platform (uygulama / web) ve sunucu adresi |
 | `src/config.js` | Tüm ayar sayıları (saha, maç, hareket, enerji, kayma, hızlı koşu, şutlar, rüzgar, top, yanma, botlar, kamera) |
 | `src/world.js` | **Simülasyon**: dünya kurulumu, sabit adım, girdiyi eyleme çevirme (sol tık şarjı), hareket, saat ve altın gol |
 | `src/actions.js` | Oyuncu eylemleri: zıplama, kayma, hızlı koşu, şut (normal / rüzgar / yakar / pas), pas hedefi seçimi |
@@ -134,5 +155,6 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/world.test.mjs` | Kural testleri |
 | `tests/browser-smoke.mjs` | Tarayıcı dumanı testi |
 | `tests/touch-smoke.mjs` | Dokunmatik dumanı testi (telefon taklidi) |
+| `tests/rooms.test.mjs`, `tests/online-smoke.mjs` | Oda testleri (sahte soket) ve iki sekmeli çevrim içi dumanı testi |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |
 | `scripts/build-web.mjs`, `scripts/apk.mjs`, `scripts/icons.mjs` | Uygulama dosyalarını toplama, APK derleme, simge / açılış / mağaza görselleri |

@@ -131,3 +131,14 @@ export const CAMERA = { fov: 66, sprintFov: 77, far: 240, back: 4.6, side: 0.65,
 export const TOUCH = { stick: 60, dead: 0.14, look: 1.9, pixelRatio: 1.35, shadow: 1024 };
 
 export const TEAMS = { names: ['MAVİ', 'TURUNCU'], colors: ['#39c2cf', '#f5825b'] };
+
+/**
+ * Çok oyunculu özellikler hangi platformda açık: tarayıcıda (web) açık; Android uygulamasında (app) kapalı, giriş
+ * ekranında oda düğmeleri "Yakında" yazar. Webde de sunucuya bağlanılamazsa (evdeki PC ya da tünel kapalı) "Yakında".
+ */
+export const ONLINE = Object.freeze({ web: true, app: false });
+/**
+ * Çevrim içi oyun sunucusu (WebSocket, Cloudflare Tunnel ile evdeki PC). Oyun dosyaları Cloudflare'deki statik siteden
+ * (yakargol.josephuz.com) gelir; sayfa sunucunun kendisinden açıldıysa (yerelde, Docker, aynı ağ) aynı adres kullanılır.
+ */
+export const SERVER = 'yakargol-sunucu.josephuz.com';

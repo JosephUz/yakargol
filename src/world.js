@@ -9,24 +9,27 @@ import { createRng } from './rng.js';
 export { dash, jump, kick, pass, sprint };
 
 /**
- * Maç simülasyonu: DOM ve three.js yok, testler Node'da koşar. 5v5: 0. oyuncu insan, kalan dokuzu bot. step sabit
- * adımla ilerletir, olayları w.events'e yazar (görünüm, ses ve mesajlar oradan okur; tüketen boşaltır).
+ * Maç simülasyonu: DOM ve three.js yok, testler Node'da (ve çevrim içi odada sunucuda) koşar. 5v5: tek başına oyunda
+ * 0. oyuncu insan, kalan dokuzu bot; çevrim içinde `human` işaretli her koltuk bir insandır. step sabit adımla
+ * ilerletir, olayları w.events'e yazar (görünüm, ses ve mesajlar oradan okur; tüketen boşaltır). `me`: bu tarayıcıdaki
+ * oyuncu (görünüm, arayüz ve kamera onu izler; tek başına oyunda 0).
  *
  * İnsan girdisi (her adım): x, z hareket yönü; aim nişan noktası; hold sol tık basılı, tap bu adımda basıldı, release
  * bu adımda bırakıldı; secondary sağ tık; fire yakar top (tarayıcıda sağ tık basılı tutulup nişan alındıktan sonra, bkz.
  * main.js); sprint Shift; pass pas; jump boşluk. Tarayıcıda
- * top sendeyken kısa sağ tık pas olarak gelir (bkz. main.js).
+ * top sendeyken kısa sağ tık pas olarak gelir (bkz. main.js). Birden çok insan varsa (sunucu) girdi
+ * `{ players: { [id]: girdi } }` biçimindedir; girdisi gelmeyen insan o adımda durur.
  */
 export function createWorld(seed = MATCH.seed) {
   const w = {
-    time: 0, score: [0, 0], winner: null, overtime: false, kickoff: MATCH.kickoff, nextKickoff: 0, kickoffTaker: 0, blast: null, fireLeft: [KICK.fireShots, KICK.fireShots], events: [], players: [],
+    me: 0, time: 0, score: [0, 0], winner: null, overtime: false, kickoff: MATCH.kickoff, nextKickoff: 0, kickoffTaker: 0, blast: null, fireLeft: [KICK.fireShots, KICK.fireShots], events: [], players: [],
     random: createRng(seed),
     ball: { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0 },
   };
   for (let i = 0; i < MATCH.teamSize * 2; i++) {
     const team = i < MATCH.teamSize ? 0 : 1, role = i % MATCH.teamSize;
     const p = {
-      id: i, team, role, name: i === 0 ? 'Sen' : 'Bot-' + i, x: 0, z: 0, vx: 0, vz: 0, angle: team === 0 ? Math.PI : 0,
+      id: i, team, role, human: i === 0, name: i === 0 ? 'Sen' : 'Bot-' + i, x: 0, z: 0, vx: 0, vz: 0, angle: team === 0 ? Math.PI : 0,
       burn: 0, guard: BURN.kickoffGuard, stun: 0, evade: 0, pressed: false, air: 0, airMax: 1, jump: 0, dash: 0, sprint: 0, dashX: 0, dashZ: 0, knock: 0, knockX: 0, knockZ: 0,
       energyCd: 0, kickCd: 0, charge: 0, chargeSpent: false, think: 0.3 + i * 0.07,
       stats: { goals: 0, passes: 0, burns: 0, steals: 0, saves: 0, dashes: 0 },
@@ -55,7 +58,7 @@ export function step(w, dt, input = {}) {
     for (const k of TIMERS) p[k] = Math.max(0, p[k] - dt);
     if (p.burn > 0) { sideline(w, p, dt); continue; }
     if (p.stun > 0) { p.charge = 0; move(p, p.knock > 0 ? p.knockX : 0, p.knock > 0 ? p.knockZ : 0, p.knock > 0 ? WIND.push : MOVE.speed, dt); continue; }
-    const cmd = p.id === 0 ? input : botInput(w, p);
+    const cmd = !p.human ? botInput(w, p) : input.players ? input.players[p.id] || {} : input;
     act(w, p, cmd, dt);
     if (p.knock > 0) move(p, p.knockX, p.knockZ, WIND.push, dt);
     else if (p.dash > 0) move(p, p.dashX, p.dashZ, DASH.speed, dt);

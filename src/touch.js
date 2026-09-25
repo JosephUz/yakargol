@@ -90,7 +90,7 @@ export function createTouch(root, sink) {
     sync(w, visible) {
       el.pad.hidden = !visible;
       if (!visible) return;
-      const p = w.players[0], owns = w.ball.owner === 0, cd = Math.min(1, p.energyCd / ENERGY.cooldown).toFixed(3);
+      const p = w.players[w.me], owns = w.ball.owner === w.me, cd = Math.min(1, p.energyCd / ENERGY.cooldown).toFixed(3);
       el.pass.classList.toggle('dash', !owns);
       el.shoot.classList.toggle('idle', !owns);
       el.pass.style.setProperty('--cd', owns ? 0 : cd);

@@ -7,7 +7,7 @@ import { benchX, lift } from './view/actors.js';
  * şutu ortak), enerji dolunca kısa "HAZIR" ve top kaptırınca sersemlik süresi. Nişangahın çevresinde **dolum halkası**:
  * sol tık (rüzgar) ve sağ tık (yakar top) basılıyken hangi vuruşun hazırlandığını ve ne kadar dolduğunu gösterir. Simülasyonu yalnızca okur.
  */
-const SCREENS = ['home', 'help', 'pause', 'results'];
+const SCREENS = ['home', 'help', 'pause', 'results', 'lobby'];
 const CHARGE_COLORS = { wind: '#8ff3ff', fire: '#ff7a2e', blocked: '#9aa39c' };
 const STATS = ['goals', 'passes', 'burns', 'steals', 'saves'];
 
@@ -17,7 +17,7 @@ export function createUI(root) {
     screens: Object.fromEntries(SCREENS.map(s => [s, $(s)])),
     playing: ['scoreboard', 'controls', 'player', 'pause-open'].map($),
     blue: $('blue-score'), orange: $('orange-score'), fires: [$('blue-fire'), $('orange-fire')], timer: $('timer'), period: $('period'),
-    ball: $('ball-status'), energyText: $('energy-text'), energyFill: $('energy-fill'),
+    side: $('side'), ball: $('ball-status'), energyText: $('energy-text'), energyFill: $('energy-fill'),
     burn: $('burn'), burnCount: $('burn-count'), crosshair: $('crosshair'), message: $('message'),
     over: $('overhead'), overEnergy: $('over-energy'), overEnergyText: $('over-energy-text'), overEnergyFill: $('over-energy-fill'),
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
@@ -58,12 +58,13 @@ export function createUI(root) {
       const left = Math.max(0, Math.ceil(MATCH.duration - w.time));
       el.timer.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
       el.period.textContent = w.overtime ? 'ALTIN GOL' : '5v5 · TEK MAÇ';
-      const p = w.players[0], owner = w.players[w.ball.owner];
-      el.ball.textContent = p.burn > 0 ? 'KENARDASIN' : p.stun > 0 ? 'SERSEMLEDİN' : w.ball.owner === 0 ? 'TOP SENDE' : owner?.team === 0 ? 'PAS İÇİN AÇIL' : 'TOPU KAZAN';
+      const p = w.players[w.me], owner = w.players[w.ball.owner];
+      el.side.textContent = 'SEN / ' + TEAMS.names[p.team] + ' TAKIM';
+      el.ball.textContent = p.burn > 0 ? 'KENARDASIN' : p.stun > 0 ? 'SERSEMLEDİN' : w.ball.owner === w.me ? 'TOP SENDE' : owner?.team === p.team ? 'PAS İÇİN AÇIL' : 'TOPU KAZAN';
       el.energyText.textContent = p.energyCd > 0 ? p.energyCd.toFixed(1) + ' sn' : 'HAZIR';
       el.energyFill.style.width = (1 - p.energyCd / ENERGY.cooldown) * 100 + '%';
-      el.fireLeft.textContent = w.fireLeft[0] + ' / ' + KICK.fireShots;
-      el.fireLeft.classList.toggle('empty', w.fireLeft[0] <= 0);
+      el.fireLeft.textContent = w.fireLeft[p.team] + ' / ' + KICK.fireShots;
+      el.fireLeft.classList.toggle('empty', w.fireLeft[p.team] <= 0);
       el.burn.hidden = !playing || !!screen || p.burn <= 0;
       el.burnCount.textContent = p.burn.toFixed(1) + ' sn';
     },
@@ -89,7 +90,7 @@ export function createUI(root) {
 
     /** Karakterin sırtındaki gösterge (başın üstünde nişan açısını kapatıyordu); her kare, gövdenin ekran konumuna. */
     overhead(w, dt, visible, project) {
-      const p = w.players[0];
+      const p = w.players[w.me];
       if (lastEnergy > 0 && p.energyCd <= 0) readyTime = 0.9;
       lastEnergy = p.energyCd;
       readyTime = Math.max(0, readyTime - dt);
@@ -132,13 +133,15 @@ export function createUI(root) {
     cinemaAim(left) { el.cineAimFill.style.width = Math.max(0, left) * 100 + '%'; },
 
     results(w) {
-      el.resultTitle.textContent = w.winner === 0 ? 'Mahallenin galibi sizsiniz!' : 'Rövanşta görüşürüz.';
+      el.resultTitle.textContent = w.winner === w.players[w.me].team ? 'Mahallenin galibi sizsiniz!' : 'Rövanşta görüşürüz.';
       el.finalScore.textContent = w.score[0] + ' : ' + w.score[1];
       el.stats.innerHTML = w.players.map(p =>
-        `<tr class="${p.team === 0 ? 'blue-text' : 'orange-text'}"><td>${p.name}${p.role === 4 ? ' · Kaleci' : ''}</td>` +
+        `<tr class="${p.team === 0 ? 'blue-text' : 'orange-text'}${p.id === w.me ? ' me' : ''}"><td>${esc(p.name)}${p.role === 4 ? ' · Kaleci' : ''}</td>` +
         STATS.map(k => `<td>${p.stats[k]}</td>`).join('') + '</tr>').join('');
     },
 
     teamName: team => TEAMS.names[team],
   };
 }
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

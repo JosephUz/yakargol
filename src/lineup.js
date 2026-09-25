@@ -23,18 +23,18 @@ export const forwardOf = (w, team) => w.players.find(p => p.team === team && p.r
 
 /**
  * Takımların saha oyuncularına rolleri karıştırarak dağıtır ve evlerini biraz kaydırır (tohumlu rastgelelik). İnsan
- * oyuncu (0) her seferinde **başka** bir role geçer: rastgele eşleşme aynı rolü verirse bir takım arkadaşıyla takas eder.
+ * oyuncular her seferinde **başka** bir role geçer: rastgele eşleşme aynı rolü verirse bir takım arkadaşıyla takas eder.
  */
 export function shuffleRoles(w) {
   for (const team of [0, 1]) {
     const field = w.players.filter(p => p.team === team && p.role !== KEEPER);
     const roles = field.map(p => p.role);
     for (let i = roles.length - 1; i > 0; i--) { const j = Math.floor(w.random() * (i + 1)); [roles[i], roles[j]] = [roles[j], roles[i]]; }
-    const human = field.findIndex(p => p.id === 0);
-    if (human >= 0 && roles[human] === field[human].role) {
+    field.forEach((p, human) => {
+      if (!p.human || roles[human] !== p.role) return;
       const other = (human + 1 + Math.floor(w.random() * (field.length - 1))) % field.length;
       [roles[human], roles[other]] = [roles[other], roles[human]];
-    }
+    });
     field.forEach((p, i) => {
       p.role = roles[i];
       p.shiftX = (w.random() - 0.5) * 2 * X * LINEUP.shiftX;

@@ -1,6 +1,9 @@
 import { createAudio } from './audio.js';
 import { CINEMA, KICK, TEAMS } from './config.js';
 import { createInput } from './input.js';
+import { createLobby } from './lobby.js';
+import { createNetClient } from './net/client.js';
+import { onlineEnabled, serverHttp } from './platform.js';
 import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { createView } from './view/view.js';
@@ -16,6 +19,10 @@ import { createWorld, step } from './world.js';
  * çekim) → çarpma (daha ağır). Simülasyon kuralları aynı kalır; yalnızca adım başına düşen gerçek zaman değişir.
  * İnsan oyuncuda tutuşma yerine nişan evresi vardır: top sendeyken sağ tık kısa basılırsa pas, CINEMA.hold'dan uzun
  * basılı kalırsa oyun donar ve CINEMA.aim saniye fareyle nişan alınır; bırakınca (sol tık ya da süre dolunca) yakar top fırlar.
+ *
+ * **Çevrim içi** (webde, config.js → ONLINE; bkz. lobby.js, net/): maçı sunucu koşturur, bu sayfa girdiyi yollar ve
+ * gelen durumu çizer (net/client.js). Sinemayı da sunucu yürütür (herkes aynı anda donar / ağır çekime geçer); nişan
+ * evresinde nişan noktası buradan gider. Çevrim içinde mola maçı durdurmaz.
  *
  * Dokunmatik kip (telefon, tablet, Android uygulaması; ?touch=1 ile masaüstünde de): joystick ve düğmeler (touch.js),
  * hafif görüntü, önemli anlarda titreşim; uygulamada Android geri tuşu mola / devam / çıkış olur.
@@ -47,7 +54,7 @@ export async function start(root) {
   camButton.onclick = toggleCamera;
   const ui = createUI(root);
   const audio = createAudio();
-  let cine = null, rightHold = null;
+  let cine = null, rightHold = null, online = false;
   let w = createWorld(), screen = 'home', started = false, acc = 0, uiClock = 0, helpReturn = 'home', pausedAt = 0, last = performance.now();
   view.faceBall(w);
 
@@ -72,9 +79,14 @@ export async function start(root) {
     if (next) input.unlock();
     ui.show(next);
     input.clear();
+    // Çevrim içinde mola yalnız bir perdedir: yeniden başlatma yok, çıkış odadan çıkar.
+    root.querySelector('#yg-restart').hidden = online;
+    root.querySelector('#yg-pause-note').hidden = !online;
+    root.querySelector('#yg-again').textContent = online ? 'LOBİYE DÖN' : 'BİR MAÇ DAHA';
     refresh();
   }
   function begin() {
+    if (online) { showLobby(); return; }
     endCinema(); rightHold = null;
     w = createWorld(); view.faceBall(w);
     started = true; acc = 0;
@@ -89,17 +101,91 @@ export async function start(root) {
   function closeHelp() { show(helpReturn); if (active()) input.lock(); }
   /** Esc: kilitliyken tarayıcı Esc'yi kilidi bırakmaya harcar (o da molaya sokar); kısa süre içindeki ikinci Esc yok sayılır. */
   function pause() {
-    if (!started || screen === 'home' || screen === 'results') return;
+    if (!started || screen === 'home' || screen === 'results' || screen === 'lobby') return;
     if (screen === 'help') { closeHelp(); return; }
     if (screen === 'pause') { if (performance.now() - pausedAt > 250) resume(); return; }
     show('pause');
   }
-  function menu() { endCinema(); started = false; w = createWorld(); view.faceBall(w); show('home'); }
+  function menu() {
+    if (online) { leaveRoom(); return; }
+    endCinema(); started = false; w = createWorld(); view.faceBall(w); show('home');
+  }
 
-  ui.button('start', begin); ui.button('restart', begin); ui.button('again', begin);
+  ui.button('start', () => { if (online) leaveRoom(); begin(); }); ui.button('restart', begin); ui.button('again', begin);
   ui.button('pause-open', pause); ui.button('resume', resume); ui.button('menu', menu);
   ui.button('help-open', help); ui.button('help-close', closeHelp);
   ui.button('sound', () => ui.setSound(audio.toggle()));
+
+  // ---------- Çevrim içi ----------
+  const net = onlineEnabled() ? createNetClient({
+    onWelcome() {
+      lobby.setServer(true);
+      if (pending) { const go = pending; pending = null; go(); return; }
+      // Sayfa yenilendi (lobideydik) ya da davet linki: odaya gir.
+      const code = inviteCode || (!net.world && net.rememberedRoom());
+      inviteCode = null;
+      if (code && !net.lobby) net.join(code);
+    },
+    // Maçta ya da maç sonu karnesindeyken lobi yalnız güncellenir (karneden "Lobiye dön" ile görünür).
+    onLobby(msg) {
+      online = true;
+      if (screen === 'lobby') lobby.render(msg);
+      else if (!started && screen !== 'results') showLobby(msg);
+    },
+    onError(msg) {
+      lobby.status(msg);
+      if (msg === 'Böyle bir oda yok' && screen !== 'lobby') net.leave();
+    },
+    onStart(msg, first) {
+      if (!first) return;
+      online = true; endCinema(); rightHold = null;
+      w = net.world; view.faceBall(w);
+      started = true; acc = 0;
+      if (touch) enterFullscreen();
+      show(null); input.lock();
+    },
+    onEvents(list) { w.events.push(...list); consume(); },
+    onEnd(msg, world) {
+      endCinema();
+      if (world) { w = world; ui.results(w); }
+      started = false;
+      show('results');
+    },
+    onOnline: n => lobby.setOnline(n),
+    onDisconnect(was) {
+      lobby.setServer(false);
+      if (was && online && started) ui.message('BAĞLANTI KOPTU · YENİDEN BAĞLANIYOR', 3);
+    },
+  }) : null;
+  let pending = null, inviteCode = null;
+  const lobby = createLobby(root, {
+    id: () => net?.id,
+    create(nick) { withHello(nick, () => net.create()); },
+    join(nick, code) { withHello(nick, () => net.join(code)); },
+    seat: slot => net.seat(slot),
+    move: (id, slot) => net.move(id, slot),
+    start: () => net.start(),
+    leave: leaveRoom,
+  });
+  /** Adı yeniledikten sonra (sunucu WELCOME ile döner) odayı kur / odaya katıl. */
+  function withHello(nick, go) { if (!net?.connected) return; pending = go; net.hello(nick); }
+  function showLobby(msg = net?.lobby) {
+    if (!msg) { show('home'); return; }
+    online = true;
+    lobby.render(msg);
+    if (screen !== 'lobby') show('lobby');
+  }
+  function leaveRoom() {
+    net?.leave();
+    online = false; endCinema(); started = false; w = createWorld(); view.faceBall(w);
+    lobby.status('');
+    show('home');
+  }
+  if (net) {
+    inviteCode = lobby.urlCode();
+    if (inviteCode) lobby.showJoin();
+    net.connect(lobby.nick());
+  }
 
   /** Yakar top çıktı: oyun donar, top alev alır; kamera topa döner. */
   function startCinema(e) {
@@ -109,13 +195,14 @@ export async function start(root) {
     view.cinemaStart();
     view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z });
     audio.play('ignite');
-    ui.cinema(true, p.id === 0 ? 'SEN' : TEAMS.names[p.team] + ' · ' + p.name);
+    ui.cinema(true, who(p));
   }
-  const canFire = () => { const p = w.players[0]; return w.ball.owner === 0 && p.energyCd <= 0 && w.fireLeft[0] > 0 && p.kickCd <= 0 && p.stun <= 0; };
-  const fireBlocked = () => { const p = w.players[0]; return w.fireLeft[0] <= 0 ? 'TAKIMIN YAKAR TOP HAKKI BİTTİ' : p.energyCd > 0 ? 'ENERJİ DOLMADI' : null; };
+  const who = p => (p.id === w.me ? 'SEN' : TEAMS.names[p.team] + ' · ' + p.name);
+  const canFire = () => { const p = w.players[w.me]; return w.ball.owner === w.me && p.energyCd <= 0 && w.fireLeft[p.team] > 0 && p.kickCd <= 0 && p.stun <= 0; };
+  const fireBlocked = () => { const p = w.players[w.me]; return w.fireLeft[p.team] <= 0 ? 'TAKIMIN YAKAR TOP HAKKI BİTTİ' : p.energyCd > 0 ? 'ENERJİ DOLMADI' : null; };
   /** Sağ tık, top sendeyken: simülasyona gitmez; kısa basış pas olur, basılı tutuş nişana geçer (tickRightHold). */
   function route(cmd) {
-    const owns = w.ball.owner === 0;
+    const owns = w.ball.owner === w.me;
     if (cmd.secondary && owns) { cmd.secondary = false; rightHold = { t: 0, warned: false }; }
     if (rightHold) {
       if (!owns) rightHold = null;
@@ -127,20 +214,20 @@ export async function start(root) {
     if (!rightHold || cine) return;
     rightHold.t += dt;
     if (rightHold.t < CINEMA.hold) return;
-    if (canFire()) { rightHold = null; startAim(); }
+    if (canFire()) { rightHold = null; if (online) net.aim(); else startAim(); }
     else if (!rightHold.warned) { rightHold.warned = true; const why = fireBlocked(); if (why) ui.message(why, 1.2); }
   }
   /** Dolum halkası ve topun rengi için şu an hazırlanan vuruş (yoksa null). */
   function chargeState() {
     if (!active()) return null;
-    const p = w.players[0];
-    if (cine && cine.phase === 'aim') return { kind: 'fire', p: 1 - cine.t / CINEMA.aim, text: 'BIRAK: YAKAR TOP', full: true };
+    const p = w.players[w.me];
+    if (cine && cine.phase === 'aim' && cine.mine !== false) return { kind: 'fire', p: 1 - cine.t / CINEMA.aim, text: 'BIRAK: YAKAR TOP', full: true };
     if (cine) return null;
     if (rightHold) {
       const why = fireBlocked(), full = rightHold.t >= CINEMA.hold;
       return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? why + ' · BIRAK: PAS' : 'BIRAK: PAS · TUT: YAKAR TOP' };
     }
-    if (p.charge > 0 && w.ball.owner === 0) {
+    if (p.charge > 0 && w.ball.owner === w.me) {
       const full = p.charge >= KICK.windCharge, wait = full && p.energyCd > 0;
       return { kind: wait ? 'blocked' : 'wind', p: p.charge / KICK.windCharge, full: full && !wait, text: wait ? 'ENERJİ BEKLENİYOR · BIRAK: ŞUT' : 'BIRAK: ŞUT · TUT: RÜZGAR' };
     }
@@ -154,13 +241,14 @@ export async function start(root) {
     audio.play('ignite');
     ui.cinema(true, 'NİŞAN AL · BIRAK: ŞUT', 1);
   }
+  /** Nişan evresinde bırakıldı mı (sağ tık bırakıldı, sol tık ya da süre doldu). */
+  const aimReleased = () => input.take('secondaryUp') | !input.rightHeld() | input.take('tap') | cine.t >= CINEMA.aim;
   function tickAim(dt) {
     cine.t += dt;
-    const p = w.players[0], aim = view.aim(input.move(view));
+    const p = w.players[w.me], aim = view.aim(input.move(view));
     p.angle = Math.atan2(aim.x - p.x, aim.z - p.z);
     ui.cinemaAim(1 - cine.t / CINEMA.aim);
-    const go = input.take('secondaryUp') | !input.rightHeld() | input.take('tap') | cine.t >= CINEMA.aim;
-    if (go) fireNow();
+    if (aimReleased()) fireNow();
   }
   /** Nişanlanan yöne yakar top; kamera bu bakışı kaydeder (uçuştan sonra buraya döner). */
   function fireNow() {
@@ -192,40 +280,81 @@ export async function start(root) {
     else if (cine.phase === 'flight' && (w.ball.kind !== 'fire' || cine.t >= CINEMA.flightMax)) endCinema();
     else if (cine.phase === 'impact' && cine.t >= CINEMA.impact) endCinema();
   }
+  /**
+   * Çevrim içi sinema: evreyi sunucu söyler (durum paketindeki cine). Evre değişince görüntü (şeritler, alev, kamera)
+   * ona uyar; senin nişanındaysa nişan noktası ve bırakış sunucuya gider.
+   */
+  function syncNetCinema(dt) {
+    const sc = w.cine;
+    if (!sc) { endCinema(); return; }
+    const p = w.players[sc.id], mine = sc.id === w.me;
+    if (!cine) {
+      cine = { phase: sc.phase, t: 0, mine, sent: false };
+      view.cinemaStart();
+      view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z });
+      audio.play('ignite');
+      if (sc.phase === 'aim') ui.cinema(true, mine ? 'NİŞAN AL · BIRAK: ŞUT' : who(p) + ' NİŞAN ALIYOR', mine ? 1 : null);
+      else ui.cinema(true, who(p));
+    } else if (cine.phase !== sc.phase) {
+      if (cine.phase === 'aim') ui.cinema(true, who(p));
+      if (sc.phase === 'impact') { view.event({ type: 'impact', x: w.ball.x, z: w.ball.z }); audio.play('impact'); }
+      Object.assign(cine, { phase: sc.phase, t: 0 });
+    }
+    cine.t += dt;
+    if (cine.phase === 'aim' && mine && active() && !cine.sent) {
+      const aim = view.aim(input.move(view));
+      p.angle = Math.atan2(aim.x - p.x, aim.z - p.z);
+      ui.cinemaAim(1 - cine.t / CINEMA.aim);
+      const go = !!aimReleased();
+      if (go) cine.sent = true;
+      net.aimAt(aim, go);
+    }
+  }
 
   function consume() {
+    const me = w.me;
     for (const e of w.events) {
       view.event(e);
       audio.play(e.type);
-      if (touch) buzz(e);
-      if (e.type === 'kick' && e.kind === 'fire') {
+      if (touch) buzz(e, me);
+      if (!online && e.type === 'kick' && e.kind === 'fire') {
         if (cine && cine.phase === 'aim') { Object.assign(cine, { phase: 'flight', t: 0 }); ui.cinema(true, 'SEN'); }
         else startCinema(e);
       }
-      if (e.type === 'burn' && cine) {
+      if (!online && e.type === 'burn' && cine) {
         Object.assign(cine, { phase: 'impact', t: 0 });
         view.event({ type: 'impact', x: e.x, z: e.z });
         audio.play('impact');
       }
       if (e.type === 'goal') { ui.message(ui.teamName(e.team) + ' TAKIM · GOOOL!', 2.2); audio.play('boom'); view.faceBall(w); }
       if (e.type === 'lineup') view.faceBall(w);
-      if (e.type === 'return' && e.id === 0) view.faceBall(w);
-      if (e.type === 'burn' && e.attacker === 0) ui.message('YAKALADIN! Şimdi golü bul.', 1.8);
-      if (e.type === 'receive' && e.id === 0) ui.message('TOP SENDE', 0.75);
-      if (e.type === 'steal' && e.from === 0 && e.stun) ui.message('TOPU KAPTIRDIN · SERSEMLEDİN', 1.4);
+      if (e.type === 'return' && e.id === me) view.faceBall(w);
+      if (e.type === 'burn' && e.attacker === me) ui.message('YAKALADIN! Şimdi golü bul.', 1.8);
+      if (e.type === 'receive' && e.id === me) ui.message('TOP SENDE', 0.75);
+      if (e.type === 'steal' && e.from === me && e.stun) ui.message('TOPU KAPTIRDIN · SERSEMLEDİN', 1.4);
       if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
     }
     w.events.length = 0;
-    if (w.winner !== null && screen !== 'results') { show('results'); ui.results(w); }
+    if (!online && w.winner !== null && screen !== 'results') { show('results'); ui.results(w); }
   }
 
-  const refresh = () => ui.hud(w, started && screen !== 'home', screen);
+  const refresh = () => ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen);
 
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.08, (now - last) / 1000);
     last = now;
-    if (active()) {
+    if (online && started) {
+      // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).
+      const move = active() ? input.move(view) : null;
+      if (active()) {
+        const cmd = route(input.read(view));
+        if (!cine) net.input(cmd, dt);
+        tickRightHold(dt);
+      } else net.input({ x: 0, z: 0, aim: null, hold: false }, dt);
+      net.update(dt, cine ? null : move);
+      syncNetCinema(dt);
+    } else if (active()) {
       acc += dt * (cine ? cinemaLook().scale : 1);
       for (let n = 0; acc >= STEP && n < MAX_STEPS; n++) {
         const was = cine;
@@ -240,26 +369,34 @@ export async function start(root) {
     ui.tickMessage(dt, w, active());
     const charge = chargeState();
     ui.charge(charge);
-    ui.speed(active() && !cine && w.players[0].sprint > 0 && w.players[0].burn <= 0);
+    const me = w.players[w.me];
+    ui.speed(active() && !cine && me.sprint > 0 && me.burn <= 0);
     input.sync(w, active());
     // İzometrikte nişan oku: top sendeyken ya da yakar top nişanında.
-    const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === 0 && !cine) || cine?.phase === 'aim');
+    const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === w.me && !cine) || (cine?.phase === 'aim' && cine.mine !== false));
     view.showAim(aiming ? view.aim(input.move(view)) : null);
-    view.render(w, screen ? 0 : dt, started && screen !== 'home', cinemaLook(), charge);
+    // Çevrim içinde durum pakette gelir: görüntü molada da oynar (sinemada ölçek sunucudan).
+    const drawDt = online && started ? dt : screen ? 0 : dt;
+    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : cinemaLook(), charge);
     ui.overhead(w, dt, active(), view.project);
     ui.ballMark(w, active() && !cine, view.project);
     uiClock -= dt;
     if (uiClock <= 0) { uiClock = 0.08; refresh(); }
   }
+  /** Çevrim içi sinemanın görüntüsü: ölçek oyuncu sallanması için, alev yoğunluğu evreden. */
+  function netLook() {
+    const look = cinemaLook();
+    return look && cine.phase === 'aim' && !cine.mine ? { ...look, track: true } : look;
+  }
 
   if (testMode) {
     window.__yakarGol = {
-      world: () => w, view: () => view, state: () => ({ screen, started, cine: cine && cine.phase }),
+      world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, cine: cine && cine.phase }),
       step: n => { for (let i = 0; i < n; i++) step(w, STEP); consume(); refresh(); },
     };
   }
   /** Android uygulamasında geri tuşu: maçta mola, molada devam, yardımda kapat, giriş ekranında uygulamadan çık. */
-  const app = window.Capacitor?.isNativePlatform?.() && window.Capacitor.registerPlugin?.('App');
+  const app = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.registerPlugin?.('App') : null;
   app?.addListener('backButton', () => {
     if (screen === 'help') closeHelp();
     else if (active() || screen === 'pause') pause();
@@ -269,27 +406,25 @@ export async function start(root) {
 
   refresh();
   requestAnimationFrame(frame);
-  if (!testMode) heartbeat();
+  // Çok oyunculusu açık sekme WebSocket bağlantısıyla sayılır; kapalıysa (uygulama) sinyalle.
+  if (!testMode && !net) heartbeat();
 }
 
 /** Dokunmatikte kısa titreşim: şut / pas, top kapma, yanma, gol. */
 const BUZZ = { kick: 18, steal: 30, receive: 12, burn: 60, goal: [70, 50, 120] };
-function buzz(e) {
+function buzz(e, me) {
   const ms = BUZZ[e.type];
-  const mine = e.type === 'goal' || e.id === 0 || e.from === 0 || e.attacker === 0 || e.target === 0;
+  const mine = e.type === 'goal' || e.id === me || e.from === me || e.attacker === me || e.target === me;
   if (ms && mine) try { navigator.vibrate?.(ms); } catch { /* desteklenmiyor */ }
 }
 
 /**
- * Sunucuya "bu sekme açık" sinyali (çevrim içi sayısı için, bkz. server.mjs); sekme kapanınca vedalaşır. Oyun dosyaları
- * Cloudflare'deki statik siteden (yakargol.josephuz.com) ya da Android uygulamasının içinden gelir; sinyal evdeki sunucuya
- * gider (sunucu CORS izni verir, kapalıysa sessizce düşer). Sayfa sunucunun kendisinden açıldıysa (yerelde) aynı adres.
+ * Sunucuya "bu sekme açık" sinyali (çevrim içi sayısı için, bkz. server.mjs); sekme kapanınca vedalaşır. Çok oyunculusu
+ * kapalı platformda (Android uygulaması) kullanılır; sinyal evdeki sunucuya gider (CORS izni var, kapalıysa sessizce düşer).
  */
-const LIVE = 'https://yakargol-sunucu.josephuz.com';
-const selfHosted = () => !window.Capacitor?.isNativePlatform?.() && /^(localhost|yakargol-sunucu\.josephuz\.com|[\d.]+|\[.*\])$/.test(location.hostname);
 function heartbeat() {
   const id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
-  const url = (selfHosted() ? '' : LIVE) + '/presence?id=' + id;
+  const url = serverHttp() + '/presence?id=' + id;
   const beat = () => { if (!document.hidden) fetch(url, { method: 'POST', keepalive: true }).catch(() => {}); };
   beat();
   setInterval(beat, 20000);

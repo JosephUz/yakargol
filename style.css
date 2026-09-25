@@ -269,3 +269,56 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol.touch #yg-charge{top:auto;bottom:calc(64px + env(safe-area-inset-bottom));transform:translateX(-50%);width:54px;height:54px}
 #yakar-gol.touch #yg-charge span{top:50%;left:100%;transform:translateY(-50%);margin:0 0 0 10px}
 #yakar-gol.touch #yg-charge span{font-size:10px;padding:4px 8px}
+
+/* Çok oyunculu: giriş ekranında ad, Oda kur / Odaya katıl, kod satırı, çevrim içi sayısı; sunucu yoksa "Yakında". */
+#yakar-gol .home-online{margin-top:22px;width:280px;display:grid;gap:8px}
+#yakar-gol .home-online .nick{display:flex;align-items:center;gap:10px;background:#143a34d9;border:1px solid #e3dcc42a;border-radius:8px;padding:0 12px}
+#yakar-gol .home-online .nick span{font-size:9px;font-weight:800;letter-spacing:1.5px;color:#a9bdaa}
+#yakar-gol .home-online input{flex:1;min-width:0;background:transparent;border:0;color:#f6edda;font:700 13px inherit;font-family:inherit;padding:11px 0;outline:none;user-select:text}
+#yakar-gol .online-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#yakar-gol .online-row button{position:relative;font-weight:800;letter-spacing:1px;white-space:nowrap;padding:12px 8px}
+#yakar-gol .online-row button.soon,#yakar-gol .join-row button.soon{opacity:.55;cursor:default;transform:none}
+#yakar-gol .soon-tag{position:absolute;top:-9px;right:-6px;padding:3px 7px;border-radius:10px;background:#e6c25a;color:#1d1a10;font:900 8px/1 system-ui,sans-serif;letter-spacing:1px;font-style:normal}
+#yakar-gol .join-row{display:flex;gap:8px}
+#yakar-gol .join-row input{background:#143a34d9;border:1px solid #e3dcc42a;border-radius:8px;padding:10px 12px;text-transform:uppercase;letter-spacing:2px}
+#yakar-gol .home-status{display:flex;gap:12px;min-height:14px;font-size:10px;letter-spacing:.5px;color:#b9cebc}
+#yakar-gol #yg-online{color:#8fe3a4;font-weight:700}
+#yakar-gol .home .rule-cards{margin-top:30px}
+
+/* Lobi: oda kodu, iki takımın beşer koltuğu; boş koltuk "Bot · otur", yöneticinin seçtiği oyuncu vurgulu. */
+#yakar-gol .lobby-card{width:min(680px,94vw)}
+#yakar-gol .lobby-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#yakar-gol .lobby-head h2{margin:12px 0;letter-spacing:3px;font-size:34px}
+#yakar-gol .lobby-teams{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+#yakar-gol .lobby-team>b{display:block;font-size:11px;letter-spacing:2px;margin-bottom:8px}
+#yakar-gol .lobby-team.blue>b{color:#68d4d8}
+#yakar-gol .lobby-team.orange>b{color:#fda27e}
+#yakar-gol .lobby-team ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#yakar-gol .seat{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;background:#183f37;border:1px solid #e3dcc41c;cursor:pointer;font-size:12px;min-height:40px}
+#yakar-gol .seat em{font-style:normal;font-size:9px;letter-spacing:1px;color:#98ae9c;width:62px;flex:none}
+#yakar-gol .seat small{font-size:9px;color:#98ae9c;margin-left:4px}
+#yakar-gol .seat.free span{color:#a7b8a6}
+#yakar-gol .seat.free:hover{background:#255346;border-color:#efbf7766}
+#yakar-gol .lobby-team.blue .seat.taken{border-left:3px solid #39c2cf}
+#yakar-gol .lobby-team.orange .seat.taken{border-left:3px solid #f5825b}
+#yakar-gol .seat.taken span{font-weight:800;color:#f6edda}
+#yakar-gol .seat.me{background:#2c5a44}
+#yakar-gol .seat.me span::after{content:" · sen";color:#f4cf3c;font-weight:700}
+#yakar-gol .seat.off{opacity:.55}
+#yakar-gol .seat.picked,#yakar-gol .seat.drop{outline:2px solid #efbf77;outline-offset:1px}
+#yakar-gol .seat.dragging{opacity:.4}
+#yakar-gol .lobby-status{min-height:18px;margin:12px 0 0;color:#f5ce8c!important}
+#yakar-gol .lobby-leave{display:block;width:100%;margin-top:10px}
+#yakar-gol .pause-note{font-size:11px;margin:14px 0 0}
+#yakar-gol #yg-results tr.me td{font-weight:800;background:#f4cf3c14}
+/* Alçak ekran (yatay telefon): oda satırı yan yana ve küçük, kural kartları yer açmak için gizli. */
+@media(max-height:560px){
+#yakar-gol .home-online{margin-top:10px;width:min(440px,70vw);grid-template-columns:1fr 1fr;gap:6px}
+#yakar-gol .home-online .nick input{padding:7px 0;font-size:12px}
+#yakar-gol .online-row button{padding:8px 10px;font-size:10px}
+#yakar-gol .join-row,#yakar-gol .home-status{grid-column:1/-1}
+#yakar-gol .home .rule-cards{display:none}
+#yakar-gol .lobby-card{padding:16px}
+#yakar-gol .lobby-head h2{font-size:24px;margin:4px 0}
+#yakar-gol .seat{min-height:30px;padding:5px 9px}
+}

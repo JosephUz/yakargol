@@ -4,7 +4,7 @@ import { attackDir } from '../lineup.js';
 import { benchX, benchZ, lift } from './actors.js';
 
 /**
- * Omuz kamerası (tek kamera): 0. oyuncunun arkasında ve biraz sağında, zıplayınca onunla yükselir; yanınca kenardaki
+ * Omuz kamerası (tek kamera): senin oyuncunun (w.me) arkasında ve biraz sağında, zıplayınca onunla yükselir; yanınca kenardaki
  * yerine geçer. Yatay bakış (yaw) ve dikey eğim (pitch) fareyle döner. Nişan ekran ortasından zemine inen ışındır,
  * hareket bakış yönüne göredir. Oyuncu doğunca (maç başı, gol sonrası diziliş, kenardan dönüş) kamera topa çevrilir.
  * Yakar top sinemasında bakış kaydedilir, kamera yumuşakça topu izler (track), sinema bitince eski bakışa döner.
@@ -34,7 +34,7 @@ export function createShoulderCamera() {
     /** Bakışı topa çevirir, eğimi varsayılana döndürür. */
     faceBall(w) {
       if (mode === 'iso') return;
-      const p = w.players[0], x = p.burn > 0 ? benchX(p.team) : p.x, z = p.burn > 0 ? benchZ(p) : p.z;
+      const p = w.players[w.me], x = p.burn > 0 ? benchX(p.team) : p.x, z = p.burn > 0 ? benchZ(p) : p.z;
       const dx = w.ball.x - x, dz = w.ball.z - z;
       if (Math.hypot(dx, dz) > 0.01) yaw = Math.atan2(dx, dz);
       pitch = CAMERA.pitch;
@@ -46,7 +46,7 @@ export function createShoulderCamera() {
     /** Bakışı topa doğru yumuşakça çevirir (sinema). */
     track(w, dt) {
       if (mode === 'iso') return;
-      const at = spot(w.players[0]), target = Math.atan2(w.ball.x - at.x, w.ball.z - at.z), k = Math.min(1, dt * CINEMA.turn);
+      const at = spot(w.players[w.me]), target = Math.atan2(w.ball.x - at.x, w.ball.z - at.z), k = Math.min(1, dt * CINEMA.turn);
       yaw += Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw)) * k;
       pitch += (CAMERA.pitch + 0.06 - pitch) * k;
     },

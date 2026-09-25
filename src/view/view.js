@@ -72,11 +72,11 @@ export function createView(container, { mobile = false } = {}) {
       const scale = cine ? cine.scale : 1;
       time += dt * scale; real += dt;
       if (cine && cine.track !== false) shoulder.track(w, dt);
-      const hero = w.players[0], wide = hero.sprint > 0 && hero.burn <= 0 ? CAMERA.sprintFov : CAMERA.fov;
+      const hero = w.players[w.me], wide = hero.sprint > 0 && hero.burn <= 0 ? CAMERA.sprintFov : CAMERA.fov;
       if (shoulder.mode === 'shoulder') shoulder.zoom(wide, dt);
       shoulder.follow(hero, dt);
       syncActors(actors, w, time, playing, shoulder.project);
-      syncBall(ball, w.ball, real, dt * scale, cine ? cine.heat : 0, w.ball.owner === 0 ? charge : null);
+      syncBall(ball, w.ball, real, dt * scale, cine ? cine.heat : 0, w.ball.owner === w.me ? charge : null);
       effects.update(cine ? dt * Math.max(scale, 0.3) : dt);
       arrow.visible = !!aimAt && shoulder.mode === 'iso' && hero.burn <= 0;
       if (arrow.visible) { arrow.position.set(hero.x, 0.2, hero.z); arrow.rotation.y = Math.atan2(aimAt.x - hero.x, aimAt.z - hero.z); }

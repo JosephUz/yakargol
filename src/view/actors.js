@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { BURN, CINEMA, DASH, GOAL_BLAST, JUMP, PITCH, TEAMS } from '../config.js';
-import { box } from './builders.js';
+import { box, mat } from './builders.js';
 
 /**
  * Oyuncu görselleri: blok gövde, kafa, saç, kollar ve bacaklar (koşarken sallanır), üstte isim etiketi (DOM).
@@ -28,8 +28,9 @@ export function createActor(scene, labels, id) {
   box(body, 0.76, 0.9, 0.46, color, 0, 1.05, 0);
   box(body, 0.78, 0.26, 0.49, '#263a3a', 0, 0.59, 0);
   box(body, 0.53, 0.55, 0.5, '#d6a17c', 0, 1.75, 0);
-  // Senin karakterin (0) sarı saçlı: kalabalıkta hemen seçilir.
-  box(body, 0.56, 0.16, 0.54, id === 0 ? '#f4cf3c' : id % 3 === 0 ? '#443b31' : '#40352d', 0, 2.03, 0);
+  // Senin karakterin sarı saçlı (bkz. syncActors): kalabalıkta hemen seçilir.
+  const hairColor = id % 3 === 0 ? '#443b31' : '#40352d';
+  const hair = box(body, 0.56, 0.16, 0.54, hairColor, 0, 2.03, 0);
   box(body, 0.31, 0.08, 0.08, '#ffedcd', 0, 1.73, 0.27);
   const limbs = [];
   for (const x of [-0.23, 0.23]) {
@@ -57,14 +58,19 @@ export function createActor(scene, labels, id) {
   const wind = new T.Group(), streaks = [];
   wind.visible = false; scene.add(wind);
   for (let i = 0; i < 7; i++) { const s = new T.Mesh(streakGeo, streakMat); wind.add(s); streaks.push(s); }
-  return { root, body, limbs, stars, wind, streaks, label };
+  return { root, body, limbs, stars, wind, streaks, label, hair, hairColor, mine: null };
 }
 
-/** Her kare: konum, bakış, uzuv sallanması ve etiket (kendi oyuncunun etiketi yok; kameranın arkası gizli). */
+/**
+ * Her kare: konum, bakış, uzuv sallanması ve etiket (kendi oyuncunun etiketi yok; kameranın arkası gizli). Senin
+ * oyuncun (w.me) sarı saçlı; çevrim içinde öbür insanların başında adları yazar.
+ */
 export function syncActors(actors, w, time, playing, project) {
   const b = w.ball;
   for (const p of w.players) {
-    const v = actors[p.id], since = BURN.time - p.burn, knocked = p.burn > 0 && since < CINEMA.knock && p.burnX !== undefined;
+    const v = actors[p.id], mine = p.id === w.me;
+    if (v.mine !== mine) { v.mine = mine; v.hair.material = mat(mine ? '#f4cf3c' : v.hairColor); }
+    const since = BURN.time - p.burn, knocked = p.burn > 0 && since < CINEMA.knock && p.burnX !== undefined;
     const burned = p.burn > 0 && !knocked;
     if (knocked) {
       // Yakar top çarptı: kenara gitmeden önce topun gidişi yönünde savrulup sırtüstü düşer.
@@ -72,7 +78,7 @@ export function syncActors(actors, w, time, playing, project) {
       v.root.position.set(p.burnX + p.burnDX * k * 3, Math.sin(Math.min(1, k * 1.6) * Math.PI) * 0.9, p.burnZ + p.burnDZ * k * 3);
     } else v.root.position.set(burned ? benchX(p.team) : p.x, lift(p), burned ? benchZ(p) : p.z);
     const sliding = p.dash > 0 && !burned && !knocked, flying = p.air > 0 && !burned;
-    v.root.rotation.y = flying ? Math.atan2(p.vx, p.vz) : sliding ? Math.atan2(p.dashX, p.dashZ) : b.owner === p.id || (p.id === 0 && Math.hypot(p.vx, p.vz) > 1.2) ? p.angle : Math.atan2(b.x - v.root.position.x, b.z - v.root.position.z);
+    v.root.rotation.y = flying ? Math.atan2(p.vx, p.vz) : sliding ? Math.atan2(p.dashX, p.dashZ) : b.owner === p.id || (p.human && Math.hypot(p.vx, p.vz) > 1.2) ? p.angle : Math.atan2(b.x - v.root.position.x, b.z - v.root.position.z);
     const swing = burned ? 0 : Math.min(Math.hypot(p.vx, p.vz) / 7, 1) * 0.65;
     // Kayma: bacaklardan biri öne uzanır, diğeri kırılır, kollar geriye açılır; yoksa koşu sallanması.
     const SLIDE = [-1.35, -0.4, 0.9, 0.9];
@@ -93,7 +99,7 @@ export function syncActors(actors, w, time, playing, project) {
     v.body.rotation.x = flying ? -tumble(p) : knocked ? -Math.min(1, since / CINEMA.knock * 1.5) * 1.35 : sliding ? -1.05 : 0;
     v.stars.visible = dazed;
     if (dazed) { v.stars.rotation.y = time * 5; v.stars.children.forEach((s, i) => { s.rotation.y = time * 8 + i; s.position.y = Math.sin(time * 7 + i * 2) * 0.06; }); }
-    v.label.textContent = burned ? 'YANDI · ' + p.burn.toFixed(1) : p.id !== 0 && p.role === 4 ? 'KALECİ' : '';
+    v.label.textContent = burned ? 'YANDI · ' + p.burn.toFixed(1) : mine ? '' : w.online && p.human ? p.name + (p.role === 4 ? ' · KALECİ' : '') : p.role === 4 ? 'KALECİ' : '';
     const screen = project(v.root.position.x, 2.6, v.root.position.z);
     v.label.hidden = !playing || !v.label.textContent || screen.behind;
     v.label.style.transform = `translate(${screen.x}px,${screen.y}px) translate(-50%,-100%)`;

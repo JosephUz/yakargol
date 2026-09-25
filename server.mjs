@@ -3,10 +3,14 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { WebSocketServer } from 'ws';
+import { createRooms } from './server/rooms.mjs';
 
 /**
- * Tek süreç, tek port: statik dosyalar (oyun). Proje klasöründeki oyun dosyaları, src/ ve three.js paketi dışında
- * hiçbir dosyaya erişim yok. Ağ oyunu yok; simülasyon tarayıcıda koşar.
+ * Tek süreç, tek port: statik dosyalar (oyun) + WebSocket (odalar, lobi, otoriter maç simülasyonu; bkz. server/rooms.mjs).
+ * Cloudflare Tunnel bu sunucuyu yakargol-sunucu.josephuz.com adında açar; oyun dosyaları Cloudflare'deki statik siteden
+ * (yakargol.josephuz.com, wrangler.jsonc) gelir ve tarayıcı bu adrese bağlanır. Yerelde sayfa da buradan açılır.
+ * Proje klasöründeki oyun dosyaları, src/ ve three.js paketi dışında hiçbir dosyaya erişim yok.
  */
 const root = path.dirname(fileURLToPath(import.meta.url));
 const vendorDir = path.join(root, 'node_modules', 'three', 'build');
@@ -55,7 +59,8 @@ const port = Number(process.env.PORT || 5186);
 const host = process.env.HOST || '127.0.0.1';
 const address = `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`;
 /**
- * Çevrim içi sayısı: açık her sekme `POST /presence?id=<sekme>` ile PRESENCE.beat saniyede bir haber verir, kapanırken
+ * Çevrim içi sayısı: çok oyunculu açık sekmeler WebSocket bağlantısıyla sayılır (rooms.mjs). Çok oyunculusu kapalı
+ * sekmeler (Android uygulaması) `POST /presence?id=<sekme>` ile PRESENCE.beat saniyede bir haber verir, kapanırken
  * `bye=1` gönderir. Son PRESENCE.ttl saniyede haber veren sekmeler /health → online alanında sayılır (josephuz.com
  * bu sayıyı gösterir). Kimlik rastgele sekme kimliğidir; başka bilgi tutulmaz. Android uygulaması oyunu kendi içinden
  * (https://localhost) açtığı için /presence her kökene açıktır (CORS); yanıt gövdesizdir, başka uç açılmaz.
@@ -73,7 +78,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, address);
   if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': types['.json'], 'Cache-Control': noStore });
-    res.end(JSON.stringify({ oyun: 'Yakar Gol', online: onlineCount(), surum: stamp })); return;
+    res.end(JSON.stringify({ oyun: 'Yakar Gol', ...rooms.stats(), surum: stamp })); return;
   }
   if (url.pathname === '/presence' && req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return; }
   if (url.pathname === '/presence' && req.method === 'POST') {
@@ -100,11 +105,24 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+const rooms = createRooms({ log: (...a) => console.log(new Date().toLocaleTimeString('tr-TR'), ...a), presence: onlineCount });
+/**
+ * WebSocket yalnız bilinen sayfalardan: aynı adres (yerelde, aynı ağda), *.josephuz.com (Cloudflare'deki statik site) ve
+ * localhost. Origin'siz istemciler (testler, araçlar) kabul edilir.
+ */
+function allowedOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try { const u = new URL(origin); return u.host === req.headers.host || u.hostname === 'josephuz.com' || u.hostname.endsWith('.josephuz.com') || u.hostname === 'localhost'; } catch { return false; }
+}
+const wss = new WebSocketServer({ server, maxPayload: 16 * 1024, verifyClient: ({ req }) => allowedOrigin(req) });
+wss.on('connection', ws => rooms.attach(ws));
+
 server.on('error', error => {
   console.error(error.code === 'EADDRINUSE' ? `${port} portu kullanimda. Baska port icin PORT ortam degiskenini ayarlayin.` : error);
   process.exit(1);
 });
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { console.log(sig + ': kapaniyor.'); server.close(); process.exit(0); });
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { console.log(sig + ': kapaniyor.'); rooms.close(); wss.close(); server.close(); process.exit(0); });
 buildStamp().then(s => { stamp = s; });
 server.listen(port, host, () => {
   console.log(`Yakar Gol: ${address} (dinlenen: ${host}:${port})\nDurdurmak icin Ctrl+C.`);
