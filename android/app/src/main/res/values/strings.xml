@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Yakar Gol</string>
+    <string name="title_activity_main">Yakar Gol</string>
+    <string name="package_name">com.josephuz.yakargol</string>
+    <string name="custom_url_scheme">com.josephuz.yakargol</string>
+</resources>

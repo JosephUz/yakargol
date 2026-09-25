@@ -1,0 +1,30 @@
+# Yerel Docker kurulumu: `docker compose up -d --build`, ardından http://localhost:5186
+# Oyun portu yalnızca bu bilgisayara açıktır (127.0.0.1); dışarıdan erişim tünelden geçer.
+# Cloudflare Tunnel (yakargol.josephuz.com) için `--profile tunnel` ve .env içinde TUNNEL_TOKEN (bkz. README).
+name: yakargol
+services:
+  game:
+    build: .
+    image: yakar-gol
+    container_name: yakargol
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PORT:-5186}:5186"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5186
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: yakargol-tunnel
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    # Oyunun ağ alanını paylaşır: paneldeki rota http://localhost:5186 doğrudan oyuna gider.
+    network_mode: "service:game"
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}  # boşsa cloudflared başlamaz; .env dosyasına yaz
+    depends_on:
+      game:
+        condition: service_healthy

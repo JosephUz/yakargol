@@ -1,0 +1,271 @@
+html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
+#yakar-gol{position:fixed;inset:0;font-family:Segoe UI,Arial,sans-serif;color:#f6edda;background:#193d39;font-synthesis:none;user-select:none}
+#yakar-gol *{box-sizing:border-box}
+#yakar-gol [hidden]{display:none!important}
+#yakar-gol button,#yakar-gol a{-webkit-tap-highlight-color:transparent}
+#yakar-gol button{font:600 12px inherit;font-family:inherit;background:#20473f;border:1px solid #e3dcc42a;color:#f4ead7;border-radius:8px;padding:12px 17px;cursor:pointer;transition:background .15s,transform .15s}
+#yakar-gol a.btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:13.333px;background:#20473f;border:1px solid #e3dcc42a;color:#f4ead7;border-radius:8px;padding:12px 17px;text-decoration:none;text-align:center;transition:background .15s,transform .15s}
+#yakar-gol button:hover,#yakar-gol a.btn:hover{background:#365c4e;transform:translateY(-1px)}
+#yakar-gol button:focus-visible,#yakar-gol a:focus-visible{outline:3px solid #f3c77f;outline-offset:3px}
+#yakar-gol kbd{display:inline-block;padding:4px 6px;border:1px solid #f4efd93b;border-bottom-width:2px;border-radius:4px;font:700 9px inherit;font-family:inherit;margin-left:4px}
+#yakar-gol .primary{display:flex;align-items:center;justify-content:space-between;background:#efbf77;color:#203e33;border:0;font-weight:900;letter-spacing:1px;min-height:54px;padding:17px 23px}
+#yakar-gol .primary:hover{background:#ffda99}
+#yakar-gol .primary span{font-size:22px}
+#yakar-gol .eyebrow{font-size:10px;font-weight:800;letter-spacing:2px;color:#b9cebc}
+#yakar-gol .eyebrow i,#yakar-gol .pitch-note i{display:inline-block;background:#ecc578;width:7px;height:7px;border-radius:50%;margin-right:7px}
+#yakar-gol .blue-text{color:#68d4d8}
+#yakar-gol .orange-text{color:#fda27e}
+
+/* Sahne: tüm pencereyi doldurur; arayüz üstünde yüzer. Kenarlarda hafif koyulaşma. */
+#yakar-gol #yg-view{position:absolute;inset:0;overflow:hidden}
+#yakar-gol canvas{display:block;width:100%;height:100%;cursor:crosshair}
+#yakar-gol .grain{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#18362e30,transparent 25%,transparent 75%,#172f3630)}
+
+/* Üst şerit: logo ve düğmeler. */
+#yakar-gol header{position:absolute;top:27px;left:34px;right:34px;display:flex;justify-content:space-between;align-items:center;z-index:8}
+#yakar-gol .logo{font-weight:950;font-size:26px;letter-spacing:-1px;color:#f3ebd7;text-decoration:none;text-shadow:0 2px 12px #18392f}
+#yakar-gol .logo>span{color:#f0ae65}
+#yakar-gol .logo small{display:block;font-size:8px;letter-spacing:2px;margin-top:7px}
+#yakar-gol .header-actions{display:flex;gap:8px}
+#yakar-gol .header-actions button,#yakar-gol .header-actions a.btn{background:#183d37e8;font-size:11px}
+
+/* Giriş ekranı. */
+#yakar-gol .home{position:absolute;inset:0;background:linear-gradient(90deg,#153c37fc 0%,#153c37ef 28%,#153c3766 52%,transparent 74%);display:flex;align-items:center}
+#yakar-gol .home-content{width:530px;margin-left:7vw;padding-top:60px}
+#yakar-gol .home h1{font-size:clamp(40px,4.4vw,72px);letter-spacing:-3px;line-height:1.05;margin:25px 0;color:#f3ecd8;font-weight:900}
+#yakar-gol .home h1 span{color:#f0bc76}
+#yakar-gol .home p{font-size:16px;line-height:1.8;color:#c5d3be;margin:24px 0 32px}
+#yakar-gol .home .primary{width:280px}
+#yakar-gol .home-meta{display:flex;gap:27px;margin-top:17px;font-size:9px;letter-spacing:1.5px;color:#a9bdaa}
+#yakar-gol .rule-cards{display:flex;margin-top:47px;gap:25px}
+#yakar-gol .rule-cards div{max-width:125px;border-top:1px solid #aabd9955;padding-top:14px}
+#yakar-gol .rule-cards b{display:block;font-size:9px;letter-spacing:1.2px;color:#f5c988}
+#yakar-gol .rule-cards span{display:block;font-size:11px;line-height:1.6;margin-top:9px;color:#b3c5b2}
+#yakar-gol .pitch-note{position:absolute;right:40px;bottom:35px;font-size:10px;letter-spacing:2px;background:#193b37de;padding:18px;border-radius:8px}
+#yakar-gol .pitch-note span{display:block;font-size:11px;letter-spacing:0;margin:9px 0 0 15px;color:#c7d5be}
+
+/* Skor tabelası ve saat. */
+#yakar-gol #yg-scoreboard{position:absolute;top:22px;left:50%;transform:translateX(-50%);display:flex;gap:23px;align-items:center;padding:12px 23px;background:#173d38f0;border:1px solid #ffffff24;border-radius:12px;box-shadow:0 10px 35px #183d392a;z-index:7}
+#yakar-gol .team{display:flex;align-items:center;gap:15px;font-size:10px;font-weight:900;letter-spacing:1px}
+#yakar-gol .team b{font-size:32px;letter-spacing:0;color:#fff3da}
+/* Takımların kalan yakar top hakları: alev damlaları; harcanan soluk. */
+#yakar-gol .fires{display:inline-flex;gap:4px}
+#yakar-gol .fires i{width:10px;height:14px;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:radial-gradient(circle at 50% 70%,#fff3a0 0 22%,#ff9a2e 45%,#e8321a 80%);box-shadow:0 0 8px #ff5a1f99;transition:opacity .3s,filter .3s}
+#yakar-gol .fires i.used{opacity:.25;filter:grayscale(1);box-shadow:none}
+#yakar-gol .clock{text-align:center;border-left:1px solid #fff2;border-right:1px solid #fff2;padding:0 20px;min-width:110px}
+#yakar-gol .clock span{font-size:20px;font-variant-numeric:tabular-nums}
+#yakar-gol .clock small{display:block;font-size:7px;letter-spacing:1px;color:#b7c8af;margin-top:4px}
+
+/* Oyuncuların üstündeki etiketler (kaleci, yanan oyuncunun sayacı). */
+#yakar-gol #yg-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#yakar-gol .actor-label{position:absolute;top:0;left:0;font-size:10px;font-weight:900;text-shadow:0 2px 4px #12382e;background:#173a39aa;padding:3px 6px;border-radius:4px}
+#yakar-gol .blue{color:#94eff3}
+#yakar-gol .orange{color:#ffd098}
+
+/* Nişangah ve karakterin sırtındaki gösterge: enerji geri sayımı (sarı, dolunca yeşil "HAZIR") ve rüzgar şarjı (camgöbeği; enerji yokken soluk). */
+#yakar-gol #yg-crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:28px monospace;color:white;text-shadow:0 1px 4px #173a39;pointer-events:none;z-index:6}
+#yakar-gol #yg-overhead{position:absolute;top:0;left:0;z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:center}
+#yakar-gol .over-row{display:flex;align-items:center;gap:6px;padding:4px 7px;border-radius:6px;background:#122f2cd9;border:1px solid #f1c57d88;box-shadow:0 4px 14px #0b1f1c66;font:900 11px/1 Segoe UI,Arial,sans-serif;letter-spacing:1px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#yakar-gol .over-row span{min-width:78px;color:#ffd98f}
+#yakar-gol .over-bar{width:56px;height:6px;border-radius:4px;background:#ffffff22;overflow:hidden}
+#yakar-gol .over-bar i{display:block;height:100%;width:0;background:#f1c57d}
+#yakar-gol .over-row.energy.ready{border-color:#9be58f;animation:ygReady .9s ease-out}
+#yakar-gol .over-row.energy.ready span{color:#b9f5ae}
+#yakar-gol .over-row.energy.ready .over-bar i{background:#9be58f}
+#yakar-gol .over-row.stun{border-color:#ffe066}
+#yakar-gol .over-row.stun span{color:#fff0a0}
+#yakar-gol .over-row.stun .over-bar i{background:#ffe066}
+@keyframes ygReady{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+
+/* Yakar top sineması: üstten ve alttan sinema şeritleri, ortada alevli başlık ve atanın adı. */
+#yakar-gol #yg-cine{position:absolute;inset:0;z-index:9;pointer-events:none}
+#yakar-gol .cine-bar{position:absolute;left:0;right:0;height:11vh;background:#0b0f0e;animation:ygBar .35s ease-out}
+#yakar-gol .cine-bar.top{top:0}
+#yakar-gol .cine-bar.bottom{bottom:0}
+#yakar-gol .cine-title{position:absolute;left:50%;top:15vh;transform:translateX(-50%);text-align:center;animation:ygCine .5s cubic-bezier(.2,1.6,.4,1)}
+#yakar-gol .cine-title strong{display:block;font:950 clamp(38px,6vw,74px)/1 Segoe UI,Arial,sans-serif;letter-spacing:-1px;background:linear-gradient(180deg,#fff3a0,#ff9a2e 45%,#e8321a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 14px #ff4a1a99)}
+#yakar-gol .cine-title span{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:6px;background:#1a0f0bcc;color:#ffd9a8;font-weight:900;font-size:13px;letter-spacing:2px}
+#yakar-gol .cine-aim{width:240px;height:7px;margin:10px auto 0;border-radius:4px;background:#ffffff26;overflow:hidden}
+#yakar-gol .cine-aim i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5a1f,#ffd35c)}
+#yakar-gol #yg-cine:not([hidden]) ~ #yg-message{display:none!important}
+@keyframes ygBar{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+@keyframes ygCine{0%{transform:translateX(-50%) scale(2.2);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+
+/* Nişangah dolum halkası: sol tık rüzgar (camgöbeği), sağ tık yakar top (turuncu), yapılamıyorsa gri; dolunca atar. */
+#yakar-gol #yg-charge{--p:0;--c:#8ff3ff;position:absolute;left:50%;top:50%;width:92px;height:92px;transform:translate(-50%,-50%);z-index:6;pointer-events:none}
+#yakar-gol .charge-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p) * 1turn),#ffffff2e 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 9px),#000 calc(100% - 8px));mask:radial-gradient(farthest-side,transparent calc(100% - 9px),#000 calc(100% - 8px));filter:drop-shadow(0 0 7px var(--c))}
+#yakar-gol #yg-charge span{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:10px;padding:5px 11px;border-radius:6px;background:#0f2a27e6;border:1px solid var(--c);color:var(--c);font:900 12px/1 Segoe UI,Arial,sans-serif;letter-spacing:1px;white-space:nowrap}
+#yakar-gol #yg-charge.full .charge-ring{animation:ygFull .35s ease-in-out infinite alternate}
+@keyframes ygFull{0%{transform:scale(1)}100%{transform:scale(1.14)}}
+
+/* Hızlı koşu: ekran kenarlarından merkeze akan hız çizgileri (orta açık kalır). */
+#yakar-gol #yg-speed{position:absolute;inset:-10%;z-index:5;pointer-events:none;background:repeating-conic-gradient(from 0deg,#ffffff00 0deg 5deg,#ffffff38 5.4deg 6deg,#ffffff00 6.4deg 11deg);-webkit-mask:radial-gradient(circle,transparent 34%,#000 72%);mask:radial-gradient(circle,transparent 34%,#000 72%);animation:ygSpeed .5s linear infinite}
+@keyframes ygSpeed{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(2deg) scale(1.04)}100%{transform:rotate(0deg) scale(1)}}
+
+/* Ortadaki mesaj ve yanma perdesi. */
+#yakar-gol #yg-message{position:absolute;top:130px;left:50%;transform:translateX(-50%);background:#f1c57d;color:#263d30;padding:14px 27px;border-radius:8px;font-weight:900;letter-spacing:.5px;z-index:8;white-space:nowrap}
+#yakar-gol #yg-burn{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 160px #e2693980;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#402c161f}
+#yakar-gol #yg-burn strong{font-size:38px;color:#fff1cb;text-shadow:0 3px 18px #742609}
+#yakar-gol #yg-burn-count{font-size:50px;font-weight:900;color:#ffd199}
+#yakar-gol #yg-burn small{background:#513d27dd;padding:8px 12px;border-radius:6px}
+
+/* Sol alt oyuncu kartı ve alt kontrol şeridi. */
+#yakar-gol #yg-player{position:absolute;bottom:90px;left:30px;width:220px;padding:19px;background:#173d38ee;border:1px solid #f1e8cc26;border-radius:10px}
+#yakar-gol #yg-player .eyebrow{font-size:8px}
+#yakar-gol #yg-ball-status{display:block;font-size:15px;margin:12px 0 20px;color:#f5d899}
+#yakar-gol .meter-label{display:flex;justify-content:space-between;font-size:8px;font-weight:800;letter-spacing:1px;color:#c7d6c0;margin:12px 0 7px}
+#yakar-gol .meter{height:5px;background:#d6e6bc1f;border-radius:5px;overflow:hidden}
+#yakar-gol .meter i{display:block;width:100%;height:100%;background:#66c6c7}
+#yakar-gol .fire-row{margin-top:14px}
+#yakar-gol #yg-fire-left{color:#ff9a5c}
+#yakar-gol #yg-fire-left.empty{color:#8a9a8c}
+#yakar-gol #yg-controls{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:19px;padding:11px 17px;background:#173d38ee;border:1px solid #f1e8cc26;border-radius:9px;white-space:nowrap;font-size:10px}
+#yakar-gol #yg-controls kbd{margin-right:5px;margin-left:0}
+
+/* Açılır kartlar: yardım, mola, maç sonu. */
+#yakar-gol .overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#102f2cc9;backdrop-filter:blur(7px);padding:25px}
+#yakar-gol .card{width:min(620px,94vw);max-height:92vh;overflow:auto;background:#20483e;border:1px solid #cdd5b72b;border-radius:18px;padding:33px;box-shadow:0 25px 85px #091e2b55}
+#yakar-gol .card h2{font-size:35px;line-height:1.12;margin:17px 0 26px;color:#f4d7a5;letter-spacing:-1px}
+#yakar-gol .card p{font-size:12px;line-height:1.8;color:#bed0b9}
+#yakar-gol .card dl{display:grid;grid-template-columns:150px 1fr;gap:18px 15px;font-size:12px;line-height:1.6}
+#yakar-gol .card dt{color:#f5ce8c;font-weight:800}
+#yakar-gol .card dd{margin:0;color:#cad7c1}
+#yakar-gol .card .primary{width:100%;margin-top:23px;justify-content:center}
+#yakar-gol .card.small{max-width:370px}
+#yakar-gol .card.small button,#yakar-gol .card.small a.btn{display:block;width:100%;margin-top:12px}
+#yakar-gol .result-card{width:min(740px,95vw)}
+#yakar-gol #yg-final-score{font-size:40px;font-weight:900;margin-bottom:20px}
+#yakar-gol .table-wrap{overflow:auto}
+#yakar-gol table{border-collapse:collapse;width:100%;font-size:12px}
+#yakar-gol td,#yakar-gol th{padding:10px 8px;text-align:left;border-bottom:1px solid #fff1}
+#yakar-gol th{font-size:10px;color:#c0cfb5}
+
+/* Dar ekranlar. */
+@media(max-width:1100px){
+#yakar-gol header{left:20px;right:20px;top:20px}
+#yakar-gol .logo{font-size:20px}
+#yakar-gol .header-actions button,#yakar-gol .header-actions a.btn{font-size:9px;padding:9px}
+#yakar-gol .header-actions kbd{display:none}
+#yakar-gol #yg-scoreboard{top:88px;gap:12px;padding:8px 14px}
+#yakar-gol .team b{font-size:24px}
+#yakar-gol .clock{padding:0 10px}
+#yakar-gol #yg-message{top:167px}
+#yakar-gol #yg-controls{gap:10px;font-size:8px}
+#yakar-gol #yg-player{width:180px;padding:12px;left:18px}
+#yakar-gol .home-content{margin-left:5vw;width:450px}
+#yakar-gol .home h1{font-size:54px}
+#yakar-gol .home p{font-size:14px}
+}
+@media(max-width:650px){
+#yakar-gol .logo small{font-size:6px}
+#yakar-gol .header-actions button,#yakar-gol .header-actions a.btn{padding:8px}
+#yakar-gol .home-content{width:90vw}
+#yakar-gol .home{background:#143e37c9}
+#yakar-gol .home h1{font-size:48px}
+#yakar-gol .home p{font-size:13px}
+#yakar-gol .rule-cards{margin-top:25px;gap:20px}
+#yakar-gol .pitch-note{display:none}
+#yakar-gol #yg-controls{width:94vw;white-space:normal;flex-wrap:wrap;justify-content:center;bottom:12px}
+#yakar-gol #yg-player{bottom:110px;width:150px}
+#yakar-gol #yg-player .eyebrow{font-size:7px}
+#yakar-gol #yg-ball-status{font-size:12px}
+#yakar-gol .card{padding:22px}
+#yakar-gol .card dl{grid-template-columns:100px 1fr;gap:12px;font-size:11px}
+}
+
+/* Dokunmatik kip (telefon / tablet, ?touch=1): sol yarı joystick, sağ yarı bakış, sağ altta başparmak düğmeleri. */
+#yakar-gol .touch-only{display:none}
+#yakar-gol.touch .touch-only{display:grid}
+#yakar-gol.touch .desktop-only,#yakar-gol.touch #yg-controls,#yakar-gol.touch #yg-player,#yakar-gol.touch kbd{display:none!important}
+#yakar-gol.touch canvas{cursor:default}
+#yakar-gol #yg-touch{position:absolute;inset:0;touch-action:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#yakar-gol.touch #yg-scoreboard,#yakar-gol.touch #yg-message{pointer-events:none}
+#yakar-gol .touch-zone{position:absolute;top:0;bottom:0;z-index:7;touch-action:none}
+#yakar-gol .touch-zone.left{left:0;width:44%}
+#yakar-gol .touch-zone.right{left:44%;right:0}
+#yakar-gol #yg-stick{position:fixed;left:0;top:0;width:0;height:0;z-index:10;pointer-events:none}
+#yakar-gol #yg-stick::before{content:"";position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;background:#10302bb0;border:2px solid #f1e8cc55;box-shadow:0 6px 24px #0b1f1c66}
+#yakar-gol #yg-stick i{position:absolute;left:-27px;top:-27px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff6de,#efbf77);box-shadow:0 4px 14px #0b1f1c88}
+#yakar-gol .touch-buttons{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));width:250px;height:210px;z-index:10;pointer-events:none}
+#yakar-gol .tbtn{--cd:0;position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:#173d38d9;border:2px solid #f1e8cc55;color:#f6edda;box-shadow:0 6px 20px #0b1f1c66;pointer-events:auto;touch-action:none;overflow:hidden;transition:transform .08s,background .12s}
+#yakar-gol .tbtn::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(#0b1f1cc0 calc(var(--cd) * 1turn),transparent 0);pointer-events:none}
+#yakar-gol .tbtn b{font:950 14px/1 Segoe UI,Arial,sans-serif;letter-spacing:1px}
+#yakar-gol .tbtn small{font:800 7px/1 Segoe UI,Arial,sans-serif;letter-spacing:1px;margin-top:5px;opacity:.8}
+#yakar-gol .tbtn.on{transform:scale(.9);background:#2f6356e6}
+#yakar-gol .tbtn.shoot{right:0;bottom:0;width:96px;height:96px;background:#efbf77e6;color:#203e33;border-color:#fff3}
+#yakar-gol .tbtn.shoot b{font-size:18px}
+#yakar-gol .tbtn.shoot.on{background:#ffda99}
+#yakar-gol .tbtn.shoot.idle{opacity:.5}
+#yakar-gol .tbtn.pass{right:112px;bottom:4px;width:78px;height:78px;border-color:#ff9a5c99}
+#yakar-gol .tbtn.pass .when-free,#yakar-gol .tbtn.pass.dash .when-ball{display:none}
+#yakar-gol .tbtn.pass.dash .when-free{display:block}
+#yakar-gol .tbtn.pass.dash{border-color:#8ff3ff88}
+#yakar-gol .tbtn.jump{right:14px;bottom:112px;width:64px;height:64px}
+#yakar-gol .tbtn.sprint{right:98px;bottom:96px;width:64px;height:64px}
+#yakar-gol .tbtn.jump b,#yakar-gol .tbtn.sprint b{font-size:12px}
+#yakar-gol #yg-rotate{display:none}
+@media(orientation:portrait){
+#yakar-gol.touch #yg-rotate{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#193d39;text-align:center;padding:30px}
+#yakar-gol #yg-rotate strong{font-size:26px;color:#f4d7a5}
+#yakar-gol #yg-rotate span{font-size:14px;color:#c5d3be}
+}
+
+/* Kısa (yatay telefon) ekranlar: her şey sıkışır, sahne görünür kalır. */
+@media(max-height:560px){
+#yakar-gol header{top:calc(10px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));right:calc(16px + env(safe-area-inset-right))}
+#yakar-gol .logo{font-size:17px}
+#yakar-gol .logo small{display:none}
+#yakar-gol .header-actions button,#yakar-gol .header-actions a.btn{font-size:9px;padding:8px 10px}
+#yakar-gol #yg-scoreboard{top:8px;gap:10px;padding:5px 12px;border-radius:9px}
+#yakar-gol .team{gap:8px;font-size:8px}
+#yakar-gol .team b{font-size:20px}
+#yakar-gol .fires i{width:7px;height:10px}
+#yakar-gol .clock{padding:0 8px;min-width:70px}
+#yakar-gol .clock span{font-size:15px}
+#yakar-gol .clock small{font-size:6px}
+#yakar-gol #yg-message{top:62px;padding:9px 18px;font-size:12px}
+#yakar-gol .home-content{padding-top:34px;margin-left:calc(5vw + env(safe-area-inset-left));width:min(440px,70vw)}
+#yakar-gol .home h1{font-size:30px;letter-spacing:-1px;margin:10px 0}
+#yakar-gol .home p{font-size:12px;line-height:1.5;margin:8px 0 14px}
+#yakar-gol .home .primary{min-height:44px;padding:12px 18px;width:230px}
+#yakar-gol .home-meta{margin-top:10px}
+#yakar-gol .rule-cards{margin-top:14px}
+#yakar-gol .rule-cards span{margin-top:5px;line-height:1.4}
+#yakar-gol .pitch-note{display:none}
+#yakar-gol .overlay{padding:10px}
+#yakar-gol .card{padding:18px 22px;max-height:94vh}
+#yakar-gol .card h2{font-size:22px;margin:8px 0 12px}
+#yakar-gol .card dl{gap:8px 12px;font-size:11px;line-height:1.45}
+#yakar-gol .card .primary{margin-top:12px;min-height:42px}
+#yakar-gol .card.small button,#yakar-gol .card.small a.btn{margin-top:8px;padding:10px}
+#yakar-gol #yg-final-score{font-size:28px;margin-bottom:8px}
+#yakar-gol td,#yakar-gol th{padding:5px 6px}
+#yakar-gol #yg-charge{width:74px;height:74px}
+#yakar-gol .cine-title{top:13vh}
+#yakar-gol .cine-title strong{font-size:40px}
+#yakar-gol #yg-burn strong{font-size:26px}
+#yakar-gol #yg-burn-count{font-size:34px}
+#yakar-gol .touch-buttons{transform:scale(.88);transform-origin:100% 100%}
+}
+
+/* İzometrikte nişangah yok (nişan yerdeki ok). */
+#yakar-gol.iso #yg-crosshair{display:none!important}
+/* Telefonda üst düğmeler simge: skor tabelasına yer kalsın. */
+#yakar-gol.touch .header-actions button{font-size:0;padding:0;width:40px;height:40px}
+#yakar-gol.touch .header-actions button::before{font-size:18px}
+#yakar-gol.touch #yg-cam::before{content:"🎥"}
+#yakar-gol.touch #yg-help-open::before{content:"?";font-weight:900}
+#yakar-gol.touch #yg-pause-open::before{content:"☰"}
+#yakar-gol.touch #yg-sound::before{content:"🔊"}
+#yakar-gol.touch #yg-sound.muted::before{content:"🔇"}
+
+/* Top ekran dışındayken kenardaki işaret: beyaz top ve topa doğru ok; yakar topta kırmızı. */
+#yakar-gol #yg-ballmark{--a:0rad;position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff,#d9dccf);border:2px solid #173a39;box-shadow:0 3px 12px #0b1f1c88;z-index:6;pointer-events:none}
+#yakar-gol #yg-ballmark i{position:absolute;inset:0;transform:rotate(var(--a))}
+#yakar-gol #yg-ballmark i::after{content:"";position:absolute;right:-13px;top:50%;margin-top:-7px;border:7px solid transparent;border-left:10px solid #fff3c4;filter:drop-shadow(0 1px 2px #0008)}
+#yakar-gol #yg-ballmark.fire{background:radial-gradient(circle at 38% 35%,#ffe08a,#ff5a1f);border-color:#6a1a08}
+/* Telefonda göstergeler ekranın altında (karakterin üstünde görüşü kapatmasın): dolum halkası ve enerji / sersemlik. */
+#yakar-gol.touch #yg-overhead{left:50%;top:auto;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%)!important}
+#yakar-gol.touch #yg-charge{top:auto;bottom:calc(64px + env(safe-area-inset-bottom));transform:translateX(-50%);width:54px;height:54px}
+#yakar-gol.touch #yg-charge span{top:50%;left:100%;transform:translateY(-50%);margin:0 0 0 10px}
+#yakar-gol.touch #yg-charge span{font-size:10px;padding:4px 8px}

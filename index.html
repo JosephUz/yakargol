@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#193d39">
+<title>Yakar Gol · Mahalle Ligi</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+<script type="importmap">{ "imports": { "three": "/vendor/three.module.js" } }</script>
+</head>
+<body>
+<div id="yakar-gol">
+  <div id="yg-view">
+    <div id="yg-labels"></div>
+    <div class="grain"></div>
+
+    <header>
+      <a class="logo" href="/">YAKAR<span>GOL</span><small>MAHALLE LİGİ / İLK DENEME</small></a>
+      <div class="header-actions">
+        <a id="yg-site" class="btn" href="https://www.josephuz.com/">← josephuz.com</a>
+        <button id="yg-cam" aria-label="Kamera: izometrik / omuz">🎥 Omuz</button>
+        <button id="yg-help-open">Nasıl oynanır <kbd>F1</kbd></button>
+        <button id="yg-pause-open" hidden>Duraklat <kbd>Esc</kbd></button>
+        <button id="yg-sound" aria-label="Sesi aç veya kapat">Ses açık</button>
+      </div>
+    </header>
+
+    <div id="yg-scoreboard" hidden>
+      <div class="team blue-text"><span class="fires" id="yg-blue-fire"></span>MAVİ <b id="yg-blue-score">0</b></div>
+      <div class="clock"><span id="yg-timer">05:00</span><small id="yg-period">5v5 · TEK MAÇ</small></div>
+      <div class="team orange-text"><b id="yg-orange-score">0</b> TURUNCU<span class="fires" id="yg-orange-fire"></span></div>
+    </div>
+
+    <section id="yg-home" class="home">
+      <div class="home-content">
+        <div class="eyebrow"><i></i> 5v5 FUTBOL + YAKAR TOP</div>
+        <h1>Mahalle senin.<br><span>Oyun kızışsın.</span></h1>
+        <p>Pas ver, duvardan sektir, kaleyi bul.<br>Ya da rakibi yakıp takımına yol aç.</p>
+        <button id="yg-start" class="primary">SAHAYA ÇIK <span>↗</span></button>
+        <div class="home-meta"><span>01 OYUNCU + 09 BOT</span><span>05 DAKİKA</span></div>
+        <div class="rule-cards">
+          <div><b>01 / GOL</b><span>Skoru goller belirler.</span></div>
+          <div><b>02 / YAK</b><span>Rakibi 4 saniye kenara al.</span></div>
+          <div><b>03 / KAY</b><span>Kayarak topu mutlaka çal.</span></div>
+        </div>
+      </div>
+      <div class="pitch-note"><i></i> MAHALLE SAHASI <span>Duvarlar oyunun bir parçası.</span></div>
+    </section>
+
+    <div id="yg-speed" hidden></div>
+    <div id="yg-crosshair" hidden>+</div>
+    <div id="yg-charge" hidden><div class="charge-ring"></div><span id="yg-charge-text"></span></div>
+    <div id="yg-overhead" hidden>
+      <div id="yg-over-stun" class="over-row stun" hidden><span id="yg-over-stun-text">SERSEM</span><div class="over-bar"><i id="yg-over-stun-fill"></i></div></div>
+      <div id="yg-over-energy" class="over-row energy" hidden><span id="yg-over-energy-text">ENERJİ</span><div class="over-bar"><i id="yg-over-energy-fill"></i></div></div>
+    </div>
+    <div id="yg-cine" hidden><i class="cine-bar top"></i><i class="cine-bar bottom"></i><div class="cine-title"><strong>YAKAR TOP!</strong><span id="yg-cine-who"></span><div id="yg-cine-aim" class="cine-aim" hidden><i id="yg-cine-aim-fill"></i></div></div></div>
+    <div id="yg-ballmark" hidden aria-hidden="true"><i></i></div>
+    <div id="yg-message" role="status" hidden></div>
+    <div id="yg-burn" hidden><strong>YANDIN!</strong><span id="yg-burn-count"></span><small>Birazdan kenardan oyuna döneceksin.</small></div>
+
+    <aside id="yg-player" hidden>
+      <span class="eyebrow">SEN / MAVİ TAKIM</span>
+      <strong id="yg-ball-status">TOPU KAZAN</strong>
+      <div class="meter-label"><span>ENERJİ</span><span id="yg-energy-text">HAZIR</span></div>
+      <div class="meter"><i id="yg-energy-fill"></i></div>
+      <div class="meter-label fire-row"><span>TAKIMIN YAKAR TOPU</span><span id="yg-fire-left">5 / 5</span></div>
+    </aside>
+
+    <div id="yg-touch" hidden>
+      <div class="touch-zone left" data-t="stick"></div>
+      <div class="touch-zone right" data-t="look"></div>
+      <div id="yg-stick" hidden><i></i></div>
+      <div class="touch-buttons">
+        <div id="yg-t-shoot" class="tbtn shoot" data-t="shoot" role="button" aria-label="Şut"><b>ŞUT</b><small>TUT: RÜZGAR</small></div>
+        <div id="yg-t-pass" class="tbtn pass" data-t="pass" role="button" aria-label="Pas, yakar top ya da kay"><b class="when-ball">PAS</b><small class="when-ball">TUT: YAKAR</small><b class="when-free">KAY</b></div>
+        <div id="yg-t-jump" class="tbtn jump" data-t="jump" role="button" aria-label="Zıpla"><b>ZIPLA</b></div>
+        <div id="yg-t-sprint" class="tbtn sprint" data-t="sprint" role="button" aria-label="Hızlı koş"><b>KOŞ</b></div>
+      </div>
+    </div>
+    <div id="yg-rotate"><strong>Telefonu yan çevir</strong><span>Yakar Gol yatay ekranda oynanır.</span></div>
+
+    <div id="yg-controls" hidden>
+      <span><kbd>W A S D</kbd> Hareket</span>
+      <span><kbd>FARE</kbd> Bak / nişan</span>
+      <span><kbd>SOL TIK</kbd> Şut · 2 sn tut: Rüzgar</span>
+      <span><kbd>SAĞ TIK</kbd> Pas · basılı: Yakar top · topsuz: Kay</span>
+      <span><kbd>SHIFT</kbd> Hızlı koş</span>
+            <span><kbd>BOŞLUK</kbd> Zıpla</span>
+      <span><kbd>V</kbd> Kamera</span>
+    </div>
+
+    <section id="yg-help" class="overlay" hidden>
+      <div class="card">
+        <span class="eyebrow">MAHALLE KURALLARI</span>
+        <h2>Top sende.<br>Karar da sende.</h2>
+        <dl class="touch-only">
+          <dt>Sol yarı</dt><dd>Parmağını koy, joystick belirir: sürükleyerek koş. Hızlı koşu yalnız KOŞ düğmesiyle.</dd>
+          <dt>Kamera 🎥</dt><dd>Telefonda izometrik (sabit yan açı) başlar: nişan koştuğun yöndür, rakip kaleye dönüksen kaleye kilitlenir (yerdeki ok gösterir). 🎥 ile omuz kamerasına geçersin (ortadaki artı nişangahtır).</dd>
+          <dt>Sağ yarı</dt><dd>Parmağını kaydırarak kamerayı çevir (omuzda bakış ve nişan).</dd>
+          <dt>ŞUT</dt><dd>Dokun: şut. 2 saniye basılı tut: rüzgar topu (halka dolar). Basılıyken parmağını kaydırarak nişan al.</dd>
+          <dt>PAS / KAY</dt><dd>Top sendeyken dokun: pas. 2 saniye basılı tut: oyun durur, top alev alır; joystick ile (omuzda parmak kaydırarak) nişan al, bırakınca yakar top uçar (takım başına 5 hak). Topsuzken: topa doğru kay, topu mutlaka çal.</dd>
+          <dt>ZIPLA / KOŞ</dt><dd>Havadayken yakar top seni yakamaz. Koşu 3 saniye sürer; kayma, koşu, yakar ve rüzgar aynı enerjiyi kullanır (düğmelerde dolum).</dd>
+          <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, kaptıran sersemler. Arkadan düz koşuyla alınmaz; koş ya da kay.</dd>
+        </dl>
+        <dl class="desktop-only">
+          <dt>WASD / Oklar</dt><dd>Baktığın yöne göre hareket et. Topa yaklaşınca otomatik alırsın.</dd>
+          <dt>Fare + sol tık</dt><dd>Kamera omzunun üstünde; fareyle bak, nişangaha doğru beyaz şut çek (bırakınca çıkar). Gol atmanın yolu bu!</dd>
+          <dt>Sol tık basılı</dt><dd>2 saniye tut (nişangahtaki camgöbeği halka dolar): rüzgar topu. Çok hızlıdır, yolundaki rakipleri savurur, tutulamaz ve gol olur.</dd>
+          <dt>Sağ tık</dt><dd>Top sendeyken kısa bas: pas. 2 saniye basılı tut (nişangahtaki turuncu halka dolar): oyun durur, top alev alır, 2,5 saniye fareyle nişan al ve bırak: kırmızı alevli yakar top ağır çekimde uçar (takım başına maç boyunca yalnızca 5 kez; kalan haklar skor tabelasında); topsuzken topa doğru kay (hangi yöne basarsan bas). Top taşıyana kayarak dokunursan topu mutlaka çalarsın. Yakar top doğrudan gol olmaz.</dd>
+          <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, boştaki topa yaklaşınca yakalarsın. Topu yürüyerek kaptıran 2 saniye, kayarak kaptıran 1,5 saniye sersemler: kıpırdayamaz, şut atamaz, topu geri kapamaz. Arkadan düz koşuyla alınmaz; hızlı koş ya da kay.</dd>
+          <dt>Shift</dt><dd>3 saniye hızlı koşu, sonra yorulur normale dönersin (enerji koşu bitince dolmaya başlar).</dd>
+          <dt>Enerji</dt><dd>Kayma, hızlı koşu, yakar top ve rüzgar şutu aynı enerjiyi kullanır: biri kullanılınca hepsi 3 saniye bekler. Geri sayım karakterinin sırtında görünür.</dd>
+          <dt>Boşluk</dt><dd>Zıpla. Havadayken yakar top seni yakamaz.</dd>
+          <dt>V</dt><dd>Kamera: omuz ↔ izometrik (futbol yayını gibi sabit yan açı, kaleler sağda ve solda). İzometrikte fare kilitlenmez: şut, pas ve yakar top imlecin sahada gösterdiği yere gider (yerdeki ok).</dd>
+          <dt>Esc</dt><dd>Fareyi bırakır ve oyunu durdurur. Devam edince fare yeniden kilitlenir.</dd>
+        </dl>
+        <p>Aut yok: top duvarlardan seker. Yanan oyuncu 4 saniye sonra geri döner. Beraberlikte sonraki gol kazanır.</p>
+        <button id="yg-help-close" class="primary">ANLADIM</button>
+      </div>
+    </section>
+
+    <section id="yg-pause" class="overlay" hidden>
+      <div class="card small">
+        <span class="eyebrow">MOLA</span>
+        <h2>Bir nefes al.</h2>
+        <button id="yg-resume" class="primary">OYUNA DÖN</button>
+        <button id="yg-restart">Yeniden başlat</button>
+        <button id="yg-menu">Ana menü</button>
+        <a class="btn" href="https://www.josephuz.com/">josephuz.com'a dön</a>
+      </div>
+    </section>
+
+    <section id="yg-results" class="overlay" hidden>
+      <div class="card result-card">
+        <span class="eyebrow">MAÇ SONU</span>
+        <h2 id="yg-result-title"></h2>
+        <div id="yg-final-score"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Oyuncu</th><th>Gol</th><th>Pas</th><th>Yakma</th><th>Top kapma</th><th>Kurtarış</th></tr></thead>
+            <tbody id="yg-stats"></tbody>
+          </table>
+        </div>
+        <button id="yg-again" class="primary">BİR MAÇ DAHA</button>
+      </div>
+    </section>
+  </div>
+</div>
+<script type="module" src="/game.js"></script>
+</body>
+</html>

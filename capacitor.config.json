@@ -1,0 +1,14 @@
+{
+  "appId": "com.josephuz.yakargol",
+  "appName": "Yakar Gol",
+  "webDir": "dist",
+  "backgroundColor": "#193d39",
+  "android": {
+    "backgroundColor": "#193d39"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    }
+  }
+}
