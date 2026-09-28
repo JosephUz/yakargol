@@ -1,4 +1,5 @@
 import { NET } from './net/protocol.js';
+import { paylasti } from './olcum.js';
 
 /**
  * Çok oyunculu ekranlar: giriş ekranındaki oda düğmeleri (ad, Oda kur, Odaya katıl + kod, çevrim içi sayısı) ve lobi
@@ -46,6 +47,7 @@ export function createLobby(root, app) {
   $('lobby-copy').onclick = () => {
     const url = `${location.origin}${location.pathname}?oda=${encodeURIComponent(lobby?.code || '')}`;
     const done = () => { el.lobbyStatus.textContent = 'Link kopyalandı'; setTimeout(() => render(lobby), 1500); };
+    paylasti();
     try { navigator.clipboard.writeText(url).then(done, () => { el.lobbyStatus.textContent = url; }); } catch { el.lobbyStatus.textContent = url; }
   };
   el.start.onclick = () => app.start();

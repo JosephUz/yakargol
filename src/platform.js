@@ -1,4 +1,4 @@
-import { ONLINE, SERVER } from './config.js';
+import { OLCUM, ONLINE, SERVER } from './config.js';
 
 /**
  * Android uygulaması mı (Capacitor, oyun dosyaları uygulamanın içinden açılır) yoksa tarayıcı mı. `?app` ile tarayıcıda
@@ -15,3 +15,9 @@ export const selfHosted = () => {
 /** Sunucunun HTTP kökü (çevrim içi sayısı sinyali) ve WebSocket adresi. */
 export const serverHttp = () => (selfHosted() ? '' : 'https://' + SERVER);
 export const serverUrl = () => (selfHosted() ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}` : 'wss://' + SERVER);
+/** Kullanım ölçümü adresi; yerelde (localhost / IP adresi) boş döner, ölçüm kapalıdır (olcum.js). Uygulamada açık. */
+export const olcumUrl = () => {
+  if (isApp()) return OLCUM; // Capacitor'da hostname localhost'tur ama uygulama ölçülmeli
+  const h = location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || /^[\d.]+$|^\[/.test(h) ? '' : OLCUM;
+};

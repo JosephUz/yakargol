@@ -3,6 +3,7 @@ import { CINEMA, KICK, TEAMS } from './config.js';
 import { createInput } from './input.js';
 import { createLobby } from './lobby.js';
 import { createNetClient } from './net/client.js';
+import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { onlineEnabled, serverHttp } from './platform.js';
 import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
@@ -90,6 +91,7 @@ export async function start(root) {
     endCinema(); rightHold = null;
     w = createWorld(); view.faceBall(w);
     started = true; acc = 0;
+    macBasladi(); // ölçüm: çevrimdışı maç başladı
     if (touch) enterFullscreen();
     show(null); input.lock();
   }
@@ -141,6 +143,7 @@ export async function start(root) {
       online = true; endCinema(); rightHold = null;
       w = net.world; view.faceBall(w);
       started = true; acc = 0;
+      macBasladi(); // ölçüm: çevrimiçi maç başladı (yalnız first === true, yani gerçek başlangıç)
       if (touch) enterFullscreen();
       show(null); input.lock();
     },
@@ -148,6 +151,7 @@ export async function start(root) {
     onEnd(msg, world) {
       endCinema();
       if (world) { w = world; ui.results(w); }
+      if (started) macBitti(); // ölçüm: yalnız maçı oynayan için (lobide bekleyen END alsa da saymaz)
       started = false;
       show('results');
     },
@@ -335,7 +339,7 @@ export async function start(root) {
       if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
     }
     w.events.length = 0;
-    if (!online && w.winner !== null && screen !== 'results') { show('results'); ui.results(w); }
+    if (!online && w.winner !== null && screen !== 'results') { show('results'); ui.results(w); macBitti(); }
   }
 
   const refresh = () => ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen);
@@ -344,6 +348,7 @@ export async function start(root) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.08, (now - last) / 1000);
     last = now;
+    if (started) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
     if (online && started) {
       // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).
       const move = active() ? input.move(view) : null;
