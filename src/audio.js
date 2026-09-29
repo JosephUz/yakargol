@@ -1,6 +1,7 @@
 /**
  * Kısa sentez sesler (dosya yok): şut, yanma, gol ve rüzgar. Tarayıcı ilk kullanıcı hareketinden önce ses açtırmaz;
  * bağlam ilk seste kurulur, hata olursa sessiz kalır.
+ * Aç / kapa ayarı tarayıcıda kalır (localStorage "yg.sound").
  */
 const TONES = {
   kick: [380, 120],
@@ -14,9 +15,14 @@ const TONES = {
 
 export function createAudio() {
   let context = null, enabled = true;
+  try { enabled = localStorage.getItem('yg.sound') !== 'off'; } catch { /* yok */ }
   return {
     get enabled() { return enabled; },
-    toggle() { enabled = !enabled; return enabled; },
+    toggle() {
+      enabled = !enabled;
+      try { localStorage.setItem('yg.sound', enabled ? 'on' : 'off'); } catch { /* yok */ }
+      return enabled;
+    },
     play(type) {
       const tone = TONES[type];
       if (!enabled || !tone) return;

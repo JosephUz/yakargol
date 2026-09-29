@@ -6,7 +6,7 @@ import { mkdir } from 'node:fs/promises';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const url = process.env.GAME_URL || 'http://localhost:5186';
 await mkdir('artifacts', { recursive: true });
-const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--disable-gpu-sandbox'] });
+const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), headless: true, args: ['--disable-gpu-sandbox', ...(process.env.SWIFTSHADER ? ['--use-gl=angle', '--use-angle=swiftshader'] : ['--use-gl=angle', '--use-angle=d3d11', '--ignore-gpu-blocklist'])] });
 try {
   const page = await browser.newPage({ viewport: { width: 1536, height: 960 } }), errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -42,7 +42,7 @@ try {
   assert.ok(!(await page.locator('#yg-crosshair').isVisible()), 'izometrikte nişangah yok');
   await page.screenshot({ path: 'artifacts/02b-iso.png' });
   // İzometrikte fare kilitlenmez: imlecin gösterdiği noktaya şut (bakılan yöne değil).
-  await game(() => { const w = window.__yakarGol.world(), p = w.players[0]; w.kickoff = 0; Object.assign(p, { x: 0, z: 5, kickCd: 0, charge: 0 }); Object.assign(w.ball, { owner: 0, x: 0, z: 5, vx: 0, vz: 0 }); for (const b of w.players.slice(1)) b.stun = 3; });
+  await game(() => { const w = window.__yakarGol.world(), p = w.players[0]; w.kickoff = 0; Object.assign(p, { x: 0, z: 5, kickCd: 0, charge: 0, jump: 0, dash: 0, stun: 0 }); Object.assign(w.ball, { owner: 0, x: 0, z: 5, vx: 0, vz: 0 }); for (const b of w.players.slice(1)) b.stun = 3; });
   await page.waitForTimeout(150);
   const spot = await game(() => window.__yakarGol.view().project(-8, 0, -4));
   await page.mouse.move(spot.x, spot.y); await page.waitForTimeout(100);
@@ -178,6 +178,11 @@ try {
   const pausedTime = await game(() => window.__yakarGol.world().time);
   await page.waitForTimeout(200);
   assert.equal(await game(() => window.__yakarGol.world().time), pausedTime);
+  await page.locator('#yg-pause-sound').click();
+  assert.equal(await page.locator('#yg-pause-sound').textContent(), 'Ses: kapalı', 'mola menüsünden ses kapanmadı');
+  assert.equal(await page.evaluate(() => localStorage.getItem('yg.sound')), 'off', 'ses ayarı kaydedilmedi');
+  await page.locator('#yg-pause-sound').click();
+  assert.equal(await page.locator('#yg-pause-sound').textContent(), 'Ses: açık');
   await page.locator('#yg-resume').click();
 
   await page.keyboard.press('F1');
