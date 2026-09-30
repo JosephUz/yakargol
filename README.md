@@ -36,7 +36,9 @@ lobi atlanır, on koltuğun hepsini mevcut bot yapay zekâsı oynar (insan koltu
 botlar yalnız bu kipte saldırganlaşır (daha çok yakar top, kayma ve uzaktan şut — bkz. `config.js` → `GOSTERI.bot`), yakar
 top hakkı bollaşır. Kamera topun ve çevresindeki kalabalığın ağırlık merkezini yumuşakça izler, kadraj telefon ekranı
 için yakındır; yakar top ağır çekimi bu kipte de çalışır. Arayüz gizlidir (köşede küçük oyun adı kalır), girdi okunmaz,
-ölçüm olayı gitmez ve sunucuya hiç bağlanılmaz. Maç bitince birkaç saniye sonra yenisi kurulur: kip girdisiz döner durur.
+ölçüm olayı gitmez, sunucuya hiç bağlanılmaz ve telefonda titreşim çalışmaz. Maç bitince birkaç saniye sonra yenisi
+kurulur: kip girdisiz döner durur. Her maç **rastgele tohumla** kurulur (normal maçta tohum sabittir, `MATCH.seed`):
+girdi olmadığı için sabit tohumda her maç birebir aynı maçın tekrarı olur, klipler birbirinin kopyası çıkardı.
 Normal oyun ve çevrim içi maç bu ayarlardan hiç etkilenmez. Kod: `src/gosteri.js`.
 
 ## Çok oyunculu

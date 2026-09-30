@@ -333,5 +333,5 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol.gosteri #yg-speed,#yakar-gol.gosteri #yg-labels,#yakar-gol.gosteri #yg-rotate,
 #yakar-gol.gosteri .home,#yakar-gol.gosteri .overlay{display:none!important}
 #yakar-gol.gosteri canvas{cursor:none}
-#yakar-gol #yg-gosteri{position:absolute;left:22px;bottom:18px;z-index:6;font:900 13px/1 inherit;letter-spacing:3px;
+#yakar-gol #yg-gosteri{position:absolute;left:22px;bottom:18px;z-index:6;font:900 13px/1 Segoe UI,Arial,sans-serif;letter-spacing:3px;
   color:#f6efd9cc;text-shadow:0 2px 8px #10302bcc;pointer-events:none}

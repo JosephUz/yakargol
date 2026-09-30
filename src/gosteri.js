@@ -13,6 +13,7 @@ import { isApp } from './platform.js';
  *    (GOSTERI.iso). Mevcut yakar top sineması (donuk → ağır çekim → çarpma) gösteride de çalışır: onu main.js yürütür.
  *  - Arayüz gizlidir (bkz. style.css `.gosteri`), ölçüm (olcum.js) gitmez, sunucuya bağlanılmaz (bkz. main.js).
  *  - Maç bitince karne açılmaz: GOSTERI.yenidenBasla saniye sonra yeni maç kurulur, kip girdisiz döner.
+ *  - Her maç rastgele tohumla kurulur (tohum): art arda çekilen klipler aynı maçın tekrarı olmaz.
  * Uygulamada (isApp) açılmaz: Play Store sürümüne yeni bir kip girmez.
  */
 export function gosteriAcik() {
@@ -26,6 +27,14 @@ export function createGosteri() {
   // Kameraya verilen sahte "oyuncu": yalnız konumu değişir, kalan alanlar view/camera.js'in beklediği durgun değerler.
   const odakNokta = { x: 0, z: 0, angle: 0, team: 0, role: 0, burn: 0, stun: 0, air: 0, jump: 0, sprint: 0, vx: 0, vz: 0 };
   let bitisTimer = 0, yapis = true;
+
+  /**
+   * Yeni maçın tohumu (createWorld'e verilir). Gösteride girdi yok ve adım süresi sabit: maç sabit tohumla
+   * (MATCH.seed) kurulsa her gösteri maçı — sayfa yenilense bile — aynı maçın birebir tekrarı olur, klipler
+   * birbirinin kopyası çıkardı. Bu yüzden her maça rastgele tohum verilir. Yalnız bu kipe özeldir: normal oyun ve
+   * testler MATCH.seed'in belirliliğini kullanmayı sürdürür.
+   */
+  const tohum = () => (Math.random() * 0x100000000) >>> 0;
 
   /** Yeni maç: her koltuk bot, kısa başlama beklemesi, bol yakar top hakkı; kamera ilk karede aksiyona yapışır. */
   function kur(w) {
@@ -71,5 +80,5 @@ export function createGosteri() {
   /** Kameranın şu an baktığı nokta (yalnız okuma; testler ve hata ayıklama için). */
   const nokta = () => odakNokta;
 
-  return { kur, odak, guncelle, nokta };
+  return { tohum, kur, odak, guncelle, nokta };
 }

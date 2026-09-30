@@ -1,7 +1,8 @@
 // Gösteri kipi dumanı testi (?gosteri=1): içerik klipleri için "kendi kendine oynayan" maç çalışıyor mu?
 // Denetlenenler: menü atlanır ve maç başlar, on koltuğun hiçbirinde insan yoktur, arayüz gizlidir, sunucuya hiç
 // WebSocket açılmaz ve ölçüm isteği gitmez, ilk saniyelerde ekranda aksiyon olur, kamera topu izler, maç bitince
-// yenisi başlar. Adres: GAME_URL (varsayılan http://localhost:5186). Playwright yolu: PLAYWRIGHT_MODULE.
+// yenisi başlar, her maç başka tohumla kurulur (klipler birbirinin tekrarı olmaz) ve telefonda titreşim kapalıdır
+// (normal kipte açık kalır). Adres: GAME_URL (varsayılan http://localhost:5186). Playwright yolu: PLAYWRIGHT_MODULE.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 
@@ -37,6 +38,10 @@ try {
   assert.equal(await game(() => window.__yakarGol.world().players.filter(p => p.human).length), 0, 'hiç insan oyuncu yok');
   assert.ok(await game(() => window.__yakarGol.world().gosteri), 'dünya gösteri işaretli (botlar saldırgan ayarları kullanır)');
   assert.ok(await game(() => window.__yakarGol.world().fireLeft[0] > 5), 'yakar top hakkı bollaştırılır');
+  // Her gösteri maçı rastgele tohumla kurulur; sabit MATCH.seed ile açılsaydı girdi olmadığı için her maç (ve her
+  // sayfa açılışı) birebir aynı maçın tekrarı olurdu, klipler birbirinin kopyası çıkardı. Karşılaştırma 8. adımda.
+  const tohum1 = await game(() => window.__yakarGol.world().seed);
+  assert.equal(typeof tohum1, 'number', 'maçın tohumu dünyadan okunabilir');
 
   // 2) Arayüz gizli: üst çubuk, skor tabelası, oyuncu kartı, tuş listesi, nişangah, dokunmatik kontroller.
   for (const sel of ['#yakar-gol header', '#yg-scoreboard', '#yg-player', '#yg-controls', '#yg-crosshair', '#yg-touch', '#yg-labels']) {
@@ -89,10 +94,47 @@ try {
   await page.waitForFunction(() => { const w = window.__yakarGol.world(); return w.winner === null && w.time < 5; }, null, { timeout: 15000 });
   assert.equal(await game(() => window.__yakarGol.world().players.filter(p => p.human).length), 0, 'yeni maçta da insan oyuncu yok');
   assert.ok(await game(() => window.__yakarGol.world().gosteri), 'yeni maç da gösteri kipinde');
+  const tohum2 = await game(() => window.__yakarGol.world().seed);
+  assert.notEqual(tohum2, tohum1, 'her gösteri maçı başka tohumla kurulur (maçlar birbirinin tekrarı olmaz)');
   await page.waitForTimeout(1500);
   await page.screenshot({ path: 'artifacts/gosteri-2-yeni-mac.png' });
-
   assert.deepEqual(errors, [], 'sayfa hatasız');
+
+  // 8) Telefon (?touch=1): gösteride titreşim yok, normal kipte sürüyor; gösteri tohumu sabit tohum değil.
+  // Titreşim yolu bilerek tetiklenir (gol olayı buzz'da her zaman "seni ilgilendiren" sayılır), yoksa test boş geçerdi.
+  async function telefonda(adres) {
+    const ctx2 = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+    await ctx2.addInitScript(() => {
+      window.__vibrate = 0;
+      Object.defineProperty(Navigator.prototype, 'vibrate', { configurable: true, value: () => { window.__vibrate++; return true; } });
+    });
+    const p2 = await ctx2.newPage(), hata = [];
+    p2.on('pageerror', e => hata.push(e.message));
+    p2.on('console', e => { if (e.type() === 'error') hata.push(e.text()); });
+    try {
+      await p2.goto(url + adres);
+      await p2.waitForFunction(() => window.__yakarGol, null, { timeout: 20000 });
+      return await p2.evaluate(() => {
+        const y = window.__yakarGol;
+        y.world().events.push({ type: 'goal', team: 0, id: 0, x: 0, z: 39 });
+        y.step(0); // olayları tüketir: titreşim yolu burada koşar
+        return { vibrate: window.__vibrate, tohum: y.world().seed, touch: document.getElementById('yakar-gol').classList.contains('touch') };
+      }).then(r => ({ ...r, hata }));
+    } finally { await ctx2.close(); }
+  }
+  const gosteriTel = await telefonda('/?gosteri=1&touch=1');
+  assert.ok(gosteriTel.touch, 'gösteri telefon kipinde açıldı');
+  assert.equal(gosteriTel.vibrate, 0, 'gösteri kipinde telefon titremez');
+  assert.deepEqual(gosteriTel.hata, [], 'gösteri telefon sayfası hatasız');
+  const normalTel = await telefonda('/?test&touch=1');
+  assert.ok(normalTel.vibrate > 0, 'normal kipte telefon titremeyi sürdürür (gösteri normal oyunu bozmadı)');
+  assert.deepEqual(normalTel.hata, [], 'normal telefon sayfası hatasız');
+  // normalTel.tohum sabit MATCH.seed'dir (normal maç hep onunla kurulur): gösteri tohumlarının hiçbiri o olmamalı.
+  // İki gösteri maçının birbirinden de farklı olduğu yukarıda (tohum1 ≠ tohum2) denetlendi.
+  for (const [ad, t] of [['ilk maç', tohum1], ['ikinci maç', tohum2], ['telefon maçı', gosteriTel.tohum]]) {
+    assert.notEqual(t, normalTel.tohum, `gösteride ${ad} sabit tohumla (MATCH.seed) kurulmaz`);
+  }
+
   console.log('Gösteri kipi dumanı testi geçti.');
 } finally {
   await browser.close();

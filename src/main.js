@@ -98,7 +98,8 @@ export async function start(root) {
   function begin() {
     if (online) { showLobby(); return; }
     endCinema(); rightHold = null;
-    w = createWorld(); view.faceBall(w);
+    // Gösteride her maç rastgele tohumla kurulur (bkz. gosteri.tohum): klipler birbirinin tekrarı olmasın.
+    w = createWorld(gosteri ? gosteri.tohum() : undefined); view.faceBall(w);
     started = true; acc = 0;
     // Gösteri: on koltuk da bot, ölçüm yok, tam ekran ve fare kilidi yok (bkz. gosteri.js).
     if (gosteri) { gosteri.kur(w); show(null); return; }
@@ -336,7 +337,8 @@ export async function start(root) {
     for (const e of w.events) {
       view.event(e);
       audio.play(e.type);
-      if (touch) buzz(e, me);
+      // Gösteride titreşim yok: kipin "izleyeni" oyuncu değil kamera, telefonu her golde titretmenin anlamı yok.
+      if (touch && !gosteri) buzz(e, me);
       if (!online && e.type === 'kick' && e.kind === 'fire') {
         if (cine && cine.phase === 'aim') { Object.assign(cine, { phase: 'flight', t: 0 }); ui.cinema(true, 'SEN'); }
         else startCinema(e);
@@ -421,7 +423,11 @@ export async function start(root) {
     return look && cine.phase === 'aim' && !cine.mine ? { ...look, track: true } : look;
   }
 
-  // Test kancası; gösteri kipinde de açıktır (tests/gosteri-smoke.mjs buradan okur).
+  /**
+   * Test kancası. Gösteri kipinde de bilerek açıktır: tests/gosteri-smoke.mjs yayındaki `?gosteri=1` adresini de
+   * denetleyebilsin. Yayına sızan bir yetki değil — dünya ve görünüm yalnız okunur, `step` zaten her karede koşan
+   * simülasyon adımıdır; kip sunucuya bağlanmadığı için buradan başkasının maçına dokunulamaz.
+   */
   if (testMode || gosteri) {
     window.__yakarGol = {
       world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, gosteri: !!gosteri, cine: cine && cine.phase }),
