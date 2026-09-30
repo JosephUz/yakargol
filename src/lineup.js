@@ -53,6 +53,6 @@ export function lineUp(w, team) {
   const taker = forwardOf(w, team);
   taker.x = 0; taker.z = attackDir(team) * -1.5;
   Object.assign(w.ball, { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0 });
-  w.kickoff = MATCH.restart; w.nextKickoff = team; w.kickoffTaker = taker.id;
+  w.kickoff = w.restart ?? MATCH.restart; w.nextKickoff = team; w.kickoffTaker = taker.id;
   w.events.push({ type: 'lineup', team });
 }

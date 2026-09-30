@@ -322,3 +322,16 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .lobby-head h2{font-size:24px;margin:4px 0}
 #yakar-gol .seat{min-height:30px;padding:5px 9px}
 }
+
+/* Gösteri kipi (?gosteri=1, yalnız web; bkz. src/gosteri.js): yalnız oyun dünyası görünür — üst çubuk, skor tabelası,
+   oyuncu kartı, tuş listesi, nişangah, dokunmatik kontroller, göstergeler ve bütün perdeler gizlenir. Köşede küçük
+   oyun adı durur. Arayüz düğümleri gösteride hiç güncellenmez (bkz. main.js), bu kural yalnız görünürlüğü keser. */
+#yakar-gol.gosteri header,#yakar-gol.gosteri #yg-scoreboard,#yakar-gol.gosteri #yg-player,
+#yakar-gol.gosteri #yg-controls,#yakar-gol.gosteri #yg-crosshair,#yakar-gol.gosteri #yg-touch,
+#yakar-gol.gosteri #yg-charge,#yakar-gol.gosteri #yg-overhead,#yakar-gol.gosteri #yg-ballmark,
+#yakar-gol.gosteri #yg-message,#yakar-gol.gosteri #yg-burn,#yakar-gol.gosteri #yg-cine,
+#yakar-gol.gosteri #yg-speed,#yakar-gol.gosteri #yg-labels,#yakar-gol.gosteri #yg-rotate,
+#yakar-gol.gosteri .home,#yakar-gol.gosteri .overlay{display:none!important}
+#yakar-gol.gosteri canvas{cursor:none}
+#yakar-gol #yg-gosteri{position:absolute;left:22px;bottom:18px;z-index:6;font:900 13px/1 inherit;letter-spacing:3px;
+  color:#f6efd9cc;text-shadow:0 2px 8px #10302bcc;pointer-events:none}

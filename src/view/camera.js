@@ -12,8 +12,12 @@ import { benchX, benchZ, lift } from './actors.js';
  * **İzometrik** kip (telefonda varsayılan, bkz. CAMERA.iso): ortografik kamera oyuncuyu sabit bir yan açıdan (futbol yayını
  * gibi) izler; bakış dönmez, topa çevrilmez, hareket ekrana göredir. Nişan: fare varsa imlecin sahadaki noktası (pointer),
  * yoksa (dokunmatik) hareket ya da bakış yönü, rakip kaleye dönükse kalenin ortası (aim).
+ *
+ * `isoOverride`: izometrik ayarların üstüne yazılır (gösteri kipi daha yakın ve tam aksiyonun üstüne bakan bir kadraj
+ * ister, bkz. config.js GOSTERI.iso).
  */
-export function createShoulderCamera() {
+export function createShoulderCamera(isoOverride = null) {
+  const ISO = { ...CAMERA.iso, ...(isoOverride || {}) };
   const camera = new T.PerspectiveCamera(CAMERA.fov, 1, 0.1, CAMERA.far);
   const iso = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, CAMERA.far);
   let mode = 'shoulder', hero = null, pointer = null;
@@ -57,7 +61,7 @@ export function createShoulderCamera() {
     },
     resize(width, height) {
       camera.aspect = width / height; camera.updateProjectionMatrix();
-      const h = CAMERA.iso.half, a = width / height;
+      const h = ISO.half, a = width / height;
       Object.assign(iso, { left: -h * a, right: h * a, top: h, bottom: -h }); iso.updateProjectionMatrix();
     },
     /** Görüş açısını hedefe yumuşakça götürür (hızlı koşuda genişler). */
@@ -70,7 +74,7 @@ export function createShoulderCamera() {
       hero = p;
       const x = p.burn > 0 ? benchX(p.team) : p.x, z = p.burn > 0 ? benchZ(p) : p.z, fx = Math.sin(yaw), fz = Math.cos(yaw);
       if (mode === 'iso') {
-        const c = CAMERA.iso, back = c.dist * Math.cos(c.elevation), y = p.air > 0 ? lift(p) * 0.5 : 0;
+        const c = ISO, back = c.dist * Math.cos(c.elevation), y = p.air > 0 ? lift(p) * 0.5 : 0;
         const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
         // Kadraj oyuncunun biraz ötesine bakar: karşı tarafta sahanın daha çoğu görünür.
         const tx = x + fx * c.lead, tz = z + fz * c.lead;
@@ -102,8 +106,8 @@ export function createShoulderCamera() {
         const m = move && Math.hypot(move.x, move.z) > 0.2 ? move : { x: Math.sin(hero.angle), z: Math.cos(hero.angle) };
         const d = Math.hypot(m.x, m.z), dx = m.x / d, dz = m.z / d;
         const gx = 0, gz = attackDir(hero.team) * PITCH.halfZ, gd = Math.hypot(gx - hero.x, gz - hero.z);
-        if ((dx * (gx - hero.x) + dz * (gz - hero.z)) / gd > Math.cos(CAMERA.iso.goalAssist)) return { x: gx, z: gz };
-        return { x: hero.x + dx * CAMERA.iso.aimDist, z: hero.z + dz * CAMERA.iso.aimDist };
+        if ((dx * (gx - hero.x) + dz * (gz - hero.z)) / gd > Math.cos(ISO.goalAssist)) return { x: gx, z: gz };
+        return { x: hero.x + dx * ISO.aimDist, z: hero.z + dz * ISO.aimDist };
       }
       camera.updateMatrixWorld();
       ray.setFromCamera({ x: 0, y: 0 }, camera);

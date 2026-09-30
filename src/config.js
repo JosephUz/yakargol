@@ -107,8 +107,10 @@ export const BURN = { time: 4, ballKeep: 0.12, ballLock: 0.2, returnGuard: 1.5, 
  * `commit` saniye kararında kalır; bu sürede önden kapılabilir), boştaki arkadaşa pas (`passRange` içinde), `wallAhead`
  * ileriye duvardan sektirme, şut (kaleye yakınsa çok daha olası) ya da yakar top.
  * Yakar top `dodgeRange` içindeyse `dodgeChance` ile kaçar. Kaleci top kalesine `keeperRange` yaklaşınca çıkar.
+ * `chasers` topa koşan saha oyuncusu sayısı (1: yalnız en yakını; gösteri kipinde daha çok, bkz. GOSTERI.bot); topa
+ * koşmayanlar evlerinden topa doğru `homeX` / `homeZ` oranında esner.
  */
-export const BOT = { think: 0.5, thinkJitter: 0.35, threat: 9, shootRange: 16, fireRange: 7, fireChance: 0.24, pressure: 4.5, reactMin: 0.15, reactMax: 0.6, commit: 0.6, escape: { dribble: 3.5, pass: 2.5, wall: 1.5, shoot: 1.5, fire: 1 }, passRange: 26, wallAhead: 9, passChance: 0.2, dodgeRange: 10, dodgeChance: 0.25, keeperRange: 5, sprintRange: 12, dashRange: 4, dashChance: 0.35 };
+export const BOT = { think: 0.5, thinkJitter: 0.35, threat: 9, shootRange: 16, fireRange: 7, fireChance: 0.24, pressure: 4.5, reactMin: 0.15, reactMax: 0.6, commit: 0.6, escape: { dribble: 3.5, pass: 2.5, wall: 1.5, shoot: 1.5, fire: 1 }, passRange: 26, wallAhead: 9, passChance: 0.2, dodgeRange: 10, dodgeChance: 0.25, keeperRange: 5, sprintRange: 12, dashRange: 4, dashChance: 0.35, chasers: 1, homeX: 0.3, homeZ: 0.45 };
 
 /**
  * Omuz kamerası: oyuncunun `back` gerisinde, `side` sağında ve `height` yukarıda. Fare kilitliyken yatay / dikey bakış
@@ -144,3 +146,40 @@ export const ONLINE = Object.freeze({ web: true, app: false });
 export const SERVER = 'yakargol-sunucu.josephuz.com';
 /** Kullanım ölçümü uç noktası (josephuz.com Worker → Analytics Engine). Yerelde / IP adresinden açılınca kapalı (platform.js → olcumUrl). */
 export const OLCUM = 'https://www.josephuz.com/api/olay';
+
+/**
+ * **Gösteri kipi** (yalnız web, `?gosteri=1`; bkz. src/gosteri.js): içerik klipleri için "kendi kendine oynayan" maç.
+ * Menü atlanır, on koltuğun hepsini mevcut bot yapay zekâsı oynar, arayüz gizlenir, kamera topu ve çevresindeki
+ * kalabalığı yumuşakça izler; ölçüm olayı gitmez ve sunucuya bağlanılmaz. Uygulamada (isApp) açılmaz, normal oyun
+ * bu ayarlardan hiç etkilenmez.
+ */
+export const GOSTERI = {
+  /** İlk düdük ve golden sonraki başlama beklemesi (normalde MATCH.kickoff / MATCH.restart): ilk saniyede aksiyon olsun. */
+  kickoff: 0.25, restart: 0.5,
+  /** Maç bitince yeni maç kurulana kadar beklenen saniye. */
+  yenidenBasla: 3,
+  /** Takım başına yakar top hakkı (normalde KICK.fireShots): klip boyunca yakar top bitmesin. */
+  fireShots: 40,
+  /**
+   * Gösteride izometrik kadraj (CAMERA.iso üstüne yazılır): `half` normalde 14, burada daha yakın — klip telefon
+   * ekranında izlendiğinde oyuncular ve top seçilsin. `lead` 0: kadraj oyuncunun ötesine değil, odağın tam üstüne bakar.
+   */
+  iso: { half: 10.5, lead: 0 },
+  /**
+   * Kamera odağı: topun ve çevresindeki oyuncuların ağırlık merkezi. `top` topun kendi ağırlığı (oyuncu başına 1'e
+   * karşılık), `yayilma` oyuncunun topa uzaklığının ağırlığını yarıya indirdiği mesafe, `ilerisi` topun hızının kaç
+   * saniye ötesine bakıldığı (uçan top kadrajdan kaçmasın), `yumusatma` geçişin yumuşaklığı (1/sn: büyük = daha çabuk
+   * yetişir), `sinir` odağın sahada kalabileceği yarı boy.
+   *
+   * `sinir` neden böyle: izometrik kamera z eksenini ekranda yatay, x eksenini dikey gösterir. 16:9 kadrajda (half 10.5)
+   * yatayda ±10.5·16/9 ≈ ±18.7 birim z, dikeyde ±10.5/sin(elevation) ≈ ±18.6 birim x görünür. Saha 26 x 40 yarı boyunda:
+   * x'te ±9 (kamera en çok 27.6'ya bakar, yan duvarın azıcık ötesi — boş çayır dolmaz, top en kenarda bile kadrajda kalır),
+   * z'de ±24 (kamera 42.7'ye kadar bakar: kale ağzı ve gol her zaman kadrajda).
+   */
+  kamera: { top: 6, yayilma: 8, ilerisi: 0.18, yumusatma: 2.2, sinir: { x: 9, z: 24 } },
+  /**
+   * Gösteride bot ayarları (yalnız bu kipte; normal oyun BOT'u kullanır, bkz. ai.js). Daha çok yakar top, daha çok
+   * kayma, daha uzaktan şut, topa iki oyuncu birden koşar ve takım topun çevresinde toplanır: klipte sürekli kargaşa olur.
+   */
+  bot: { ...BOT, think: 0.28, thinkJitter: 0.2, shootRange: 21, fireRange: 12, fireChance: 0.72, pressure: 6, dodgeChance: 0.45, sprintRange: 7, dashRange: 5.5, dashChance: 0.75, passChance: 0.3, escape: { dribble: 2.5, pass: 2, wall: 1, shoot: 2.5, fire: 3.5 }, chasers: 2, homeX: 0.55, homeZ: 0.7 },
+};

@@ -27,6 +27,17 @@ tünel → **Published application routes** içindeki rota `yakargol-sunucu.jose
 `node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran görüntüleri `artifacts/`.
 Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak). Çevrim içi için
 `node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar top nişanı, mola; uygulama kipinde "Yakında").
+Gösteri kipi için `node tests/gosteri-smoke.mjs`.
+
+## Gösteri kipi (içerik klipleri)
+
+`https://yakargol.josephuz.com/?gosteri=1` **yalnız tarayıcıda** (uygulamada değil) oyunu kendi kendine oynatır: menü ve
+lobi atlanır, on koltuğun hepsini mevcut bot yapay zekâsı oynar (insan koltuğu dahil), başlama beklemeleri kısalır ve
+botlar yalnız bu kipte saldırganlaşır (daha çok yakar top, kayma ve uzaktan şut — bkz. `config.js` → `GOSTERI.bot`), yakar
+top hakkı bollaşır. Kamera topun ve çevresindeki kalabalığın ağırlık merkezini yumuşakça izler, kadraj telefon ekranı
+için yakındır; yakar top ağır çekimi bu kipte de çalışır. Arayüz gizlidir (köşede küçük oyun adı kalır), girdi okunmaz,
+ölçüm olayı gitmez ve sunucuya hiç bağlanılmaz. Maç bitince birkaç saniye sonra yenisi kurulur: kip girdisiz döner durur.
+Normal oyun ve çevrim içi maç bu ayarlardan hiç etkilenmez. Kod: `src/gosteri.js`.
 
 ## Çok oyunculu
 
@@ -145,6 +156,7 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `src/ui.js` | Arayüz: ekranlar, tabela, oyuncu kartı, mesaj, sırttaki enerji / rüzgar göstergesi, maç sonu tablosu |
 | `src/audio.js` | Kısa sentez sesler |
 | `src/main.js` | Uygulama: ekran akışı, sabit adım döngüsü, olayların tüketilmesi, test kancası (`?test`) |
+| `src/gosteri.js` | Gösteri kipi (`?gosteri=1`, yalnız web): bot-bot maç, arayüzsüz, kamera aksiyonu izler |
 | `src/view/view.js` | Görünüm: renderer, ışıklar, sahne bileşenlerinin toplanması, kare çizimi |
 | `src/view/camera.js` | Omuz kamerası: takip, bakış, nişan ışını, bakış yönlü hareket, topa dönme |
 | `src/view/pitch.js` | Saha ve çevresi (kaleler, duvarlar, tel örgü, apartmanlar, ağaçlar) |
@@ -156,5 +168,6 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/browser-smoke.mjs` | Tarayıcı dumanı testi |
 | `tests/touch-smoke.mjs` | Dokunmatik dumanı testi (telefon taklidi) |
 | `tests/rooms.test.mjs`, `tests/online-smoke.mjs` | Oda testleri (sahte soket) ve iki sekmeli çevrim içi dumanı testi |
+| `tests/gosteri-smoke.mjs` | Gösteri kipi dumanı testi (arayüz gizli, ağ ve ölçüm yok, kamera aksiyonda, maç yenilenir) |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |
 | `scripts/build-web.mjs`, `scripts/apk.mjs`, `scripts/icons.mjs` | Uygulama dosyalarını toplama, APK derleme, simge / açılış / mağaza görselleri |
