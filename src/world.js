@@ -22,8 +22,12 @@ export { dash, jump, kick, pass, sprint };
  */
 export function createWorld(seed = MATCH.seed) {
   const w = {
-    me: 0, time: 0, score: [0, 0], winner: null, overtime: false, kickoff: MATCH.kickoff, nextKickoff: 0, kickoffTaker: 0, blast: null, fireLeft: [KICK.fireShots, KICK.fireShots], events: [], players: [],
-    random: createRng(seed),
+    // gosteri: içerik klipleri için bot-bot gösteri kipi (bkz. gosteri.js); botlar saldırganlaşır, normal maçta hep false.
+    // restart: golden sonraki başlama beklemesi (lineup.js); gösteri kipi kısaltır.
+    // seed: bu maçın tohumu (yalnız okuma; aynı tohum aynı bot kararlarını verir). Normal maçta hep MATCH.seed,
+    // gösteri kipinde her maça rastgele tohum verilir (bkz. gosteri.js → tohum).
+    me: 0, time: 0, score: [0, 0], winner: null, overtime: false, gosteri: false, kickoff: MATCH.kickoff, restart: MATCH.restart, nextKickoff: 0, kickoffTaker: 0, blast: null, fireLeft: [KICK.fireShots, KICK.fireShots], events: [], players: [],
+    seed, random: createRng(seed),
     ball: { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0 },
   };
   for (let i = 0; i < MATCH.teamSize * 2; i++) {

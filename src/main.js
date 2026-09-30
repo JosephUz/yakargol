@@ -1,5 +1,6 @@
 import { createAudio } from './audio.js';
-import { CINEMA, KICK, TEAMS } from './config.js';
+import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
+import { createGosteri, gosteriAcik } from './gosteri.js';
 import { createInput } from './input.js';
 import { createLobby } from './lobby.js';
 import { createNetClient } from './net/client.js';
@@ -27,14 +28,19 @@ import { createWorld, step } from './world.js';
  *
  * Dokunmatik kip (telefon, tablet, Android uygulaması; ?touch=1 ile masaüstünde de): joystick ve düğmeler (touch.js),
  * hafif görüntü, önemli anlarda titreşim; uygulamada Android geri tuşu mola / devam / çıkış olur.
+ *
+ * **Gösteri kipi** (yalnız web, `?gosteri=1`; bkz. gosteri.js): içerik klipleri için menü atlanır, on koltuğu da bot
+ * oynar, arayüz gizlenir, kamera aksiyonu izler; girdi okunmaz, ölçüm gitmez, sunucuya bağlanılmaz.
  */
 const STEP = 1 / 60, MAX_STEPS = 5;
 
 export async function start(root) {
   const testMode = new URLSearchParams(location.search).has('test');
+  /** Gösteri kipi (yalnız web): açıksa oyun kendi kendine oynanır, bkz. gosteri.js. */
+  const gosteri = gosteriAcik() ? createGosteri() : null;
   const touch = touchDevice();
   root.classList.toggle('touch', touch);
-  const view = createView(root.querySelector('#yg-view'), { mobile: touch });
+  const view = createView(root.querySelector('#yg-view'), { mobile: touch, iso: gosteri ? GOSTERI.iso : null });
   /**
    * Kamera: masaüstünde omuz kamerasıyla, dokunmatikte izometrik başlar; 🎥 ya da V ile geçilir (seçim tarayıcıda hatırlanır).
    */
@@ -46,11 +52,13 @@ export async function start(root) {
     if (mode !== 'iso' && input && active()) input.lock();
     root.classList.toggle('iso', mode === 'iso');
     camButton.innerHTML = (mode === 'iso' ? '🎥 Omuz' : '🎥 İzometrik') + ' <kbd>V</kbd>';
-    try { localStorage.setItem('yg.cam', mode); } catch { /* yok */ }
+    // Gösteri kipinin zorunlu izometriği oyuncunun kayıtlı seçimini bozmasın.
+    if (!gosteri) try { localStorage.setItem('yg.cam', mode); } catch { /* yok */ }
   };
   let savedCam = null, unlockQuiet = false, input = null;
   try { savedCam = localStorage.getItem('yg.cam'); } catch { /* yok */ }
-  setCamera(touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
+  // Gösteride kamera hep izometriktir (futbol yayını gibi sabit yan açı); kaydedilmiş seçim okunmaz, yazılmaz.
+  setCamera(gosteri ? 'iso' : touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
   const toggleCamera = () => setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso');
   onTap(camButton, toggleCamera);
   const ui = createUI(root);
@@ -63,15 +71,16 @@ export async function start(root) {
   input = createInput(view.canvas, {
     testMode,
     touch: touch && root,
-    playing: active,
+    // Gösteride girdi hiç okunmaz: tuş, fare ve dokunma yok sayılır, fare kilitlenmez, mola açılmaz.
+    playing: () => !gosteri && active(),
     onHelp: help,
     onCamera: () => toggleCamera(),
     onPause: pause,
     onLook: (dx, dy) => { if (!cine || cine.phase === 'aim') view.look(dx, dy); },
     onPoint: (x, y) => view.point(x, y),
     canLock: () => view.cameraMode !== 'iso',
-    onUnlock: () => { if (unlockQuiet) { unlockQuiet = false; return; } if (active() && view.cameraMode !== 'iso') show('pause'); },
-    onBlur: () => { if (active()) show('pause'); else input.clear(); },
+    onUnlock: () => { if (unlockQuiet) { unlockQuiet = false; return; } if (!gosteri && active() && view.cameraMode !== 'iso') show('pause'); },
+    onBlur: () => { if (gosteri) return; if (active()) show('pause'); else input.clear(); },
   });
 
   function show(next) {
@@ -89,20 +98,25 @@ export async function start(root) {
   function begin() {
     if (online) { showLobby(); return; }
     endCinema(); rightHold = null;
-    w = createWorld(); view.faceBall(w);
+    // Gösteride her maç rastgele tohumla kurulur (bkz. gosteri.tohum): klipler birbirinin tekrarı olmasın.
+    w = createWorld(gosteri ? gosteri.tohum() : undefined); view.faceBall(w);
     started = true; acc = 0;
+    // Gösteri: on koltuk da bot, ölçüm yok, tam ekran ve fare kilidi yok (bkz. gosteri.js).
+    if (gosteri) { gosteri.kur(w); show(null); return; }
     macBasladi(); // ölçüm: çevrimdışı maç başladı
     if (touch) enterFullscreen();
     show(null); input.lock();
   }
   function resume() { show(null); input.lock(); if (touch) enterFullscreen(); }
   function help() {
+    if (gosteri) return; // gösteride perde açılmaz: kip girdisiz döner (bkz. gosteri.js)
     if (screen === 'help') { closeHelp(); return; }
     helpReturn = screen; show('help');
   }
   function closeHelp() { show(helpReturn); if (active()) input.lock(); }
   /** Esc: kilitliyken tarayıcı Esc'yi kilidi bırakmaya harcar (o da molaya sokar); kısa süre içindeki ikinci Esc yok sayılır. */
   function pause() {
+    if (gosteri) return; // gösteride mola yok: kip girdisiz döner (bkz. gosteri.js)
     if (!started || screen === 'home' || screen === 'results' || screen === 'lobby') return;
     if (screen === 'help') { closeHelp(); return; }
     if (screen === 'pause') { if (performance.now() - pausedAt > 250) resume(); return; }
@@ -121,7 +135,8 @@ export async function start(root) {
   ui.setSound(audio.enabled);
 
   // ---------- Çevrim içi ----------
-  const net = onlineEnabled() ? createNetClient({
+  // Gösteride sunucuya hiç bağlanılmaz: WebSocket açılmaz, oda / davet linki okunmaz.
+  const net = onlineEnabled() && !gosteri ? createNetClient({
     onWelcome() {
       lobby.setServer(true);
       if (pending) { const go = pending; pending = null; go(); return; }
@@ -322,7 +337,8 @@ export async function start(root) {
     for (const e of w.events) {
       view.event(e);
       audio.play(e.type);
-      if (touch) buzz(e, me);
+      // Gösteride titreşim yok: kipin "izleyeni" oyuncu değil kamera, telefonu her golde titretmenin anlamı yok.
+      if (touch && !gosteri) buzz(e, me);
       if (!online && e.type === 'kick' && e.kind === 'fire') {
         if (cine && cine.phase === 'aim') { Object.assign(cine, { phase: 'flight', t: 0 }); ui.cinema(true, 'SEN'); }
         else startCinema(e);
@@ -341,16 +357,18 @@ export async function start(root) {
       if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
     }
     w.events.length = 0;
+    // Gösteride karne açılmaz ve ölçüm gitmez: birkaç saniye sonra yeni maç kurulur (bkz. gosteri.guncelle).
+    if (gosteri) return;
     if (!online && w.winner !== null && screen !== 'results') { show('results'); ui.results(w); macBitti(); }
   }
 
-  const refresh = () => ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen);
+  const refresh = () => { if (!gosteri) ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen); };
 
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.08, (now - last) / 1000);
     last = now;
-    if (started) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
+    if (started && !gosteri) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
     if (online && started) {
       // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).
       const move = active() ? input.move(view) : null;
@@ -365,28 +383,37 @@ export async function start(root) {
       acc += dt * (cine ? cinemaLook().scale : 1);
       for (let n = 0; acc >= STEP && n < MAX_STEPS; n++) {
         const was = cine;
-        step(w, STEP, route(input.read(view)));
+        // Gösteride girdi okunmaz: on koltuğu da bot yapay zekâsı sürer (bkz. world.js step).
+        step(w, STEP, gosteri ? {} : route(input.read(view)));
         consume();
         acc -= STEP;
         if (screen || (cine && !was)) { if (cine) acc = 0; break; }
       }
-      tickRightHold(dt);
+      if (!gosteri) tickRightHold(dt);
       tickCinema(dt);
+      // Maç bittiyse birkaç saniye sonra yenisi kurulur: gösteri girdisiz döner durur.
+      if (gosteri) gosteri.guncelle(dt, w, begin);
     } else acc = 0;
-    ui.tickMessage(dt, w, active());
-    const charge = chargeState();
-    ui.charge(charge);
-    const me = w.players[w.me];
-    ui.speed(active() && !cine && me.sprint > 0 && me.burn <= 0);
-    input.sync(w, active());
-    // İzometrikte nişan oku: top sendeyken ya da yakar top nişanında.
-    const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === w.me && !cine) || (cine?.phase === 'aim' && cine.mine !== false));
-    view.showAim(aiming ? view.aim(input.move(view)) : null);
+    // Gösteride arayüz yoktur (bkz. style.css `.gosteri`): panel, gösterge ve işaret güncellemeleri hiç koşmaz.
+    const charge = gosteri ? null : chargeState();
+    if (!gosteri) {
+      ui.tickMessage(dt, w, active());
+      ui.charge(charge);
+      const me = w.players[w.me];
+      ui.speed(active() && !cine && me.sprint > 0 && me.burn <= 0);
+      input.sync(w, active());
+      // İzometrikte nişan oku: top sendeyken ya da yakar top nişanında.
+      const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === w.me && !cine) || (cine?.phase === 'aim' && cine.mine !== false));
+      view.showAim(aiming ? view.aim(input.move(view)) : null);
+    }
     // Çevrim içinde durum pakette gelir: görüntü molada da oynar (sinemada ölçek sunucudan).
     const drawDt = online && started ? dt : screen ? 0 : dt;
-    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : cinemaLook(), charge);
-    ui.overhead(w, dt, active(), view.project);
-    ui.ballMark(w, active() && !cine, view.project);
+    // Gösteride kamera senin oyuncunu değil aksiyonun ağırlık merkezini izler (bkz. gosteri.odak).
+    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : cinemaLook(), charge, gosteri ? gosteri.odak(drawDt, w) : null);
+    if (!gosteri) {
+      ui.overhead(w, dt, active(), view.project);
+      ui.ballMark(w, active() && !cine, view.project);
+    }
     uiClock -= dt;
     if (uiClock <= 0) { uiClock = 0.08; refresh(); }
   }
@@ -396,9 +423,15 @@ export async function start(root) {
     return look && cine.phase === 'aim' && !cine.mine ? { ...look, track: true } : look;
   }
 
-  if (testMode) {
+  /**
+   * Test kancası. Gösteri kipinde de bilerek açıktır: tests/gosteri-smoke.mjs yayındaki `?gosteri=1` adresini de
+   * denetleyebilsin. Yayına sızan bir yetki değil — dünya ve görünüm yalnız okunur, `step` zaten her karede koşan
+   * simülasyon adımıdır; kip sunucuya bağlanmadığı için buradan başkasının maçına dokunulamaz.
+   */
+  if (testMode || gosteri) {
     window.__yakarGol = {
-      world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, cine: cine && cine.phase }),
+      world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, gosteri: !!gosteri, cine: cine && cine.phase }),
+      odak: () => (gosteri ? gosteri.nokta() : null),
       step: n => { for (let i = 0; i < n; i++) step(w, STEP); consume(); refresh(); },
     };
   }
@@ -412,9 +445,15 @@ export async function start(root) {
   });
 
   refresh();
+  // Gösteri: menü ve lobi atlanır, arayüz gizlenir (style.css `.gosteri`), maç hemen başlar.
+  if (gosteri) {
+    root.classList.add('gosteri');
+    root.querySelector('#yg-gosteri').hidden = false;
+    begin();
+  }
   requestAnimationFrame(frame);
-  // Çok oyunculusu açık sekme WebSocket bağlantısıyla sayılır; kapalıysa (uygulama) sinyalle.
-  if (!testMode && !net) heartbeat();
+  // Çok oyunculusu açık sekme WebSocket bağlantısıyla sayılır; kapalıysa (uygulama) sinyalle. Gösteride sinyal de yok.
+  if (!testMode && !net && !gosteri) heartbeat();
 }
 
 /** Dokunmatikte kısa titreşim: şut / pas, top kapma, yanma, gol. */

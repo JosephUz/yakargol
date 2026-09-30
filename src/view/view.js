@@ -11,9 +11,10 @@ import { buildPitch } from './pitch.js';
  * yalnızca okur: render her karede dünyayı çizer, event simülasyon olaylarından efekt çıkarır. Hızlı koşuda kamera
  * açısı genişler (CAMERA.sprintFov); şarj sırasında ayaktaki top hazırlanan vuruşun rengine bürünür.
  * mobile: telefonda piksel oranı ve gölge haritası küçülür, yumuşak gölge yerine düz gölge (TOUCH).
+ * iso: izometrik kadraj ayarlarının üstüne yazılanlar (gösteri kipi daha yakın bakar, bkz. config.js GOSTERI.iso).
  * İzometrikte nişan ekran ortası değildir: top sendeyken (ya da yakar top nişanında) yerde nişan yönünü gösteren ok çıkar.
  */
-export function createView(container, { mobile = false } = {}) {
+export function createView(container, { mobile = false, iso = null } = {}) {
   const renderer = new T.WebGLRenderer({ antialias: !mobile || devicePixelRatio < 2, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? TOUCH.pixelRatio : 1.5));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = mobile ? T.PCFShadowMap : T.PCFSoftShadowMap;
@@ -35,7 +36,7 @@ export function createView(container, { mobile = false } = {}) {
   const actors = Array.from({ length: 10 }, (_, id) => createActor(scene, labels, id));
   const ball = createBallView(scene);
   const effects = createEffects(scene);
-  const shoulder = createShoulderCamera();
+  const shoulder = createShoulderCamera(iso);
   let time = 0, real = 0, aimAt = null;
   // İzometrik nişan oku: oyuncunun ayağından nişan yönüne yassı bir ok.
   const arrow = new T.Group(), arrowMat = new T.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.9, depthWrite: false, depthTest: false });
@@ -67,12 +68,16 @@ export function createView(container, { mobile = false } = {}) {
     movement: (x, z) => shoulder.movement(x, z),
     project: (x, y, z) => shoulder.project(x, y, z),
     event: e => { effects.spawn(e); if (e.type === 'goal') shoulder.shake(GOAL_BLAST.shake); },
-    /** cine: { scale, heat } yakar top sinemasında: oyuncular ölçekli zamanla (donuk / ağır çekim), alevler gerçek zamanla oynar. */
-    render(w, dt, playing, cine = null, charge = null) {
+    /**
+     * cine: { scale, heat } yakar top sinemasında: oyuncular ölçekli zamanla (donuk / ağır çekim), alevler gerçek zamanla oynar.
+     * focus: kameranın izleyeceği nokta (oyuncu biçiminde: x, z, burn, air, jump, sprint); null ise kendi oyuncun.
+     * Gösteri kipinde insan oyuncu yoktur, kamera aksiyonun ağırlık merkezini izler (bkz. gosteri.js).
+     */
+    render(w, dt, playing, cine = null, charge = null, focus = null) {
       const scale = cine ? cine.scale : 1;
       time += dt * scale; real += dt;
       if (cine && cine.track !== false) shoulder.track(w, dt);
-      const hero = w.players[w.me], wide = hero.sprint > 0 && hero.burn <= 0 ? CAMERA.sprintFov : CAMERA.fov;
+      const hero = focus || w.players[w.me], wide = hero.sprint > 0 && hero.burn <= 0 ? CAMERA.sprintFov : CAMERA.fov;
       if (shoulder.mode === 'shoulder') shoulder.zoom(wide, dt);
       shoulder.follow(hero, dt);
       syncActors(actors, w, time, playing, shoulder.project);
