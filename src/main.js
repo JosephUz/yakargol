@@ -6,7 +6,7 @@ import { createNetClient } from './net/client.js';
 import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { onlineEnabled, serverHttp } from './platform.js';
 import { enterFullscreen, touchDevice } from './touch.js';
-import { createUI } from './ui.js';
+import { createUI, onTap } from './ui.js';
 import { createView } from './view/view.js';
 import { createWorld, step } from './world.js';
 
@@ -52,7 +52,7 @@ export async function start(root) {
   try { savedCam = localStorage.getItem('yg.cam'); } catch { /* yok */ }
   setCamera(touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
   const toggleCamera = () => setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso');
-  camButton.onclick = toggleCamera;
+  onTap(camButton, toggleCamera);
   const ui = createUI(root);
   const audio = createAudio();
   let cine = null, rightHold = null, online = false;

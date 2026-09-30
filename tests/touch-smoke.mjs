@@ -112,6 +112,7 @@ try {
   await page.waitForTimeout(80);
   assert.ok(Math.abs((await yaw()) - s0) > 0.1, 'omuzda sağ yarıda kaydırmak bakışı çevirir');
   await page.screenshot({ path: 'artifacts/t2b-shoulder.png' });
+  // Kaydırmanın hemen ardından: tarayıcı bu dokunuşun `click`'ini yutar, düğme yine de çalışmalı (bkz. ui.js onTap).
   await page.tap('#yg-cam');
   await page.waitForTimeout(100);
   assert.equal(await game(() => window.__yakarGol.view().cameraMode), 'iso');
@@ -130,7 +131,9 @@ try {
   assert.ok((await hero()).jump > 0, 'ZIPLA düğmesi');
   await page.screenshot({ path: 'artifacts/t3-play.png' });
 
-  // Dik ekran: yan çevir uyarısı.
+  // Dik ekran: yan çevir uyarısı. (Maça girerken tam ekrana geçildi; pencere ancak oradan çıkınca boyutlanır.)
+  await game(() => document.fullscreenElement && document.exitFullscreen());
+  await page.waitForTimeout(150);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(150);
   assert.ok(await page.locator('#yg-rotate').isVisible(), 'dik tutunca yan çevir uyarısı');

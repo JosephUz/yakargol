@@ -10,6 +10,35 @@ import { benchX, lift } from './view/actors.js';
 const SCREENS = ['home', 'help', 'pause', 'results', 'lobby'];
 const CHARGE_COLORS = { wind: '#8ff3ff', fire: '#ff7a2e', blocked: '#9aa39c' };
 const STATS = ['goals', 'passes', 'burns', 'steals', 'saves'];
+/** Dokunuşun basış sayılması için parmağın kayabileceği en fazla piksel ve dokunuş sonrası click'i yutma süresi (ms). */
+const TAP_SLOP = 12, TAP_CLICK_GUARD = 700;
+
+/**
+ * Düğmeye basış. Dokunuşta `click` beklenmez: Chrome hızlı bir kaydırmadan hemen sonraki ilk dokunuşun `click`'ini
+ * yutar (kaydırmanın sönümünü durdurmak için), bu yüzden bakışı çevirip hemen üstteki 🎥 / ☰ / 🔊 düğmesine dokunan
+ * oyuncuda düğmeler yarım saniye kadar ölü kalıyordu. Dokunuş `pointerup` ile işlenir (parmak düğmeden kaymadıysa).
+ * `pointerdown`'da preventDefault şart: yoksa tarayıcı dokunuşun ardından uyumluluk fare olaylarını üretir ve düğme
+ * ekranı kapattığı için bunlar altta kalan sahaya düşer (izometrik nişanı imlece kilitler, şut tetikler).
+ * Fare ve klavye (Enter / Boşluk) eskisi gibi `click` ile çalışır; iki yol birden gelirse ikincisi yutulur.
+ */
+export function onTap(node, fn) {
+  let down = null, handled = -Infinity;
+  node.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') { down = null; return; }
+    e.preventDefault();
+    node.focus?.({ preventScroll: true });
+    down = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  });
+  node.addEventListener('pointercancel', () => { down = null; });
+  node.addEventListener('pointerup', e => {
+    const d = down;
+    down = null;
+    if (!d || d.id !== e.pointerId || Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_SLOP) return;
+    handled = performance.now();
+    fn(e);
+  });
+  node.addEventListener('click', e => { if (performance.now() - handled > TAP_CLICK_GUARD) fn(e); });
+}
 
 export function createUI(root) {
   const $ = id => root.querySelector('#yg-' + id);
@@ -29,7 +58,7 @@ export function createUI(root) {
   let messageTime = 0, readyTime = 0, lastEnergy = 0;
 
   return {
-    button: (id, fn) => { $(id).onclick = fn; },
+    button: (id, fn) => onTap($(id), fn),
 
     show(screen) { for (const s of SCREENS) el.screens[s].hidden = screen !== s; },
 
