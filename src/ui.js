@@ -4,7 +4,7 @@ import { benchX, lift } from './view/actors.js';
 /**
  * Arayüz (DOM): ekranlar (giriş, yardım, mola, maç sonu), skor tabelası ve saat, sol alttaki oyuncu kartı, yanma
  * perdesi, ortadaki mesaj ve **karakterin sırtındaki gösterge**: enerji geri sayımı (kayma ve hızlı koşu ortak), enerji dolunca kısa "HAZIR" ve top kaptırınca sersemlik süresi. Nişangahın çevresinde **dolum halkası**:
- * sol tık (rüzgar) ve sağ tık (yakar top) basılıyken hangi vuruşun hazırlandığını ve ne kadar dolduğunu gösterir. Simülasyonu yalnızca okur.
+ * sol tık (rüzgar) ve sağ tık (yakar pas) basılıyken hangi vuruşun hazırlandığını ve ne kadar dolduğunu gösterir. Simülasyonu yalnızca okur.
  */
 const SCREENS = ['home', 'help', 'pause', 'results', 'lobby'];
 const CHARGE_COLORS = { wind: '#8ff3ff', fire: '#ff7a2e', blocked: '#9aa39c' };
@@ -85,7 +85,7 @@ export function createUI(root) {
       el.crosshair.hidden = !playing || !!screen;
       el.blue.textContent = w.score[0]; el.orange.textContent = w.score[1];
       el.fires.forEach((node, team) => {
-        node.title = TEAMS.names[team] + ' takımının yakar top hakkı: ' + w.fireLeft[team];
+        node.title = TEAMS.names[team] + ' takımının yakar pas hakkı: ' + w.fireLeft[team];
         [...node.children].forEach((pip, i) => pip.classList.toggle('used', i >= w.fireLeft[team]));
       });
       el.winds.forEach((node, team) => {
@@ -109,7 +109,7 @@ export function createUI(root) {
     },
 
     /**
-     * Top ekranda değilse kenarda işaret: topun yönünü gösteren ok, ekrana girince kaybolur (yakar topta kırmızı).
+     * Top ekranda değilse kenarda işaret: topun yönünü gösteren ok, ekrana girince kaybolur (yakar pasta kırmızı).
      * project: dünya → ekran (behind: kameranın arkasında).
      */
     ballMark(w, visible, project) {
@@ -161,11 +161,11 @@ export function createUI(root) {
     /** Hızlı koşuda ekran kenarlarında hız çizgileri. */
     speed(on) { el.speed.hidden = !on; },
 
-    /** Sinema şeritleri ve "YAKAR TOP!" ya da "RÜZGAR ŞUTU!" yazısı (atanın adıyla); aim: nişan süresi çubuğu (1 → 0). */
+    /** Sinema şeritleri ve "YAKAR PAS!" ya da "RÜZGAR ŞUTU!" yazısı (atanın adıyla); aim: nişan süresi çubuğu (1 → 0). */
     cinema(on, who = '', aim = null, kind = 'fire') {
       el.cine.hidden = !on;
       el.cine.classList.toggle('wind', kind === 'wind');
-      el.cineTitle.textContent = kind === 'wind' ? 'RÜZGAR ŞUTU!' : 'YAKAR TOP!';
+      el.cineTitle.textContent = kind === 'wind' ? 'RÜZGAR ŞUTU!' : 'YAKAR PAS!';
       el.cineWho.textContent = who;
       el.cineAim.hidden = aim === null;
       if (aim !== null) el.cineAimFill.style.width = aim * 100 + '%';

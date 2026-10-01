@@ -8,9 +8,9 @@ import { isApp } from './platform.js';
  *  - Menü ve lobi atlanır, doğrudan maç başlar: on koltuğun hepsi bottur (`p.human = false`, bkz. world.js step —
  *    insan işareti olmayan her oyuncuyu botInput sürer), insan koltuğunu da aynı yapay zekâ oynar.
  *  - Başlama beklemeleri kısalır ve botlar saldırganlaşır (GOSTERI.bot, bkz. ai.js): ilk saniyelerde ekranda aksiyon olur.
- *    Yakar top hakkı bollaşır ki klip boyunca yakar top, ağır çekim ve kayma bitmesin.
+ *    Yakar pas hakkı bollaşır ki klip boyunca yakar pas, ağır çekim ve kayma bitmesin.
  *  - Kamera topun ve çevresindeki kalabalığın ağırlık merkezini yumuşakça izler; kadraj telefon ekranı için yakındır
- *    (GOSTERI.iso). Mevcut yakar top sineması (donuk → ağır çekim → çarpma) gösteride de çalışır: onu main.js yürütür.
+ *    (GOSTERI.iso). Mevcut yakar pas sineması (donuk → ağır çekim → çarpma) gösteride de çalışır: onu main.js yürütür.
  *  - Arayüz gizlidir (bkz. style.css `.gosteri`), ölçüm (olcum.js) gitmez, sunucuya bağlanılmaz (bkz. main.js).
  *  - Maç bitince karne açılmaz: GOSTERI.yenidenBasla saniye sonra yeni maç kurulur, kip girdisiz döner.
  *  - Her maç rastgele tohumla kurulur (tohum): art arda çekilen klipler aynı maçın tekrarı olmaz.
@@ -50,7 +50,7 @@ export function createGosteri() {
    */
   const tohum = () => (Math.random() * 0x100000000) >>> 0;
 
-  /** Yeni maç: her koltuk bot, kısa başlama beklemesi, bol yakar top hakkı; kamera ilk karede aksiyona yapışır. */
+  /** Yeni maç: her koltuk bot, kısa başlama beklemesi, bol yakar pas hakkı; kamera ilk karede aksiyona yapışır. */
   function kur(w) {
     w.gosteri = true;
     for (const p of w.players) { p.human = false; p.name = 'Bot-' + (p.id + 1); }

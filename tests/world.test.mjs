@@ -563,11 +563,37 @@ test('botlar rüzgar şutunu dolumla atar: önce dolum, sonra nişan, sonra rüz
   assert.equal(w.windLeft[0], KICK.windShots - 1);
 });
 
+test('yakar pas arkadaşa kilitlenir: yoldaki bütün rakipleri yakar, durmaz, araya giren arkadaş tutamaz, hedef yakalar', () => {
+  const w = setup();
+  for (const t of w.players) if (![0, 1, 2, 5, 6, 7].includes(t.id)) t.burn = 99;
+  for (const t of w.players) Object.assign(t, { think: 99, guard: 0, dodgeShot: 0, dodgeOk: false, energyCd: 99 });
+  Object.assign(w.players[0], { x: 0, z: 12 }); Object.assign(w.players[1], { x: 0, z: -14 }); Object.assign(w.players[2], { x: 1.2, z: 1 });
+  Object.assign(w.players[5], { x: 0.3, z: 6 }); Object.assign(w.players[6], { x: -0.3, z: -3 }); Object.assign(w.players[7], { x: 0.2, z: -8 });
+  for (const id of [1, 5, 6, 7]) w.players[id].stun = 99; // yerinde dursunlar (sersem oyuncu da yanar, sersem hedef de yakalar)
+  w.ball.owner = 0; w.players[0].kickCd = 0;
+  assert.ok(kick(w, 0, { x: 0, z: -14 }, 'fire'));
+  assert.equal(w.ball.to, 1, 'nişana en yakın arkadaş seçilmedi');
+  for (let i = 0; i < 120 && w.ball.owner === null; i++) step(w, 1 / 60);
+  assert.equal(w.ball.owner, 1, 'yakar pas hedefe varmadı');
+  for (const id of [5, 6, 7]) assert.ok(w.players[id].burn > 0, id + ' yanmadı');
+  assert.equal(w.players[2].burn, 0); assert.equal(w.players[0].stats.burns, 3);
+});
+
+test('yakar pas hedef kaçsa da onu izler', () => {
+  const w = setup();
+  for (const t of w.players) if (![0, 1].includes(t.id)) t.burn = 99;
+  Object.assign(w.players[0], { x: 0, z: 12 }); Object.assign(w.players[1], { x: 0, z: -14 });
+  w.ball.owner = 0; w.players[0].kickCd = 0;
+  assert.ok(kick(w, 0, { x: 0, z: -14 }, 'fire'));
+  for (let i = 0; i < 180 && w.ball.owner === null; i++) step(w, 1 / 60, { players: { 1: { x: 1, z: 0 } } });
+  assert.equal(w.ball.owner, 1);
+});
+
 test('botlar yakar topu dolumla atar: dolumda fireCharge artar, nişandan sonra yakar top çıkar', () => {
   const w = setup(), p = w.players[1], e = w.players[6];
   for (const t of w.players) if (t.id !== 1 && t.id !== 6) t.burn = 99;
   Object.assign(p, { x: 0, z: 0, think: 0 }); Object.assign(e, { x: 0, z: -6, think: 99, energyCd: 99 });
-  w.ball.owner = 1; p.plan = { kind: 'fire', enemy: 6 };
+  w.ball.owner = 1; p.plan = { kind: 'fire', mate: 0 };
   let charged = false, aimed = false;
   for (let i = 0; i < 200 && w.ball.kind !== 'fire'; i++) { step(w, 1 / 60); if (p.fireCharge > 0.5) charged = true; if (w.aim?.id === 1) aimed = true; }
   assert.ok(charged, 'dolum oldu'); assert.ok(aimed, 'nişan oldu'); assert.equal(w.ball.kind, 'fire');

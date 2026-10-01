@@ -51,7 +51,7 @@ try {
   assert.equal(await b.evaluate(() => window.__yakarGol.world().me), 9, 'Ayşe turuncu kaleci');
   assert.equal(await a.evaluate(() => window.__yakarGol.world().players[9].name), 'Ayşe');
 
-  // Santrayı Ali (mavi forvet) yapar: sağ tık basılı → herkes için donan nişan, bırakınca yakar top.
+  // Santrayı Ali (mavi forvet) yapar: sağ tık basılı → herkes için donan nişan, bırakınca yakar pas.
   await a.waitForFunction(() => window.__yakarGol.world().ball.owner === 0, null, { timeout: 5000 });
   await a.mouse.move(640, 300); await a.mouse.down({ button: 'right' });
   await a.waitForFunction(() => window.__yakarGol.state().cine === 'aim', null, { timeout: 4000 });
@@ -64,11 +64,13 @@ try {
 
   // Ali sağa yürür; Ayşe'nin ekranında da yürür.
   await a.waitForTimeout(500);
-  const seen = () => b.evaluate(() => window.__yakarGol.world().players[0].x);
+  // Kamera topa dönük geçtiği için D yönü sahaya göre değişebilir: yürünen yol iki eksende ölçülür.
+  const seen = () => b.evaluate(() => { const p = window.__yakarGol.world().players[0]; return { x: p.x, z: p.z }; });
   const x0 = await seen();
   await a.keyboard.down('KeyD'); await a.waitForTimeout(900); await a.keyboard.up('KeyD');
   await a.waitForTimeout(300);
-  assert.ok(Math.abs((await seen()) - x0) > 2, 'Ali\'nin hareketi Ayşe\'de görünür');
+  const x1 = await seen();
+  assert.ok(Math.hypot(x1.x - x0.x, x1.z - x0.z) > 2, 'Ali\'nin hareketi Ayşe\'de görünür');
   await b.screenshot({ path: 'artifacts/o2-match.png' });
 
   // Mola maçı durdurmaz.

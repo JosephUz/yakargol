@@ -3,7 +3,7 @@ import { GOAL_BLAST, TEAMS } from '../config.js';
 import { box } from './builders.js';
 
 /**
- * Parçacıklar: şutta sarı, yanmada turuncu, rüzgarla savrulmada camgöbeği kıvılcım; yakar top sinemasında tutuşma
+ * Parçacıklar: şutta sarı, yanmada turuncu, rüzgarla savrulmada camgöbeği kıvılcım; yakar pas sinemasında tutuşma
  * (ignite) ve çarpma (impact) patlamaları. Golde Rocket League usulü **gol patlaması**: kaleden takım rengi, beyaz ve
  * altın parçalar fışkırır, yerde bir şok dalgası halkası sahaya yayılır ve kısa bir ışık çakar (bkz. GOAL_BLAST).
  * Küçük kutular yukarı fırlayıp yerçekimiyle düşer ve ömürleri bitince sahneden kalkar.

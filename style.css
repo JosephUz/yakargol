@@ -361,3 +361,5 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 /* Pas isteyenin başında "PAS!" (sarı, hafif zıplar). */
 #yakar-gol .actor-label.call{background:#efbf77;color:#203e33;text-shadow:none;font-size:12px;animation:ygCall .5s ease-in-out infinite alternate}
 @keyframes ygCall{to{margin-top:-4px}}
+/* Yakar pasın gideceği arkadaş: başında alev renginde "YAKAR PAS". */
+#yakar-gol .actor-label.fire-to{background:#e2522f;color:#fff3df;text-shadow:none;font-size:12px;animation:ygCall .4s ease-in-out infinite alternate}

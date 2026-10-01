@@ -6,8 +6,8 @@ import { ENERGY, TOUCH } from './config.js';
  * - Sol yarı: parmağın değdiği yerde beliren **joystick** (hareket, analog). Sonuna kadar itip biraz tutunca hızlı koşu.
  * - Sağ yarı: parmak kaydırmak **bakış / nişan** (farenin karşılığı).
  * - Sağ alttaki düğmeler: ŞUT (sol tık: dokun şut, basılı tut rüzgar), PAS (sağ tık: top sendeyken dokun pas, basılı tut
- *   yakar top nişanı; topsuzken KAY), ZIPLA (Boşluk), KOŞ (Shift). Düğmeye basılıyken parmağı kaydırmak da nişan alır:
- *   rüzgar dolarken ya da yakar top nişanında başparmak düğmeden kalkmadan hedefi çevirir.
+ *   yakar pas nişanı; topsuzken KAY), ZIPLA (Boşluk), KOŞ (Shift). Düğmeye basılıyken parmağı kaydırmak da nişan alır:
+ *   rüzgar dolarken ya da yakar pas nişanında başparmak düğmeden kalkmadan hedefi çevirir.
  * Girdi input.js'e `sink` üzerinden akar (down / up / look); joystick ve kendiliğinden koşu `poll` ile okunur.
  */
 export const touchDevice = () => new URLSearchParams(location.search).has('touch') || matchMedia('(pointer: coarse)').matches;

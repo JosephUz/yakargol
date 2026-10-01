@@ -1,17 +1,19 @@
-import { BALL, BURN, DASH, GOAL_BLAST, PITCH, STEAL, WIND } from './config.js';
+import { BALL, BURN, DASH, GOAL_BLAST, KICK, PITCH, STEAL, WIND } from './config.js';
 import { emit } from './actions.js';
 import { KEEPER, lineUp } from './lineup.js';
 import { distance } from './math.js';
 
 /**
  * Top, bir adım. Taşınıyorsa taşıyanın ayağının önünde durur ve rakipler kapmaya çalışır. Boştaysa ilerler, duvardan
- * seker, kaleye girerse gol olur (yakar top olmaz). Oyuncuya değerse yakalanır; rakibe değen yakar top onu yakar.
+ * seker, kaleye girerse gol olur (yakar pas olmaz). Oyuncuya değerse yakalanır. Yakar pas hedef arkadaşına (b.to)
+ * kilitlidir: onu izler, yalnız o yakalar, yol boyunca değdiği her rakibi yakar ve durmadan yoluna devam eder.
  * Rüzgar topu durdurulamaz: kimse tutamaz, rakipleri savurup yavaşlamadan yoluna devam eder; kaleye giderse gol olur,
  * duvara çarparsa rüzgarı biter (normal top).
  */
 export function updateBall(w, dt) {
   const b = w.ball;
   if (b.owner !== null) { carry(w); return; }
+  if (b.kind === 'fire' && b.to != null) home(w);
   const pieces = Math.max(1, Math.ceil(Math.hypot(b.vx, b.vz) * dt / BALL.substep)), h = dt / pieces;
   for (let n = 0; n < pieces; n++) {
     b.x += b.vx * h; b.z += b.vz * h;
@@ -24,8 +26,16 @@ export function updateBall(w, dt) {
   }
   const friction = Math.exp(-(b.kind === 'wind' ? WIND.friction : BALL.friction) * dt);
   b.vx *= friction; b.vz *= friction;
-  if (b.kind === 'fire' && b.power <= 0) { b.kind = 'normal'; b.vx *= BALL.fireFade; b.vz *= BALL.fireFade; }
+  if (b.kind === 'fire' && b.power <= 0) { b.kind = 'normal'; b.to = null; b.vx *= BALL.fireFade; b.vz *= BALL.fireFade; }
   if (b.kind === 'wind' && b.power <= 0) b.kind = 'normal';
+}
+
+/** Yakar pas hedefine döner (hız sabit, KICK.fire); hedef yandıysa kilit bırakılır, top düz gider. */
+function home(w) {
+  const b = w.ball, t = w.players[b.to];
+  if (!t || t.burn > 0) { b.to = null; return; }
+  const dx = t.x - b.x, dz = t.z - b.z, d = Math.max(0.01, Math.hypot(dx, dz));
+  b.vx = dx / d * KICK.fire; b.vz = dz / d * KICK.fire;
 }
 
 /** Rüzgar topu duvara çarptı: rüzgarı biter, normal top olarak seker. */
@@ -35,7 +45,7 @@ function windOut(w) { if (w.ball.kind === 'wind') { w.ball.kind = 'normal'; w.ba
  * Taşınan top. Yürüyen rakip **topa** STEAL.reach kadar yakınsa, taşıyanın arkasında değilse (arkadan ancak hızlı
  * koşuyla), iki taraf da yerdeyse, kapan şut beklemesinde değilse ve taşıyan korunmuyorsa topu kapar; taşıyan STEAL.stun
  * kadar sersemler. Kayan rakip DASH.steal içindeyse her koşulda kapar; taşıyan STEAL.dashStun kadar sersemler.
- * Sersem oyuncu topu kapamaz. Nişan alan (yakar top / rüzgar, w.aim) yürüyerek soyulamaz: yalnız kayarak.
+ * Sersem oyuncu topu kapamaz. Nişan alan (yakar pas / rüzgar, w.aim) yürüyerek soyulamaz: yalnız kayarak.
  */
 function carry(w) {
   const b = w.ball, p = w.players[b.owner];
@@ -64,25 +74,31 @@ export function behind(p, rival, reach) {
 }
 
 /**
- * Boştaki topun oyunculara değmesi. true: top bu adımda durdu (yakalandı ya da yaktı). Yakalama BALL.catch içinde,
- * yakar topun yakması ve rüzgar topunun savurması daha dar BALL.hit içinde olur.
+ * Boştaki topun oyunculara değmesi. true: top bu adımda durdu (yakalandı). Yakalama BALL.catch içinde, yakar pasın
+ * yakması ve rüzgar topunun savurması daha dar BALL.hit içinde olur. Yakar pası yalnız hedef arkadaşı (b.to) yakalar
+ * (zıplıyor ya da havada olsa da); yaktığı rakipte durmaz, öbür arkadaşların içinden geçer.
  */
 function touch(w) {
   const b = w.ball, shooter = w.players[b.last];
   for (const p of w.players) {
+    if (b.kind === 'fire' && b.to === p.id) { if (p.burn <= 0 && distance(p, b) <= BALL.catch) { take(w, p, false); return true; } continue; }
     if (p.burn > 0 || p.jump > 0 || p.knock > 0 || p.air > 0 || (p.stun > 0 && b.kind !== 'fire') || (p.dash > 0 && b.kind === 'fire') || (b.last === p.id && b.lock > 0)) continue;
     const d = distance(p, b), rival = shooter && p.team !== shooter.team;
     if (d > BALL.catch) continue;
-    if (b.kind === 'fire' && rival) { if (p.guard > 0 || d > BALL.hit) continue; burn(w, p); return true; }
+    if (b.kind === 'fire' && rival) { if (p.guard <= 0 && d <= BALL.hit) burn(w, p); continue; }
     if (b.kind === 'wind') { if (rival && d <= BALL.hit) blow(w, p); continue; }
-    if (b.kind === 'fire' && b.lock > 0) continue;
-    Object.assign(b, { owner: p.id, last: p.id, kind: 'normal', power: 0 });
-    p.guard = BALL.catchGuard;
-    if (p.role === KEEPER && rival) p.stats.saves++;
-    emit(w, 'receive', { id: p.id });
+    if (b.kind === 'fire' && (b.lock > 0 || b.to != null)) continue;
+    take(w, p, rival);
     return true;
   }
   return false;
+}
+
+function take(w, p, rival) {
+  Object.assign(w.ball, { owner: p.id, last: p.id, kind: 'normal', power: 0, to: null });
+  p.guard = BALL.catchGuard;
+  if (p.role === KEEPER && rival) p.stats.saves++;
+  emit(w, 'receive', { id: p.id });
 }
 
 /** Rüzgar topu rakibi havaya fırlatır ve yolundan, topun gidişine dik yönde (rakibin durduğu tarafa) savurur. */
@@ -100,7 +116,6 @@ function burn(w, p) {
   Object.assign(p, { burn: BURN.time, vx: 0, vz: 0, charge: 0, burnX: p.x, burnZ: p.z, burnDX: b.vx / v, burnDZ: b.vz / v });
   if (attacker) attacker.stats.burns++;
   emit(w, 'burn', { id: p.id, attacker: attacker?.id, x: p.x, z: p.z });
-  b.vx *= BURN.ballKeep; b.vz *= BURN.ballKeep; b.kind = 'normal'; b.power = 0; b.lock = BURN.ballLock;
 }
 
 function scoreGoal(w, team) {
@@ -118,7 +133,7 @@ function scoreGoal(w, team) {
  * GOAL_BLAST.time sonra world.step yeniden dizer (lineUp) ve santra `next` takımından yapılır.
  */
 function blast(w, x, z, next) {
-  Object.assign(w.ball, { owner: null, vx: 0, vz: 0, kind: 'normal', power: 0, lock: 0, stealLock: 0 });
+  Object.assign(w.ball, { owner: null, vx: 0, vz: 0, kind: 'normal', power: 0, lock: 0, stealLock: 0, to: null });
   w.blast = { t: GOAL_BLAST.time, x, z, next };
   for (const p of w.players) {
     let dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz);

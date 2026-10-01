@@ -7,7 +7,7 @@ import { benchX, benchZ, lift } from './actors.js';
  * Omuz kamerası (tek kamera): senin oyuncunun (w.me) arkasında ve biraz sağında, zıplayınca onunla yükselir; yanınca kenardaki
  * yerine geçer. Yatay bakış (yaw) ve dikey eğim (pitch) fareyle döner. Nişan ekran ortasından zemine inen ışındır,
  * hareket bakış yönüne göredir. Oyuncu doğunca (maç başı, gol sonrası diziliş, kenardan dönüş) kamera topa çevrilir.
- * Yakar top sinemasında kamera topu izler (track / kovalama); sinema bitince kaldığı yere değil **topa** döner (faceBall):
+ * Yakar pas sinemasında kamera topu izler (track / kovalama); sinema bitince kaldığı yere değil **topa** döner (faceBall):
  * kontrol oyuncuya her geri geçişte (kovalama, başkasının nişanı, kenardan dönüş, kamera değişimi) bakış topa çevrilir.
  *
  * **İzometrik** kip (telefonda varsayılan, bkz. CAMERA.iso): ortografik kamera oyuncuyu sabit bir yan açıdan (futbol yayını

@@ -8,7 +8,7 @@ import { box, mat } from './builders.js';
  * yatmış, bir bacağı önde yerde kayar; hızlı koşan oyuncunun çevresinden rüzgar çizgileri geriye akar. Yanan oyuncu takımının kenarında titrer; sersem
  * oyuncu sallanır ve başının üstünde yıldızlar döner. Gol patlamasında herkes havada kollarını savurarak takla atar.
  *
- * **Dolum çevresi** (aura): yakar top dolarken (sağ tık basılı) karakterin çevresinde yerden alev dilleri yükselir,
+ * **Dolum çevresi** (aura): yakar pas dolarken (sağ tık basılı) karakterin çevresinde yerden alev dilleri yükselir,
  * rüzgar şutu dolarken (sol tık basılı) çevresinde camgöbeği halkalar ve rüzgar çizgileri döner; dolum arttıkça büyür,
  * nişanda tam boydur. Böylece vuruş çıkmadan herkes o oyuncunun neye kalkıştığını görür.
  */
@@ -70,7 +70,7 @@ export function createActor(scene, labels, id) {
   const wind = new T.Group(), streaks = [];
   wind.visible = false; scene.add(wind);
   for (let i = 0; i < 7; i++) { const s = new T.Mesh(streakGeo, streakMat); wind.add(s); streaks.push(s); }
-  // Dolum çevresi: alev dilleri + yerde kor halkası (yakar top), dönen halkalar + rüzgar çizgileri (rüzgar şutu).
+  // Dolum çevresi: alev dilleri + yerde kor halkası (yakar pas), dönen halkalar + rüzgar çizgileri (rüzgar şutu).
   const fireAura = new T.Group(), flames = [];
   fireAura.visible = false; root.add(fireAura);
   for (let i = 0; i < FLAMES; i++) { const f = new T.Mesh(flameGeo, flameMats[i % 3]); fireAura.add(f); flames.push(f); }
@@ -94,7 +94,7 @@ export function syncActors(actors, w, time, playing, project, real = time) {
     const since = BURN.time - p.burn, knocked = p.burn > 0 && since < CINEMA.knock && p.burnX !== undefined;
     const burned = p.burn > 0 && !knocked;
     if (knocked) {
-      // Yakar top çarptı: kenara gitmeden önce topun gidişi yönünde savrulup sırtüstü düşer.
+      // Yakar pas çarptı: kenara gitmeden önce topun gidişi yönünde savrulup sırtüstü düşer.
       const k = since / CINEMA.knock;
       v.root.position.set(p.burnX + p.burnDX * k * 3, Math.sin(Math.min(1, k * 1.6) * Math.PI) * 0.9, p.burnZ + p.burnDZ * k * 3);
     } else v.root.position.set(burned ? benchX(p.team) : p.x, lift(p), burned ? benchZ(p) : p.z);
@@ -121,10 +121,12 @@ export function syncActors(actors, w, time, playing, project, real = time) {
     aura(v, w, p, burned ? 0 : 1, real);
     v.stars.visible = dazed;
     if (dazed) { v.stars.rotation.y = time * 5; v.stars.children.forEach((s, i) => { s.rotation.y = time * 8 + i; s.position.y = Math.sin(time * 7 + i * 2) * 0.06; }); }
-    // Pas isteyen (sen dahil) başında "PAS!" der.
+    // Pas isteyen (sen dahil) başında "PAS!", yakar pasın gideceği arkadaşın başında "YAKAR PAS" yazar.
     const calling = !burned && p.call > 0;
-    v.label.classList.toggle('call', calling);
-    v.label.textContent = burned ? 'YANDI · ' + p.burn.toFixed(1) : calling ? 'PAS!' : mine ? '' : w.online && p.human ? p.name + (p.role === 4 ? ' · KALECİ' : '') : p.role === 4 ? 'KALECİ' : '';
+    const fireTo = !burned && ((w.aim && w.aim.kind === 'fire' && w.aim.to === p.id) || (b.kind === 'fire' && b.owner === null && b.to === p.id));
+    v.label.classList.toggle('call', calling && !fireTo);
+    v.label.classList.toggle('fire-to', fireTo);
+    v.label.textContent = burned ? 'YANDI · ' + p.burn.toFixed(1) : fireTo ? 'YAKAR PAS ▼' : calling ? 'PAS!' : mine ? '' : w.online && p.human ? p.name + (p.role === 4 ? ' · KALECİ' : '') : p.role === 4 ? 'KALECİ' : '';
     const screen = project(v.root.position.x, 2.6, v.root.position.z);
     v.label.hidden = !playing || !v.label.textContent || screen.behind;
     v.label.style.transform = `translate(${screen.x}px,${screen.y}px) translate(-50%,-100%)`;
@@ -132,8 +134,8 @@ export function syncActors(actors, w, time, playing, project, real = time) {
 }
 
 /**
- * Dolum çevresi: yakar top / rüzgar dolumu (0-1) karakterin çevresinde alev ya da rüzgar olarak; nişanda tam boy.
- * Dolum: yakar topta fireCharge / CINEMA.hold, rüzgarda charge / KICK.windCharge (yalnız top ondayken). Gerçek zamanla
+ * Dolum çevresi: yakar pas / rüzgar dolumu (0-1) karakterin çevresinde alev ya da rüzgar olarak; nişanda tam boy.
+ * Dolum: yakar pasta fireCharge / CINEMA.hold, rüzgarda charge / KICK.windCharge (yalnız top ondayken). Gerçek zamanla
  * oynar (ağır çekimde de canlı).
  */
 function aura(v, w, p, alive, t) {

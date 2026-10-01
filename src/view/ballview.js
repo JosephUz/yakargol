@@ -2,10 +2,10 @@ import * as T from 'three';
 import { mat } from './builders.js';
 
 /**
- * Top görseli. Normal ve pas topu beyaz; yakar top kırmızı, parlayan ve arkasında alev dilleri; rüzgar topu açık
+ * Top görseli. Normal ve pas topu beyaz; yakar pas kırmızı, parlayan ve arkasında alev dilleri; rüzgar topu açık
  * camgöbeği, çevresinde dönen ve geride kalan rüzgar halkaları. Yerdeki halka topun türünün rengini alır. `heat` (0-1)
- * yakar top sinemasında alevleri büyütür ve topun turuncu ışığını parlatır. `charge` ({ kind, p }) şarj sırasında ayaktaki
- * topu hazırlanan vuruşun rengine boyar (rüzgar camgöbeği, yakar top kırmızı), dolum arttıkça parlar.
+ * yakar pas sinemasında alevleri büyütür ve topun turuncu ışığını parlatır. `charge` ({ kind, p }) şarj sırasında ayaktaki
+ * topu hazırlanan vuruşun rengine boyar (rüzgar camgöbeği, yakar pas kırmızı), dolum arttıkça parlar.
  */
 const CHARGE = { wind: '#5fe6ff', fire: '#ff3a14', blocked: '#9aa39c' };
 const WHITE = new T.Color('#ffffff');

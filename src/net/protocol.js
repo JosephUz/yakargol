@@ -11,7 +11,7 @@ export const C2S = {
   START: 'start',   // yalnızca yönetici
   LEAVE: 'leave',
   INPUT: 'in',      // { mv: [x, z], aim: [x, z], hold (sol tık basılı), h2 (sağ tık basılı, top sende), e: 'basışlar' } — bkz. EDGES
-  AIM: 'aim',       // yakar top nişanını başlat (sağ tık basılı, top sende); bırakınca girdide 'f' basışı
+  AIM: 'aim',       // yakar pas nişanını başlat (sağ tık basılı, top sende); bırakınca girdide 'f' basışı
   PING: 'ping',
 };
 export const S2C = {
@@ -24,7 +24,7 @@ export const S2C = {
   PONG: 'pong',
   ONLINE: 'on',       // { n } — çevrim içi (açık sekme) sayısı, değişince
 };
-/** Tek harfle gönderilen basışlar (girdi paketindeki e alanı): şut bas / bırak, sağ tık, koşu, pas, zıplama, yakar top. */
+/** Tek harfle gönderilen basışlar (girdi paketindeki e alanı): şut bas / bırak, sağ tık, koşu, pas, zıplama, yakar pas. */
 export const EDGES = { t: 'tap', r: 'release', s: 'secondary', h: 'sprint', p: 'pass', j: 'jump', f: 'fire' };
 export const NET = {
   /** Simülasyon adımı (sn) ve kaç adımda bir durum paketi (2 → saniyede 30). */

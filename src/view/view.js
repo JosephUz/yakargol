@@ -13,7 +13,7 @@ import { buildPitch } from './pitch.js';
  * mobile: telefonda piksel oranı ve gölge haritası küçülür, yumuşak gölge yerine düz gölge (TOUCH).
  * iso: izometrik kadraj ayarlarının üstüne yazılanlar (gösteri kipi daha yakın bakar, bkz. config.js GOSTERI.iso).
  * omuz: omuz kamerasının mesafe / yükseklik ayarları (rüzgar şutu gösteri sahnesi, bkz. config.js GOSTERI_RUZGAR.omuz).
- * İzometrikte nişan ekran ortası değildir: top sendeyken (ya da yakar top nişanında) yerde nişan yönünü gösteren ok çıkar.
+ * İzometrikte nişan ekran ortası değildir: top sendeyken (ya da yakar pas nişanında) yerde nişan yönünü gösteren ok çıkar.
  */
 export function createView(container, { mobile = false, iso = null, omuz = null } = {}) {
   const renderer = new T.WebGLRenderer({ antialias: !mobile || devicePixelRatio < 2, powerPreference: 'high-performance' });
@@ -76,7 +76,7 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
     project: (x, y, z) => shoulder.project(x, y, z),
     event: e => { effects.spawn(e); if (e.type === 'goal') shoulder.shake(GOAL_BLAST.shake); },
     /**
-     * cine: { scale, heat } yakar top sinemasında: oyuncular ölçekli zamanla (donuk / ağır çekim), alevler gerçek zamanla oynar.
+     * cine: { scale, heat } yakar pas sinemasında: oyuncular ölçekli zamanla (donuk / ağır çekim), alevler gerçek zamanla oynar.
      * focus: kameranın izleyeceği nokta (oyuncu biçiminde: x, z, burn, air, jump, sprint); null ise kendi oyuncun.
      * Gösteri kipinde insan oyuncu yoktur, kamera aksiyonun ağırlık merkezini izler (bkz. gosteri.js).
      */

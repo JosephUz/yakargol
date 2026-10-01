@@ -4,7 +4,7 @@ import { distance } from './math.js';
 /**
  * Oyuncu eylemleri: zıplama, kayma, hızlı koşu, şut ve pas. İnsan girdisi de bot kararları da buradan geçer; eylem yapılamıyorsa
  * (maç bitti, başlama beklemesi, kenarda, enerji ya da şut beklemesi) false döner. Enerjiyi yalnız kayma ve hızlı koşu
- * kullanır (ENERGY.cooldown ortak geri sayımı); yakar top ve rüzgar şutu enerjiden bağımsızdır, yalnız takım hakkına bakar.
+ * kullanır (ENERGY.cooldown ortak geri sayımı); yakar pas ve rüzgar şutu enerjiden bağımsızdır, yalnız takım hakkına bakar.
  */
 export function emit(w, type, data = {}) { w.events.push({ type, ...data }); }
 
@@ -40,23 +40,24 @@ export function sprint(w, id) {
   return true;
 }
 
-/** Yakar top / rüzgar şutu için takımın kalan hakkı. */
+/** Yakar pas / rüzgar şutu için takımın kalan hakkı. */
 export const shotsLeft = (w, p, kind) => (kind === 'fire' ? w.fireLeft : w.windLeft)[p.team];
 
-/** Bu oyuncu şu an yakar top (fire) ya da rüzgar şutu (wind) atabilir mi: top onda ve takım hakkı var (enerji gerekmez). */
+/** Bu oyuncu şu an yakar pas (fire) ya da rüzgar şutu (wind) atabilir mi: top onda ve takım hakkı var (enerji gerekmez). */
 export function canPower(w, id, kind) {
   const p = w.players[id];
   return !idle(w, p) && !w.blast && w.ball.owner === id && p.kickCd <= 0 && shotsLeft(w, p, kind) > 0;
 }
 
 /**
- * Nişan başlat (yakar top ya da rüzgar şutu): oyun ağır çekime geçer (bkz. cinema.js), nişan alan kıpırdamaz, vuruş
+ * Nişan başlat (yakar pas ya da rüzgar şutu): oyun ağır çekime geçer (bkz. cinema.js), nişan alan kıpırdamaz, vuruş
  * bırakınca (releaseAim) ya da süre dolunca çıkar. Bu arada rakip kayarak topu alırsa nişan bozulur (world.js step).
  */
 export function startAim(w, id, kind) {
   if (w.aim || !canPower(w, id, kind)) return false;
   const p = w.players[id];
-  w.aim = { id, kind, t: 0, target: { x: p.x + Math.sin(p.angle) * 20, z: p.z + Math.cos(p.angle) * 20 } };
+  w.aim = { id, kind, t: 0, target: { x: p.x + Math.sin(p.angle) * 20, z: p.z + Math.cos(p.angle) * 20 }, to: null };
+  if (kind === 'fire') w.aim.to = passMate(w, id, w.aim.target, true)?.id ?? null;
   p.charge = 0; p.vx = 0; p.vz = 0;
   emit(w, 'aim', { id, kind });
   return true;
@@ -70,8 +71,9 @@ export function releaseAim(w) {
 }
 
 /**
- * Şut: top bendeyse `aim` noktasına doğru. Yakar top ve rüzgar şutu enerji istemez; takım başına maçta KICK.fireShots
- * yakar top ve KICK.windShots rüzgar şutu.
+ * Şut: top bendeyse `aim` noktasına doğru. Yakar pas nişana en yakın takım arkadaşına gider (top ona kilitlenir, `to`).
+ * Yakar pas ve rüzgar şutu enerji istemez; takım başına maçta KICK.fireShots
+ * yakar pas ve KICK.windShots rüzgar şutu.
  */
 export function kick(w, id, aim, kind = 'normal') {
   const p = w.players[id], b = w.ball;
@@ -79,12 +81,14 @@ export function kick(w, id, aim, kind = 'normal') {
   if (!KINDS.includes(kind)) kind = 'normal';
   const powered = kind === 'fire' || kind === 'wind';
   if (powered && shotsLeft(w, p, kind) <= 0) return false;
+  const mate = kind === 'fire' ? passMate(w, id, aim, true) : null;
+  if (mate) aim = { x: mate.x, z: mate.z };
   const dx = aim.x - p.x, dz = aim.z - p.z, d = Math.hypot(dx, dz);
   if (d < 0.05) return false;
   const speed = KICK[kind];
   p.angle = Math.atan2(dx, dz);
   Object.assign(b, {
-    owner: null, last: id, kind, lock: KICK.lock,
+    owner: null, last: id, kind, lock: KICK.lock, to: mate ? mate.id : null,
     x: p.x + dx / d * KICK.reach, z: p.z + dz / d * KICK.reach, vx: dx / d * speed, vz: dz / d * speed,
     power: kind === 'fire' ? KICK.firePower : kind === 'wind' ? WIND.power : 0,
   });
@@ -99,14 +103,23 @@ export function kick(w, id, aim, kind = 'normal') {
 
 /** Pas: nişan yönüne en iyi hizalanan (ve yakın) takım arkadaşına, onun biraz önüne. */
 export function pass(w, id, aim) {
+  const best = passMate(w, id, aim);
+  return best ? kick(w, id, { x: best.x + best.vx * 0.12, z: best.z + best.vz * 0.12 }, 'pass') : false;
+}
+
+/**
+ * Nişan yönüne en iyi hizalanan (ve yakın) sahadaki takım arkadaşı; yoksa null. Pas bunu kullanır. sharp (yakar pas):
+ * nişanla arasındaki açı (derece) belirleyici, uzaklık az sayılır: aynı hizadaki yakın arkadaş uzaktakini kapmaz.
+ */
+export function passMate(w, id, aim, sharp = false) {
   const p = w.players[id], dx = aim.x - p.x, dz = aim.z - p.z, d = Math.max(0.01, Math.hypot(dx, dz));
   let best = null, score = -Infinity;
   for (const t of w.players) {
     if (t.id === id || t.team !== p.team || t.burn > 0) continue;
     const len = distance(p, t);
     const alignment = ((t.x - p.x) * dx + (t.z - p.z) * dz) / (d * Math.max(0.01, len));
-    const value = alignment * 12 - len * 0.16;
+    const value = sharp ? -Math.acos(Math.max(-1, Math.min(1, alignment))) * 57.3 - len * 0.1 : alignment * 12 - len * 0.16;
     if (value > score) { score = value; best = t; }
   }
-  return best ? kick(w, id, { x: best.x + best.vx * 0.12, z: best.z + best.vz * 0.12 }, 'pass') : false;
+  return best;
 }

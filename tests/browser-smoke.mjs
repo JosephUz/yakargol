@@ -80,7 +80,7 @@ try {
   assert.ok(aimSlow > 0.03 && aimSlow < 0.2, 'nişanda oyun ağır çekimde sürmeli: ' + aimSlow);
   // Nişanda karakterin çevresinde alev dilleri (vuruş çıkmadan herkes görür).
   assert.ok(await game(() => window.__yakarGol.view().aura(0).fire), 'yakar top nişanında karakterin çevresinde alev');
-  assert.match(await page.locator('#yg-cine-title').textContent(), /YAKAR TOP/);
+  assert.match(await page.locator('#yg-cine-title').textContent(), /YAKAR PAS/);
   assert.equal(await cinema(), 'aim');
   await page.screenshot({ path: 'artifacts/03-fire.png' });
   // Uçuşu görmek için yolu boşalt: botlar kısa süre kenarda (dolum sırasında yaklaşıp ilk karede vurulabiliyorlar).
@@ -110,9 +110,9 @@ try {
   assert.equal(await page.locator('#yg-blue-fire i.used').count(), 1);
   assert.equal(await page.locator('#yg-orange-fire i.used').count(), 0);
 
-  // Yakar top rakibe çarpınca çarpma daha ağır çekimde gösterilir; vurulan geriye savrulur.
+  // Yakar pas (nişandaki arkadaşa giderken) yoldaki rakibe çarpınca çarpma daha ağır çekimde gösterilir; vurulan geriye savrulur.
   await ready();
-  await game(() => { const w = window.__yakarGol.world(), p = w.players[0], r = w.players[6], aim = window.__yakarGol.view().aim(), d = Math.hypot(aim.x - p.x, aim.z - p.z); Object.assign(r, { x: p.x + (aim.x - p.x) / d * 4, z: p.z + (aim.z - p.z) / d * 4, guard: 0, burn: 0, jump: 0, dash: 0, think: 99, stun: 6 }); });
+  await game(() => { const w = window.__yakarGol.world(), p = w.players[0], r = w.players[6], aim = window.__yakarGol.view().aim(), d = Math.hypot(aim.x - p.x, aim.z - p.z); Object.assign(r, { x: p.x + (aim.x - p.x) / d * 4, z: p.z + (aim.z - p.z) / d * 4, guard: 0, burn: 0, jump: 0, dash: 0, think: 99, stun: 6 }); Object.assign(w.players[1], { x: p.x + (aim.x - p.x) / d * 12, z: p.z + (aim.z - p.z) / d * 12, burn: 0, think: 99, stun: 6 }); });
   await page.mouse.down({ button: 'right' });
   await page.waitForFunction(() => window.__yakarGol.state().cine === 'aim', null, { timeout: 3500 });
   await page.mouse.up({ button: 'right' });

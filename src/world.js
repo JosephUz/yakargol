@@ -1,5 +1,5 @@
 import { BURN, CALL, CINEMA, DASH, GOAL_BLAST, KICK, MATCH, MOVE, PITCH, SPRINT, WIND } from './config.js';
-import { canPower, dash, emit, jump, kick, pass, releaseAim, sprint, startAim } from './actions.js';
+import { canPower, dash, emit, jump, kick, pass, passMate, releaseAim, sprint, startAim } from './actions.js';
 import { botInput } from './ai.js';
 import { updateBall } from './ball.js';
 import { attackDir, homeOf, lineUp, placeKickoff } from './lineup.js';
@@ -16,13 +16,13 @@ export { canPower, dash, jump, kick, pass, releaseAim, sprint, startAim };
  *
  * İnsan girdisi (her adım): x, z hareket yönü; aim nişan noktası; hold sol tık basılı, tap bu adımda basıldı (top
  * ayağında değilse pas isteme), release
- * bu adımda bırakıldı; secondary sağ tık; fire yakar top nişanını bırak (tarayıcıda sağ tık basılı tutulup nişan
+ * bu adımda bırakıldı; secondary sağ tık; fire yakar pas nişanını bırak (tarayıcıda sağ tık basılı tutulup nişan
  * alındıktan sonra bırakılınca, bkz. main.js); sprint Shift; pass pas; jump boşluk. Tarayıcıda
  * top sendeyken kısa sağ tık pas olarak gelir (bkz. main.js). Birden çok insan varsa (sunucu) girdi
  * `{ players: { [id]: girdi } }` biçimindedir; girdisi gelmeyen insan o adımda durur.
  *
- * **Nişan** (w.aim: { id, kind, t, target }): yakar top ya da rüzgar şutu için nişan alan kıpırdamaz, nişan noktası
- * girdisindeki aim'den izlenir. Rüzgarda sol tık bırakılınca, yakar topta fire gelince, ya da CINEMA.aim gerçek saniye
+ * **Nişan** (w.aim: { id, kind, t, target }): yakar pas ya da rüzgar şutu için nişan alan kıpırdamaz, nişan noktası
+ * girdisindeki aim'den izlenir. Rüzgarda sol tık bırakılınca, yakar pasta fire gelince, ya da CINEMA.aim gerçek saniye
  * (ağır çekimde CINEMA.aim × CINEMA.aimScale simülasyon saniyesi) dolunca vuruş çıkar. Top elden çıkarsa (rakip kayarak
  * aldı) nişan bozulur: 'aimLost' olayı.
  */
@@ -34,7 +34,7 @@ export function createWorld(seed = MATCH.seed) {
     // gösteri kipinde her maça rastgele tohum verilir (bkz. gosteri.js → tohum).
     me: 0, time: 0, score: [0, 0], winner: null, overtime: false, gosteri: false, kickoff: MATCH.kickoff, restart: MATCH.restart, nextKickoff: 0, kickoffTaker: 0, blast: null, fireLeft: [KICK.fireShots, KICK.fireShots], windLeft: [KICK.windShots, KICK.windShots], aim: null, shots: 0, events: [], players: [],
     seed, random: createRng(seed),
-    ball: { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0 },
+    ball: { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0, to: null },
   };
   for (let i = 0; i < MATCH.teamSize * 2; i++) {
     const team = i < MATCH.teamSize ? 0 : 1, role = i % MATCH.teamSize;
@@ -89,19 +89,21 @@ function aiming(w, p, cmd, dt) {
   const a = w.aim;
   a.t += dt;
   if (cmd.aim) a.target = { x: cmd.aim.x, z: cmd.aim.z };
+  // Yakar pas: nişana en yakın arkadaş (başında "YAKAR PAS" yazar, top ona gider).
+  if (a.kind === 'fire') a.to = passMate(w, p.id, a.target, true)?.id ?? null;
   p.angle = Math.atan2(a.target.x - p.x, a.target.z - p.z);
   move(p, 0, 0, MOVE.speed, dt);
   const released = a.kind === 'wind' ? cmd.release || (!cmd.hold && !cmd.tap) : cmd.fire;
   if (released || a.t >= CINEMA.aim * CINEMA.aimScale) releaseAim(w);
 }
 
-/** Girdiyi eyleme çevirir. Sağ tık: top bendeyse pas, değilse topa doğru kayma (basılan yön ne olursa olsun). fire: yakar top. */
+/** Girdiyi eyleme çevirir. Sağ tık: top bendeyse pas, değilse topa doğru kayma (basılan yön ne olursa olsun). fire: yakar pas. */
 function act(w, p, cmd, dt) {
   // Koşarken gidilen yöne, dururken nişana dönülür (şut ve pas yine nişana gider; kayma hep topa).
   if (Math.hypot(cmd.x || 0, cmd.z || 0) > 0.1) p.angle = Math.atan2(cmd.x, cmd.z);
   else if (cmd.aim) p.angle = Math.atan2(cmd.aim.x - p.x, cmd.aim.z - p.z);
   const ahead = cmd.aim || { x: p.x, z: p.z + attackDir(p.team) * 20 };
-  // Sağ tık top sendeyken basılı (held2): yakar top dolumu. Nişanı tarayıcı başlatır (main.js); burada yalnız sayılır,
+  // Sağ tık top sendeyken basılı (held2): yakar pas dolumu. Nişanı tarayıcı başlatır (main.js); burada yalnız sayılır,
   // karakterin çevresindeki alev herkeste görünsün diye (durum paketinde fireCharge).
   p.fireCharge = cmd.held2 && w.ball.owner === p.id ? (p.fireCharge || 0) + dt : 0;
   // Top ayağında değilken sol tık: pas iste (CALL.time sn "PAS!"; topu taşıyan bot arkadaş ona pas verir, bkz. ai.js).

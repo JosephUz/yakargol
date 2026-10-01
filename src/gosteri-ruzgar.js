@@ -33,7 +33,7 @@ export function createRuzgarGosteri(root) {
   /** Her tura rastgele tohum (bkz. gosteri.js): sayfa yenilense bile turlar birebir aynı olmasın. */
   const tohum = () => (Math.random() * 0x100000000) >>> 0;
 
-  /** Maç kurulduğunda bir kez: on koltuk da bot, yakar top hakkı bol (sahne kullanmaz), sonra ilk diziliş. */
+  /** Maç kurulduğunda bir kez: on koltuk da bot, yakar pas hakkı bol (sahne kullanmaz), sonra ilk diziliş. */
   function kur(w) {
     w.gosteri = true;
     for (const p of w.players) { p.human = true; p.name = 'Bot-' + (p.id + 1); }

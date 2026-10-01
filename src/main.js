@@ -19,7 +19,7 @@ import { canPower, createWorld, startAim, step } from './world.js';
  * çizim → karakter üstü gösterge; tabela ve kart kısa aralıkla tazelenir. Oyuncu doğunca (maç başı, gol sonrası
  * diziliş, kenardan dönüş) kamera topa çevrilir. Golde patlama olur, herkes fırlar (GOAL_BLAST), sonra santra. Fare kilidi düşerse (Esc) oyun molaya girer.
  *
- * Yakar top ve rüzgar şutu sineması (CINEMA, cinema.js): top sendeyken sağ tık (yakar top) ya da sol tık (rüzgar)
+ * Yakar pas ve rüzgar şutu sineması (CINEMA, cinema.js): top sendeyken sağ tık (yakar pas) ya da sol tık (rüzgar)
  * CINEMA.hold saniye basılı kalınca oyun ağır çekime geçer, CINEMA.aim saniye nişan alınır, bırakınca vuruş çıkar; bu
  * sırada rakip kayarak topu alırsa vuruş olmaz. Uçuşta da ağır çekim, herkesin kamerası topu izler. Kısa basış: sağ tık
  * pas, sol tık normal şut. Simülasyon kuralları aynı kalır; yalnızca adım başına düşen gerçek zaman değişir.
@@ -220,15 +220,15 @@ export async function start(root) {
 
   const who = p => (p.id === w.me ? 'SEN' : TEAMS.names[p.team] + ' · ' + p.name);
   const mine = () => w.players[w.me];
-  /** Yakar top / rüzgar şutu neden atılamıyor (null: atılabilir). Enerji gerekmez, yalnız takımın hakkı. */
+  /** Yakar pas / rüzgar şutu neden atılamıyor (null: atılabilir). Enerji gerekmez, yalnız takımın hakkı. */
   const powerBlocked = kind => {
     const p = mine(), left = (kind === 'fire' ? w.fireLeft : w.windLeft)[p.team];
-    return left <= 0 ? (kind === 'fire' ? 'TAKIMIN YAKAR TOP HAKKI BİTTİ' : 'TAKIMIN RÜZGAR HAKKI BİTTİ') : null;
+    return left <= 0 ? (kind === 'fire' ? 'TAKIMIN YAKAR PAS HAKKI BİTTİ' : 'TAKIMIN RÜZGAR HAKKI BİTTİ') : null;
   };
   const myAim = () => (w.aim && w.aim.id === w.me ? w.aim : null);
   /**
-   * Sağ tık, top sendeyken: simülasyona gitmez; kısa basış pas olur, basılı tutuş yakar top nişanına geçer
-   * (tickRightHold). Yakar top nişanındayken sağ tık bırakılınca (ya da sol tık) `fire`: vuruş çıkar.
+   * Sağ tık, top sendeyken: simülasyona gitmez; kısa basış pas olur, basılı tutuş yakar pas nişanına geçer
+   * (tickRightHold). Yakar pas nişanındayken sağ tık bırakılınca (ya da sol tık) `fire`: vuruş çıkar.
    */
   function route(cmd) {
     const aim = myAim();
@@ -243,7 +243,7 @@ export async function start(root) {
       if (!owns) rightHold = null;
       else if (cmd.secondaryUp || !input.rightHeld()) { cmd.pass = true; rightHold = null; }
     }
-    // Yakar top dolumu sürüyor: dünyada sayılır, karakterin çevresinde alev olarak herkese görünür.
+    // Yakar pas dolumu sürüyor: dünyada sayılır, karakterin çevresinde alev olarak herkese görünür.
     cmd.held2 = !!rightHold;
     return cmd;
   }
@@ -259,11 +259,11 @@ export async function start(root) {
   function chargeState() {
     if (!active()) return null;
     const p = mine(), aim = myAim();
-    if (aim) return { kind: aim.kind, p: 1 - (cine?.phase === 'aim' ? cine.t : 0) / CINEMA.aim, text: aim.kind === 'wind' ? 'BIRAK: RÜZGAR ŞUTU' : 'BIRAK: YAKAR TOP', full: true };
+    if (aim) return { kind: aim.kind, p: 1 - (cine?.phase === 'aim' ? cine.t : 0) / CINEMA.aim, text: aim.kind === 'wind' ? 'BIRAK: RÜZGAR ŞUTU' : 'BIRAK: YAKAR PAS', full: true };
     if (cine) return null;
     if (rightHold) {
       const why = powerBlocked('fire'), full = rightHold.t >= CINEMA.hold;
-      return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? why + ' · BIRAK: PAS' : 'BIRAK: PAS · TUT: YAKAR TOP' };
+      return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? why + ' · BIRAK: PAS' : 'BIRAK: PAS · TUT: YAKAR PAS' };
     }
     if (p.charge > 0 && w.ball.owner === w.me) {
       const why = powerBlocked('wind'), full = p.charge >= KICK.windCharge;
@@ -280,7 +280,7 @@ export async function start(root) {
   }
   /**
    * Görüntüyü sinema evresine uydurur (her kare). Evre tek başına oyunda cinema.js'ten, çevrim içinde durum paketinden
-   * gelir (w.cine): nişanda "NİŞAN AL" / "… NİŞAN ALIYOR", uçuşta "YAKAR TOP!" ya da "RÜZGAR ŞUTU!" ve vuranın adı.
+   * gelir (w.cine): nişanda "NİŞAN AL" / "… NİŞAN ALIYOR", uçuşta "YAKAR PAS!" ya da "RÜZGAR ŞUTU!" ve vuranın adı.
    * Sinema başlarken kamera bakışı kaydedilir, bitince geri döner.
    */
   function syncCine(dt) {
@@ -315,7 +315,7 @@ export async function start(root) {
     return { scale, heat, track: cine.phase === 'aim' && !cine.mine };
   }
   /**
-   * Top ayaktan çıkınca (yakar top / rüzgar uçuşu) **herkesin kamerası topu kovalar**: kamera oyuncu biçiminde bir odak
+   * Top ayaktan çıkınca (yakar pas / rüzgar uçuşu) **herkesin kamerası topu kovalar**: kamera oyuncu biçiminde bir odak
    * noktasını izler. Omuzda odak topun CINEMA.chase birim gerisidir ve bakış topun gidiş yönüne döner (kamera topun
    * arkasından onunla gider); izometrikte kadraj topa kayar. Uçuş yoksa null (kendi oyuncun); sinema bitince kamera
    * topa bakarak oyuncuya geçer (view.cinemaEnd).

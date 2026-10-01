@@ -4,12 +4,13 @@ import { attackDir, homeOf, KEEPER } from './lineup.js';
 import { clamp, distance } from './math.js';
 
 /**
- * Bot kararı: bu adımın hareket yönü { x, z }. Top bendeyse kaleye sürer ve aralıklarla şut / yakar top / pas seçer;
+ * Bot kararı: bu adımın hareket yönü { x, z }. Top bendeyse kaleye sürer ve aralıklarla şut / yakar pas / pas seçer;
  * üstüne rakip gelince (bkz. pressed) hızlı tepki verip topu elinden çıkarır. Kaleci kale ağzında topa göre kayar,
  * top yaklaşınca çıkar. Takımın topa en yakın `BOT.chasers` saha oyuncusu topa koşar (uzaksa hızlı koşar, rakip
  * taşıyana yaklaşınca üstüne kayar), kalanlar ev konumundan topa ve hücuma doğru
- * esner. Yakar top ve rüzgar şutunu insan gibi atar (bkz. charging): dolum → ağır çekimde nişan → vuruş. Takım
- * arkadaşı pas isterse (p.call) kısa bir tepkiyle ona pas verir. Yakar top üstüne gelirken zıplayıp kurtulabilir (bkz. dodgeFire). Rakip yakar top ya da rüzgar nişanı
+ * esner. Yakar pas ve rüzgar şutunu insan gibi atar (bkz. charging): dolum → ağır çekimde nişan → vuruş. Yakar pası
+ * arada rakip olan bir arkadaşa atar (bkz. burnLane). Takım arkadaşı pas isterse (p.call) kısa bir tepkiyle ona pas
+ * verir. Yakar pas üstüne gelirken zıplayıp kurtulabilir (bkz. dodgeFire). Rakip yakar pas ya da rüzgar nişanı
  * alırken (w.aim) saha oyuncuları nişan alanın üstüne koşar ve yaklaşınca kayıp topu ayağından almaya çalışır.
  */
 export function botInput(w, p, dt = 0) {
@@ -62,8 +63,8 @@ export function botInput(w, p, dt = 0) {
 }
 
 /**
- * Yakar topa zıplama: rakibin attığı yakar top bu bota doğru geliyorsa (en yakın geçiş BOT.fireJump.miss içinde,
- * çarpmaya fireJump.time saniyeden az kala) zıplar; havadakini yakar top yakmaz. Her atışta bot bir kez zar atar
+ * Yakar pasa zıplama: rakibin attığı yakar pas bu bota doğru geliyorsa (en yakın geçiş BOT.fireJump.miss içinde,
+ * çarpmaya fireJump.time saniyeden az kala) zıplar; havadakini yakar pas yakmaz. Her atışta bot bir kez zar atar
  * (fireJump.chance): bazen tepki veremez ve yanar.
  */
 function dodgeFire(w, p, B) {
@@ -80,16 +81,38 @@ function dodgeFire(w, p, B) {
 /** Pas isteyen takım arkadaşı (en yeni istek), yoksa null. */
 const callerOf = (w, p, mates) => mates.filter(t => t.id !== p.id && t.call > 0 && t.stun <= 0 && t.burn <= 0).sort((a, c) => c.call - a.call)[0] || null;
 
-/** Planın hedefi: yakar topta hedeflenen rakibin biraz önü, rüzgarda rakip kalenin içi. */
+/** Planın hedefi: yakar pasta pasın gideceği arkadaş, rüzgarda rakip kalenin içi. */
 function planTarget(w, p, plan) {
   if (plan.kind === 'wind') return plan.goal;
-  const e = w.players[plan.enemy];
-  return e && e.burn <= 0 ? lead(e) : { x: p.x + Math.sin(p.angle) * 15, z: p.z + Math.cos(p.angle) * 15 };
+  const m = w.players[plan.mate];
+  return m && m.burn <= 0 ? { x: m.x, z: m.z } : { x: p.x + Math.sin(p.angle) * 15, z: p.z + Math.cos(p.angle) * 15 };
 }
 
 /**
- * Dolum: bot yakar top (sağ tık basılı, held2) ya da rüzgar (sol tık basılı, hold) için topu sürerken dolar; çevresinde
- * alev / rüzgar görünür. Rüzgar dolunca nişanı dünya başlatır (world.js shoot); yakar top dolunca bot başlatır. Nişan
+ * Yakar pas için arkadaş: aradaki yolda (BOT.laneWidth içinde) en çok rakip olan, BOT.passRange'in 1,5 katından yakın
+ * arkadaş (eşitlikte ileride olan). Yolda hiç rakip yoksa null.
+ */
+function burnLane(w, p, mates, dir) {
+  const B = cfg(w), width = B.laneWidth ?? BOT.laneWidth;
+  const rivals = w.players.filter(e => e.team !== p.team && e.burn <= 0);
+  let best = null, score = 0;
+  for (const t of mates) {
+    if (t.id === p.id) continue;
+    const dx = t.x - p.x, dz = t.z - p.z, len = Math.hypot(dx, dz);
+    if (len < 4 || len > B.passRange * 1.5) continue;
+    const hits = rivals.filter(e => {
+      const k = ((e.x - p.x) * dx + (e.z - p.z) * dz) / (len * len);
+      return k > 0 && k < 1 && Math.abs((e.x - p.x) * dz - (e.z - p.z) * dx) / len < width;
+    }).length;
+    const value = hits * 10 + dir * (t.z - p.z) * 0.05;
+    if (hits > 0 && value > score) { score = value; best = t; }
+  }
+  return best;
+}
+
+/**
+ * Dolum: bot yakar pas (sağ tık basılı, held2) ya da rüzgar (sol tık basılı, hold) için topu sürerken dolar; çevresinde
+ * alev / rüzgar görünür. Rüzgar dolunca nişanı dünya başlatır (world.js shoot); yakar pas dolunca bot başlatır. Nişan
  * başlayamazsa (biri zaten nişan alıyor, hak bitti) plan bırakılır.
  */
 function charging(w, p, x, z, dt) {
@@ -108,7 +131,7 @@ function charging(w, p, x, z, dt) {
   return cmd;
 }
 
-/** Nişan alan bot: BOT.aimTime simülasyon saniyesi nişanı tutar, sonra bırakır (rüzgarda sol tık bırak, yakar topta ateş). */
+/** Nişan alan bot: BOT.aimTime simülasyon saniyesi nişanı tutar, sonra bırakır (rüzgarda sol tık bırak, yakar pasta ateş). */
 function aimingBot(w, p) {
   const B = cfg(w), a = w.aim, done = a.t >= (B.aimTime ?? BOT.aimTime);
   return { x: 0, z: 0, aim: p.plan ? planTarget(w, p, p.plan) : a.target, hold: a.kind === 'wind' && !done, fire: a.kind === 'fire' && done };
@@ -140,9 +163,9 @@ function pressed(w, p) {
 /**
  * Top bendeyken karar. Pas isteyen arkadaş varsa önce ona (BOT.callChance). Baskı altındaysa BOT.escape ağırlıklarıyla
  * rastgele: sürmeye devam (BOT.commit saniye), en boştaki arkadaşa pas, ileri doğru duvardan sektirme, şut (kaleye
- * yakınsa çok daha olası) ya da takımın hakkı varsa baskı yapana yakar top (dolumla); yapılamayan seçenek atlanır.
- * Baskı yoksa: kaleci ileri pas; rakip kaleye yakınsa ara sıra rüzgar şutu (dolumla); kaleye yakınsa şut; rakip
- * yakınsa ara sıra yakar top; ara sıra ileri pas.
+ * yakınsa çok daha olası) ya da takımın hakkı varsa ve arada rakip olan bir arkadaş varsa yakar pas (dolumla);
+ * yapılamayan seçenek atlanır. Baskı yoksa: kaleci ileri pas; rakip kaleye yakınsa ara sıra rüzgar şutu (dolumla);
+ * kaleye yakınsa şut; rakip yakınsa ara sıra yakar pas (yolda rakip varsa); ara sıra ileri pas.
  */
 function decide(w, p, mates, dir, presser) {
   if (p.think > 0) return;
@@ -159,7 +182,7 @@ function decide(w, p, mates, dir, presser) {
   if (p.role === KEEPER) pass(w, p.id, { x: 0, z: dir * Z * 0.8 });
   else if (w.windLeft[p.team] > 0 && !w.aim && dir * p.z > Z - (B.windRange ?? BOT.windRange) && w.random() < (B.windChance ?? BOT.windChance)) p.plan = { kind: 'wind', goal: { x: (w.random() - 0.5) * PITCH.goal * 1.2, z: dir * (Z + 3) } };
   else if (inRange) shoot();
-  else if (enemy && w.fireLeft[p.team] > 0 && !w.aim && distance(p, enemy) < B.fireRange && w.random() < B.fireChance) p.plan = { kind: 'fire', enemy: enemy.id };
+  else if (enemy && w.fireLeft[p.team] > 0 && !w.aim && distance(p, enemy) < B.fireRange && w.random() < B.fireChance && firePlan(w, p, mates, dir)) return;
   else if (w.random() < B.passChance) {
     const forward = mates.filter(t => t.id !== p.id && dir * t.z > dir * p.z + 2).sort((a, c) => dir * (c.z - a.z))[0];
     if (forward) kick(w, p.id, lead(forward), 'pass');
@@ -171,7 +194,7 @@ function escape(w, p, mates, dir, presser, inRange, shoot) {
   const options = [
     { weight: B.escape.dribble, run: () => { p.evade = B.commit; p.think = B.commit; return true; } },
     { weight: inRange ? B.escape.shoot * 3 : B.escape.shoot * (dir * p.z > 0 ? 1 : 0), run: shoot },
-    { weight: w.fireLeft[p.team] > 0 && !w.aim && p.role !== KEEPER ? B.escape.fire : 0, run: () => { p.plan = { kind: 'fire', enemy: presser.id }; return true; } },
+    { weight: w.fireLeft[p.team] > 0 && !w.aim && p.role !== KEEPER ? B.escape.fire : 0, run: () => firePlan(w, p, mates, dir) },
     { weight: open ? B.escape.pass : 0, run: () => kick(w, p.id, lead(open), 'pass') },
     { weight: B.escape.wall, run: () => kick(w, p.id, wallPoint(p, dir, presser, B.wallAhead)) },
   ];
@@ -182,6 +205,14 @@ function escape(w, p, mates, dir, presser, inRange, shoot) {
     if (pick.run()) return;
     pick.weight = 0;
   }
+}
+
+/** Yakar pas planı: yolunda rakip olan arkadaş varsa ona (dolum başlar); yoksa false. */
+function firePlan(w, p, mates, dir) {
+  const mate = burnLane(w, p, mates, dir);
+  if (!mate) return false;
+  p.plan = { kind: 'fire', mate: mate.id };
+  return true;
 }
 
 /** Hareketli hedefin biraz önü. */

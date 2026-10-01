@@ -15,7 +15,7 @@ import { C2S, EDGES, NET, S2C, roomCode } from '../src/net/protocol.js';
  * saniyede 30 durum paketi ve biriken olayları yayar. Hesap yok: bağlantı `token` ile tanınır, kopan oyuncu aynı
  * token'la koltuğuna geri döner; kopukken koltuğunu bot oynar. Oda bağlı kimse kalmayınca kapanır.
  *
- * Yakar top ve rüzgar şutu sineması herkes için aynıdır (src/cinema.js): biri nişan alırken maç ağır çekime geçer
+ * Yakar pas ve rüzgar şutu sineması herkes için aynıdır (src/cinema.js): biri nişan alırken maç ağır çekime geçer
  * (rakipler bu sırada kayıp topu alabilir), uçuşta yine ağır çekim; evre durum paketinde gider.
  */
 export function createRooms({ log = console.log, presence = () => 0 } = {}) {
@@ -256,7 +256,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
       case C2S.LEAVE: { if (room) leaveRoom(conn); send(conn, { t: S2C.ONLINE, n: online() }); return; }
       case C2S.INPUT: { if (room && room.world) readInput(conn, msg); return; }
       case C2S.AIM: {
-        // Yakar top nişanı (sağ tık basılı); rüzgar nişanını dünya kendisi başlatır (sol tık basılı, bkz. world.js shoot).
+        // Yakar pas nişanı (sağ tık basılı); rüzgar nişanını dünya kendisi başlatır (sol tık basılı, bkz. world.js shoot).
         if (!room || !room.world) return;
         const id = room.seats.indexOf(conn);
         if (id >= 0) startAim(room.world, id, 'fire');

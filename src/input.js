@@ -2,7 +2,7 @@ import { createTouch } from './touch.js';
 
 /**
  * Klavye ve fare (yalnızca tarayıcı). WASD / oklar hareket, fare kilitliyken bakış; sol tık şut (basılı tutunca rüzgar
- * şutu), sağ tık (top sendeyken kısa pas, basılı yakar top; topsuz kayma), Shift hızlı koşu, Boşluk zıplama;
+ * şutu), sağ tık (top sendeyken kısa pas, basılı yakar pas; topsuz kayma), Shift hızlı koşu, Boşluk zıplama;
  * V kamera (omuz ↔ izometrik), F1 yardım, Esc mola. Basışlar (tap, release, secondary, secondaryUp, sprint, pass, jump) bir sonraki okumada bir kez
  * tüketilir. Fare düğmeleri için mousedown / mouseup dinlenir: pointer olayları ikinci düğmeyi (sol basılıyken sağ tık)
  * ayrıca bildirmez.
@@ -84,9 +84,9 @@ export function createInput(canvas, { playing, onHelp, onPause, onLook, onPoint,
     /** Dokunmatik düğmelerin görünürlüğü ve yazıları (her kare). */
     sync(w, visible) { pad?.sync(w, visible); },
     rightHeld: () => rightHeld,
-    /** Tek bir basışı okuyup tüketir (yakar top nişanı sırasında). */
+    /** Tek bir basışı okuyup tüketir (yakar pas nişanı sırasında). */
     take(name) { const v = !!edges[name]; delete edges[name]; return v; },
-    /** Bakış yönlü hareket (dünya uzayında); basışları tüketmez (izometrik nişan, yakar top nişanı). */
+    /** Bakış yönlü hareket (dünya uzayında); basışları tüketmez (izometrik nişan, yakar pas nişanı). */
     move(view) { return view.movement(...axes()); },
     /** Bu adımın girdisi: bakış yönlü hareket, nişan (izometrikte hareket yönüne), sol tık durumu ve birikmiş basışlar. */
     read(view) {
