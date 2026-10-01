@@ -51,7 +51,7 @@ export function createWorld(seed = MATCH.seed) {
   return w;
 }
 
-const TIMERS = ['guard', 'stun', 'evade', 'jump', 'dash', 'sprint', 'knock', 'energyCd', 'kickCd', 'think', 'call'];
+const TIMERS = ['guard', 'stun', 'evade', 'jump', 'dash', 'sprint', 'knock', 'air', 'energyCd', 'kickCd', 'think', 'call'];
 
 export function step(w, dt, input = {}) {
   if (w.winner !== null) return;
@@ -69,7 +69,8 @@ export function step(w, dt, input = {}) {
   for (const p of w.players) {
     for (const k of TIMERS) p[k] = Math.max(0, p[k] - dt);
     if (p.burn > 0) { sideline(w, p, dt); continue; }
-    if (p.stun > 0) { p.charge = 0; move(p, p.knock > 0 ? p.knockX : 0, p.knock > 0 ? p.knockZ : 0, p.knock > 0 ? WIND.push : MOVE.speed, dt); continue; }
+    // Sersem ya da rüzgarla havaya fırlamış: girdi yok, yalnız savrulur.
+    if (p.stun > 0 || p.air > 0) { p.charge = 0; move(p, p.knock > 0 ? p.knockX : 0, p.knock > 0 ? p.knockZ : 0, p.knock > 0 ? WIND.push : MOVE.speed, dt); continue; }
     const cmd = !p.human ? botInput(w, p, dt) : input.players ? input.players[p.id] || {} : input;
     if (w.aim && w.aim.id === p.id) { aiming(w, p, cmd, dt); continue; }
     act(w, p, cmd, dt);

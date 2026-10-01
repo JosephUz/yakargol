@@ -267,6 +267,21 @@ test('rüzgar topu rakibi savurur ve tutulamaz, gol olur', () => {
   assert.equal(w.score[0], 1);
 });
 
+test('rüzgar topu önüne çıkan rakibi havaya fırlatır; havadayken topa değemez, inince oynar', () => {
+  const w = setup(), r = w.players[6];
+  Object.assign(r, { x: 0.3, z: -10, think: 99, guard: 0 });
+  Object.assign(w.ball, { x: 0, z: -6, vx: 0, vz: -KICK.wind, kind: 'wind', power: 10, last: 0, owner: null });
+  let flew = false;
+  for (let i = 0; i < 30; i++) { step(w, 1 / 60); if (r.air > 0) flew = true; }
+  assert.ok(flew, 'havaya fırlamadı');
+  assert.ok(r.x > 1.5, 'yana savrulmadı: ' + r.x);
+  assert.notEqual(w.ball.owner, r.id);
+  Object.assign(w.ball, { kind: 'normal', vx: 0, vz: 0, owner: 1 });
+  run(w, 60);
+  assert.equal(r.air, 0);
+  assert.equal(w.blast, null);
+});
+
 test('Shift 3 saniye hızlı koşturur, sonra normale döner; enerji koşu bitince dolmaya başlar', () => {
   const w = setup(), p = w.players[0];
   assert.equal(SPRINT.time, 3);

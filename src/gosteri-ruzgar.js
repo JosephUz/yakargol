@@ -90,11 +90,8 @@ export function createRuzgarGosteri(root) {
   /**
    * Bu simülasyon adımının girdisi (main.js her adımda sorar). Yalnız şutçuya gider: yükleme evresinde sol tık basılı
    * (`hold`) ve nişan kaleye; kalan evrelerde kimseye girdi yok — on koltuk da "insan" olduğu için herkes durur.
-   * Savrulan oyuncunun havada kalma sayacı (yalnız görünüm, bkz. view/actors.js lift) burada eritilir: `air` normalde
-   * yalnızca gol patlamasında azalır (world.js blastStep).
    */
   function girdi(dt, w) {
-    if (!w.blast) for (const p of w.players) if (p.air > 0) p.air = Math.max(0, p.air - dt);
     if (!sahne || sahne.evre !== 'yukleme') return { players: {} };
     return { players: { [sahne.atan]: { hold: true, aim: sahne.hedef } } };
   }

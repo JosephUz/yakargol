@@ -77,11 +77,12 @@ export const CINEMA = { hold: 1, aim: 1.2, aimScale: 0.35, knock: 0.45, flightSc
 
 /**
  * Rüzgar topu **durdurulamaz**: yavaşlamaz (`friction`), kimse (kaleci ve takım arkadaşları dahil) onu tutamaz, değdiği
- * rakipleri yoluna dik yönde savurur (`push` hızıyla `knock` saniye) ve hızının `keep` katıyla yoluna devam eder.
+ * rakipleri havaya fırlatır: `air` saniye havada takla atarak yoluna dik yönde savrulur (`push` hızıyla `knock` saniye;
+ * havadayken hiçbir şey yapamaz, topa da değemez) ve top hızının `keep` katıyla yoluna devam eder.
  * Kaleye nişan alındıysa her yerden gol olur; nişan kaleye değilse ilk duvara çarpınca normal topa döner. `power`
  * yalnız güvenlik sınırıdır (saniye).
  */
-export const WIND = { power: 10, friction: 0, push: 12, knock: 0.35, keep: 1 };
+export const WIND = { power: 10, friction: 0, push: 9, knock: 0.8, air: 0.8, keep: 1 };
 
 /**
  * Top: sürtünme (1/sn), duvar sekmeleri, boştaki topu yakalama yarıçapı (`catch`, oyuncudan topa), yakar topun yaktığı ve

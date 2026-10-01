@@ -44,7 +44,7 @@ function carry(w) {
   if (b.stealLock > 0) return;
   const aiming = w.aim && w.aim.id === p.id;
   for (const rival of w.players) {
-    if (rival.team === p.team || rival.burn > 0 || rival.stun > 0) continue;
+    if (rival.team === p.team || rival.burn > 0 || rival.stun > 0 || rival.air > 0) continue;
     const reach = distance(rival, p);
     const steals = rival.dash > 0
       ? reach <= DASH.steal
@@ -70,7 +70,7 @@ export function behind(p, rival, reach) {
 function touch(w) {
   const b = w.ball, shooter = w.players[b.last];
   for (const p of w.players) {
-    if (p.burn > 0 || p.jump > 0 || p.knock > 0 || (p.stun > 0 && b.kind !== 'fire') || (p.dash > 0 && b.kind === 'fire') || (b.last === p.id && b.lock > 0)) continue;
+    if (p.burn > 0 || p.jump > 0 || p.knock > 0 || p.air > 0 || (p.stun > 0 && b.kind !== 'fire') || (p.dash > 0 && b.kind === 'fire') || (b.last === p.id && b.lock > 0)) continue;
     const d = distance(p, b), rival = shooter && p.team !== shooter.team;
     if (d > BALL.catch) continue;
     if (b.kind === 'fire' && rival) { if (p.guard > 0 || d > BALL.hit) continue; burn(w, p); return true; }
@@ -85,11 +85,11 @@ function touch(w) {
   return false;
 }
 
-/** Rüzgar topu rakibi yolundan, topun gidişine dik yönde (rakibin durduğu tarafa) savurur; top biraz yavaşlar. */
+/** Rüzgar topu rakibi havaya fırlatır ve yolundan, topun gidişine dik yönde (rakibin durduğu tarafa) savurur. */
 function blow(w, p) {
   const b = w.ball, v = Math.max(0.01, Math.hypot(b.vx, b.vz)), nx = -b.vz / v, nz = b.vx / v;
   const side = (p.x - b.x) * nx + (p.z - b.z) * nz >= 0 ? 1 : -1;
-  p.knock = WIND.knock; p.knockX = nx * side; p.knockZ = nz * side;
+  p.knock = WIND.knock; p.knockX = nx * side; p.knockZ = nz * side; p.air = p.airMax = WIND.air; p.dash = 0; p.jump = 0; p.charge = 0;
   b.vx *= WIND.keep; b.vz *= WIND.keep;
   emit(w, 'blow', { id: p.id, x: p.x, z: p.z });
 }
