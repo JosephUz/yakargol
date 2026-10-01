@@ -11,6 +11,7 @@ const TONES = {
   ignite: [180, 980],
   impact: [120, 60],
   boom: [90, 40],
+  call: [880, 660],
 };
 
 export function createAudio() {

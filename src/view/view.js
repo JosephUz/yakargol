@@ -58,11 +58,15 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
     gusts: ball.gusts,
     ballCore: ball.core,
     faceBall: w => shoulder.faceBall(w),
-    cinemaStart: () => shoulder.save(),
-    cinemaEnd: () => shoulder.restore(),
+    /** Sinema bitti: kamera kaldığı bakışa değil topa döner (kontrol oyuncuya topa bakarak geçer). */
+    cinemaEnd: w => shoulder.faceBall(w),
     look: (dx, dy) => shoulder.look(dx, dy),
     /** Bakışı doğrudan kurar (gösteri sahneleri; bkz. src/gosteri-ruzgar.js). */
     setLook: (yaw, pitch) => shoulder.setLook(yaw, pitch),
+    /** Oyuncunun dolum çevresi görünüyor mu (testler için): { fire, wind }. */
+    aura: id => ({ fire: actors[id].fireAura.visible, wind: actors[id].windAura.visible }),
+    /** Omuz kamerasının yatay bakışı (rad). */
+    get yaw() { return shoulder.yaw; },
     /** İzometrikte fare imleci (ekran pikseli; null: yok). */
     point: (x, y) => shoulder.point(x, y),
     aim: move => shoulder.aim(move),
@@ -83,7 +87,7 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
       const hero = focus || w.players[w.me], wide = hero.sprint > 0 && hero.burn <= 0 ? CAMERA.sprintFov : CAMERA.fov;
       if (shoulder.mode === 'shoulder') shoulder.zoom(wide, dt);
       shoulder.follow(hero, dt);
-      syncActors(actors, w, time, playing, shoulder.project);
+      syncActors(actors, w, time, playing, shoulder.project, real);
       syncBall(ball, w.ball, real, dt * scale, cine ? cine.heat : 0, w.ball.owner === w.me ? charge : null);
       effects.update(cine ? dt * Math.max(scale, 0.3) : dt);
       arrow.visible = !!aimAt && shoulder.mode === 'iso' && hero.burn <= 0;

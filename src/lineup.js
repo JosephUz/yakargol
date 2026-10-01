@@ -47,12 +47,22 @@ export function shuffleRoles(w) {
  * Golden sonra: roller karılır, herkes (yananlar da) yeni evine, top ortaya; başlama vuruşu `team`in forvetinden,
  * orta noktanın gerisinden.
  */
+/**
+ * Santra yapan: `team`in forveti orta yuvarlakta, topun hemen gerisinde (kendi yarısında) durur; başlama beklemesi
+ * bitince top onun ayağına geçer (world.js step). Maç başında (mavi) ve her golden sonra (yiyen takım) kullanılır.
+ */
+export function placeKickoff(w, team) {
+  const taker = forwardOf(w, team);
+  taker.x = 0; taker.z = attackDir(team) * -1.5; taker.angle = attackDir(team) > 0 ? 0 : Math.PI;
+  w.kickoffTaker = taker.id;
+  return taker;
+}
+
 export function lineUp(w, team) {
   shuffleRoles(w);
   for (const p of w.players) Object.assign(p, homeOf(p), { vx: 0, vz: 0, burn: 0, guard: BURN.kickoffGuard, stun: 0, evade: 0, pressed: false, air: 0, dash: 0, sprint: 0, knock: 0, jump: 0, charge: 0 });
-  const taker = forwardOf(w, team);
-  taker.x = 0; taker.z = attackDir(team) * -1.5;
+  placeKickoff(w, team);
   Object.assign(w.ball, { x: 0, z: 0, vx: 0, vz: 0, owner: null, last: null, kind: 'normal', power: 0, lock: 0, stealLock: 0 });
-  w.kickoff = w.restart ?? MATCH.restart; w.nextKickoff = team; w.kickoffTaker = taker.id;
+  w.kickoff = w.restart ?? MATCH.restart; w.nextKickoff = team;
   w.events.push({ type: 'lineup', team });
 }

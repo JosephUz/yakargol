@@ -5,8 +5,9 @@ import { distance } from './math.js';
 
 /**
  * Top, bir adım. Taşınıyorsa taşıyanın ayağının önünde durur ve rakipler kapmaya çalışır. Boştaysa ilerler, duvardan
- * seker, kaleye girerse gol olur (yakar top olmaz). Oyuncuya değerse yakalanır; rakibe değen yakar top onu yakar,
- * rüzgar topu rakibi savurup yoluna devam eder.
+ * seker, kaleye girerse gol olur (yakar top olmaz). Oyuncuya değerse yakalanır; rakibe değen yakar top onu yakar.
+ * Rüzgar topu durdurulamaz: kimse tutamaz, rakipleri savurup yavaşlamadan yoluna devam eder; kaleye giderse gol olur,
+ * duvara çarparsa rüzgarı biter (normal top).
  */
 export function updateBall(w, dt) {
   const b = w.ball;
@@ -14,10 +15,10 @@ export function updateBall(w, dt) {
   const pieces = Math.max(1, Math.ceil(Math.hypot(b.vx, b.vz) * dt / BALL.substep)), h = dt / pieces;
   for (let n = 0; n < pieces; n++) {
     b.x += b.vx * h; b.z += b.vz * h;
-    if (Math.abs(b.x) > PITCH.halfX - 0.25) { b.x = Math.sign(b.x) * (PITCH.halfX - 0.25); b.vx *= -BALL.sideBounce; emit(w, 'bounce'); }
+    if (Math.abs(b.x) > PITCH.halfX - 0.25) { b.x = Math.sign(b.x) * (PITCH.halfX - 0.25); b.vx *= -BALL.sideBounce; windOut(w); emit(w, 'bounce'); }
     if (Math.abs(b.z) > PITCH.halfZ) {
       if (Math.abs(b.x) < PITCH.goal && b.kind !== 'fire') { scoreGoal(w, b.z < 0 ? 0 : 1); return; }
-      b.z = Math.sign(b.z) * (PITCH.halfZ - 0.1); b.vz *= -BALL.endBounce; emit(w, 'bounce');
+      b.z = Math.sign(b.z) * (PITCH.halfZ - 0.1); b.vz *= -BALL.endBounce; windOut(w); emit(w, 'bounce');
     }
     if (touch(w)) return;
   }
@@ -27,23 +28,27 @@ export function updateBall(w, dt) {
   if (b.kind === 'wind' && b.power <= 0) b.kind = 'normal';
 }
 
+/** Rüzgar topu duvara çarptı: rüzgarı biter, normal top olarak seker. */
+function windOut(w) { if (w.ball.kind === 'wind') { w.ball.kind = 'normal'; w.ball.power = 0; emit(w, 'windEnd'); } }
+
 /**
  * Taşınan top. Yürüyen rakip **topa** STEAL.reach kadar yakınsa, taşıyanın arkasında değilse (arkadan ancak hızlı
  * koşuyla), iki taraf da yerdeyse, kapan şut beklemesinde değilse ve taşıyan korunmuyorsa topu kapar; taşıyan STEAL.stun
  * kadar sersemler. Kayan rakip DASH.steal içindeyse her koşulda kapar; taşıyan STEAL.dashStun kadar sersemler.
- * Sersem oyuncu topu kapamaz.
+ * Sersem oyuncu topu kapamaz. Nişan alan (yakar top / rüzgar, w.aim) yürüyerek soyulamaz: yalnız kayarak.
  */
 function carry(w) {
   const b = w.ball, p = w.players[b.owner];
   b.x = p.x + Math.sin(p.angle) * BALL.hold; b.z = p.z + Math.cos(p.angle) * BALL.hold;
   b.vx = p.vx; b.vz = p.vz;
   if (b.stealLock > 0) return;
+  const aiming = w.aim && w.aim.id === p.id;
   for (const rival of w.players) {
     if (rival.team === p.team || rival.burn > 0 || rival.stun > 0) continue;
     const reach = distance(rival, p);
     const steals = rival.dash > 0
       ? reach <= DASH.steal
-      : distance(rival, b) <= STEAL.reach && (rival.sprint > 0 || !behind(p, rival, reach)) && rival.jump <= 0 && p.jump <= 0 && rival.kickCd <= 0 && p.guard <= 0;
+      : !aiming && distance(rival, b) <= STEAL.reach && (rival.sprint > 0 || !behind(p, rival, reach)) && rival.jump <= 0 && p.jump <= 0 && rival.kickCd <= 0 && p.guard <= 0;
     if (!steals) continue;
     b.owner = rival.id; b.last = rival.id;
     p.kickCd = STEAL.loserCooldown; p.charge = 0; p.dash = 0; b.stealLock = STEAL.lock; rival.guard = STEAL.guard; rival.stats.steals++;
@@ -69,7 +74,7 @@ function touch(w) {
     const d = distance(p, b), rival = shooter && p.team !== shooter.team;
     if (d > BALL.catch) continue;
     if (b.kind === 'fire' && rival) { if (p.guard > 0 || d > BALL.hit) continue; burn(w, p); return true; }
-    if (b.kind === 'wind' && rival) { if (d <= BALL.hit) blow(w, p); continue; }
+    if (b.kind === 'wind') { if (rival && d <= BALL.hit) blow(w, p); continue; }
     if (b.kind === 'fire' && b.lock > 0) continue;
     Object.assign(b, { owner: p.id, last: p.id, kind: 'normal', power: 0 });
     p.guard = BALL.catchGuard;

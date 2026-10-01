@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { createWorld, step } from '../src/world.js';
-import { CINEMA, PITCH } from '../src/config.js';
+import { createCinema } from '../src/cinema.js';
+import { createWorld, startAim, step } from '../src/world.js';
+import { PITCH } from '../src/config.js';
 import { encodeSnapshot } from '../src/net/snapshot.js';
 import { C2S, EDGES, NET, S2C, roomCode } from '../src/net/protocol.js';
 
@@ -14,8 +15,8 @@ import { C2S, EDGES, NET, S2C, roomCode } from '../src/net/protocol.js';
  * saniyede 30 durum paketi ve biriken olayları yayar. Hesap yok: bağlantı `token` ile tanınır, kopan oyuncu aynı
  * token'la koltuğuna geri döner; kopukken koltuğunu bot oynar. Oda bağlı kimse kalmayınca kapanır.
  *
- * Yakar top sineması herkes için aynıdır: nişan evresinde (insan, CINEMA.aim sn) ve tutuşmada (bot) maç donar,
- * uçuşta ağır çekime (flightScale), çarpmada daha ağırına (impactScale) geçer.
+ * Yakar top ve rüzgar şutu sineması herkes için aynıdır (src/cinema.js): biri nişan alırken maç ağır çekime geçer
+ * (rakipler bu sırada kayıp topu alabilir), uçuşta yine ağır çekim; evre durum paketinde gider.
  */
 export function createRooms({ log = console.log, presence = () => 0 } = {}) {
   const rooms = new Map();   // code -> room
@@ -93,12 +94,12 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
   function stopRoom(room) { if (room.timer) { clearInterval(room.timer); room.timer = null; } }
 
   // ---------- Maç ----------
-  const blankInput = () => ({ cmd: { x: 0, z: 0, aim: null, hold: false }, edges: {}, fire: false });
+  const blankInput = () => ({ cmd: { x: 0, z: 0, aim: null, hold: false }, edges: {} });
 
   function startGame(room) {
     const seed = 1 + Math.floor(Math.random() * 1e6);
     room.world = createWorld(seed);
-    room.state = 'playing'; room.cine = null; room.acc = 0; room.clock = 0; room.stepNo = 0; room.events = [];
+    room.state = 'playing'; room.cinema = createCinema(); room.acc = 0; room.clock = 0; room.stepNo = 0; room.events = [];
     room.last = performance.now();
     for (const c of members(room)) c.input = blankInput();
     syncHumans(room);
@@ -118,64 +119,31 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
     return { players };
   }
 
-  const canFire = (w, id) => { const p = w.players[id]; return w.ball.owner === id && p.energyCd <= 0 && w.fireLeft[p.team] > 0 && p.kickCd <= 0 && p.stun <= 0 && w.winner === null && !w.blast && w.kickoff <= 0; };
-
   function tick(room) {
     const now = performance.now(), dt = Math.min(0.1, (now - room.last) / 1000);
     room.last = now; room.clock += dt;
-    const w = room.world, c = room.cine;
-    let scale = 1;
-    if (c) {
-      c.t += dt;
-      if (c.phase === 'aim') {
-        scale = 0;
-        const conn = room.seats[c.id], aim = conn?.input.cmd.aim;
-        if (aim) w.players[c.id].angle = Math.atan2(aim.x - w.players[c.id].x, aim.z - w.players[c.id].z);
-        if (!conn || !conn.ws || conn.input.fire || c.t >= CINEMA.aim) fireNow(room, c.id, aim);
-      } else if (c.phase === 'ignite') { scale = 0; if (c.t >= CINEMA.ignite) Object.assign(c, { phase: 'flight', t: 0 }); }
-      else if (c.phase === 'flight') { scale = CINEMA.flightScale; if (w.ball.kind !== 'fire' || c.t >= CINEMA.flightMax) room.cine = null; }
-      else { scale = CINEMA.impactScale; if (c.t >= CINEMA.impact) room.cine = null; }
-    }
-    room.acc += dt * scale;
+    const w = room.world;
+    room.acc += dt * room.cinema.scale();
     for (let n = 0; room.acc >= NET.step && n < 6; n++) {
       step(w, NET.step, inputs(room));
       room.acc -= NET.step;
-      if (events(room)) { room.acc = 0; break; }
+      events(room);
     }
+    room.cinema.tick(w, dt);
     if (++room.stepNo % NET.snapshotEvery === 0) flush(room);
     if (w.winner !== null) endGame(room);
     else closeIfEmpty(room);
   }
 
-  /** Olayları biriktirir; yakar top sinemasını yürütür. Sinema bu adımda başladıysa true (kalan adımlar beklesin). */
+  /** Olayları biriktirir (sonraki pakette gider) ve sinemaya iletir. */
   function events(room) {
     const w = room.world;
-    let started = false;
-    for (const e of w.events) {
-      if (e.type === 'kick' && e.kind === 'fire') {
-        if (room.cine && room.cine.phase === 'aim') Object.assign(room.cine, { phase: 'flight', t: 0 });
-        else if (!room.cine) { room.cine = { phase: 'ignite', t: 0, id: e.id }; started = true; }
-      }
-      if (e.type === 'burn' && room.cine) Object.assign(room.cine, { phase: 'impact', t: 0 });
-      room.events.push(e);
-    }
+    for (const e of w.events) { room.cinema.event(e); room.events.push(e); }
     w.events.length = 0;
-    return started;
-  }
-
-  function fireNow(room, id, aim) {
-    const w = room.world, p = w.players[id];
-    const target = aim || { x: p.x + Math.sin(p.angle) * 20, z: p.z + Math.cos(p.angle) * 20 };
-    const seatConn = room.seats[id];
-    if (seatConn) seatConn.input.fire = false;
-    step(w, NET.step, { players: { [id]: { aim: target, fire: true } } });
-    events(room);
-    // Kick olmadıysa (top elden çıktı vb.) sinema biter; olduysa events() uçuşa geçirdi.
-    if (room.cine && room.cine.phase === 'aim') room.cine = null;
   }
 
   function flush(room) {
-    const snap = encodeSnapshot(room.world, room.cine, room.clock, room.events.map(compactEvent));
+    const snap = encodeSnapshot(room.world, room.cinema.state, room.clock, room.events.map(compactEvent));
     room.events = [];
     const msg = JSON.stringify({ t: S2C.SNAP, ...snap });
     for (const c of members(room)) if (c.ws && c.ws.readyState === 1) c.ws.send(msg);
@@ -192,7 +160,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
     flush(room);
     broadcast(room, { t: S2C.END, score: w.score, winner: w.winner, stats: w.players.map(p => p.stats), names: w.players.map(p => p.name), roles: w.players.map(p => p.role) });
     stopRoom(room);
-    room.state = 'lobby'; room.world = null; room.cine = null;
+    room.state = 'lobby'; room.world = null; room.cinema = null;
     log(`bitti ${room.code}: ${w.score[0]}-${w.score[1]}`);
     broadcastLobby(room);
   }
@@ -203,11 +171,10 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
     const [x, z] = Array.isArray(msg.mv) ? msg.mv.map(finite) : [0, 0];
     const d = Math.hypot(x, z), k = d > 1 ? 1 / d : 1;
     const aim = Array.isArray(msg.aim) ? { x: Math.max(-PITCH.halfX * 3, Math.min(PITCH.halfX * 3, finite(msg.aim[0]))), z: Math.max(-PITCH.halfZ * 3, Math.min(PITCH.halfZ * 3, finite(msg.aim[1]))) } : null;
-    conn.input.cmd = { x: x * k, z: z * k, aim, hold: Boolean(msg.hold) };
+    conn.input.cmd = { x: x * k, z: z * k, aim, hold: Boolean(msg.hold), held2: Boolean(msg.h2) };
     for (const ch of String(msg.e || '').slice(0, 12)) {
       const name = EDGES[ch];
-      if (name === 'fire') conn.input.fire = true;
-      else if (name) conn.input.edges[name] = true;
+      if (name) conn.input.edges[name] = true;
     }
   }
 
@@ -240,7 +207,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
       case C2S.CREATE: {
         if (room) leaveRoom(conn);
         let code = roomCode(); while (rooms.has(code)) code = roomCode();
-        const r = { code, hostId: conn.id, seats: Array(NET.seats).fill(null), state: 'lobby', world: null, cine: null, timer: null, events: [] };
+        const r = { code, hostId: conn.id, seats: Array(NET.seats).fill(null), state: 'lobby', world: null, cinema: null, timer: null, events: [] };
         r.seats[0] = conn;
         rooms.set(code, r); conn.room = r;
         broadcastLobby(r); log(`oda kuruldu ${code} (${conn.nick})`);
@@ -289,9 +256,10 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
       case C2S.LEAVE: { if (room) leaveRoom(conn); send(conn, { t: S2C.ONLINE, n: online() }); return; }
       case C2S.INPUT: { if (room && room.world) readInput(conn, msg); return; }
       case C2S.AIM: {
-        if (!room || !room.world || room.cine) return;
+        // Yakar top nişanı (sağ tık basılı); rüzgar nişanını dünya kendisi başlatır (sol tık basılı, bkz. world.js shoot).
+        if (!room || !room.world) return;
         const id = room.seats.indexOf(conn);
-        if (id >= 0 && canFire(room.world, id)) { room.cine = { phase: 'aim', t: 0, id }; conn.input.fire = false; }
+        if (id >= 0) startAim(room.world, id, 'fire');
         return;
       }
       case C2S.PING: { send(conn, { t: S2C.PONG, at: msg.at }); return; }

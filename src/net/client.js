@@ -74,7 +74,7 @@ export function createNetClient(hooks) {
     if (!clockReady || Math.abs(measured - clockOffset) > NET.clockJump) { clockOffset = measured; clockReady = true; buffer = []; }
     else clockOffset += (measured - clockOffset) * NET.clockSmooth;
     applySnapshot(world, s);
-    world.cine = s.cine ? { phase: s.cine[0], id: s.cine[1] } : null;
+    world.cine = s.cine ? { phase: s.cine[0], id: s.cine[1], kind: s.cine[2] || 'fire' } : null;
     buffer.push({ ts: s.ts, p: s.p.map(r => [r[0], r[1], r[4]]), b: [s.b[0], s.b[1]] });
     if (buffer.length > 12) buffer.shift();
     if (s.ev?.length) hooks.onEvents?.(s.ev);
@@ -116,7 +116,7 @@ export function createNetClient(hooks) {
   /** Bu karenin girdisi (input.read çıktısı): sürekli durum saniyede 30 kez, basış olunca hemen. */
   function input(cmd, dt) {
     for (const [name, key] of Object.entries(EDGE_KEY)) if (cmd[name]) edges += key;
-    last = { mv: [+(cmd.x || 0).toFixed(3), +(cmd.z || 0).toFixed(3)], aim: cmd.aim ? [+cmd.aim.x.toFixed(2), +cmd.aim.z.toFixed(2)] : null, hold: !!cmd.hold };
+    last = { mv: [+(cmd.x || 0).toFixed(3), +(cmd.z || 0).toFixed(3)], aim: cmd.aim ? [+cmd.aim.x.toFixed(2), +cmd.aim.z.toFixed(2)] : null, hold: !!cmd.hold, h2: !!cmd.held2 };
     sendTimer += dt;
     if (edges || sendTimer >= NET.inputEvery) flushInput();
   }
@@ -145,8 +145,6 @@ export function createNetClient(hooks) {
     start() { send({ t: C2S.START }); },
     leave() { send({ t: C2S.LEAVE }); client.lobby = null; world = null; buffer = []; store('yg.room', null); },
     aim() { send({ t: C2S.AIM }); },
-    /** Yakar top nişanında: nişan noktası ve (bırakınca) ateş. */
-    aimAt(aim, fire) { last.aim = [+aim.x.toFixed(2), +aim.z.toFixed(2)]; if (fire) edges += EDGE_KEY.fire; flushInput(); },
     rememberedRoom() { return store('yg.room'); },
     input, update,
   };

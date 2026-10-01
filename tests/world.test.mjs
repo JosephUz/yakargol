@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BURN, ENERGY, GOAL_BLAST, KICK, MATCH, MOVE, PITCH, SPRINT, STEAL } from '../src/config.js';
-import { createWorld, dash, jump, kick, sprint, step } from '../src/world.js';
+import { BOT, BURN, CINEMA, ENERGY, GOAL_BLAST, KICK, MATCH, MOVE, PITCH, SPRINT, STEAL } from '../src/config.js';
+import { createWorld, dash, jump, kick, sprint, startAim, step } from '../src/world.js';
 
 const setup = () => { const w = createWorld(); w.kickoff = 0; return w; };
 const run = (w, n, input = {}) => { for (let i = 0; i < n; i++) step(w, 1 / 60, input); };
@@ -41,7 +41,7 @@ test('yan duvar topu geri sektirir', () => {
 
 test('yakar top rakibi yakar, can veya gol puanı yoktur', () => {
   const w = setup(), p = w.players[5];
-  Object.assign(p, { x: 0, z: 0, guard: 0, think: 2 });
+  Object.assign(p, { x: 0, z: 0, guard: 0, think: 2, dodgeShot: 0, dodgeOk: false }); w.players[0].x = 10; // santracı topun yolundan çekilir
   Object.assign(w.ball, { x: 0, z: 1, vz: -27, kind: 'fire', power: 1, last: 0 });
   run(w, 2);
   assert.ok(p.burn > BURN.time - 0.2); assert.equal(w.players[0].stats.burns, 1); assert.deepEqual(w.score, [0, 0]);
@@ -91,11 +91,24 @@ test('botlarla tam maçta koordinatlar ve top geçerlidir', () => {
   assert.ok(w.players.slice(1).some(p => p.stats.passes + p.stats.goals + p.stats.steals > 0));
 });
 
-test('yakar top (fire) top varken anında atılır', () => {
+test('yakar top: nişan başlar, nişan alan durur, fire ile nişan noktasına çıkar', () => {
+  const w = setup(), p = w.players[0];
+  w.ball.owner = 0;
+  assert.ok(startAim(w, 0, 'fire'));
+  assert.equal(w.aim.kind, 'fire');
+  const x0 = p.x;
+  run(w, 5, { x: 1, z: 0, aim: { x: 0, z: -25 } });
+  assert.ok(Math.abs(p.x - x0) < 0.1, 'nişan alan yürümez');
+  step(w, 1 / 60, { fire: true, aim: { x: 0, z: -25 } });
+  assert.equal(w.ball.kind, 'fire'); assert.equal(w.ball.owner, null); assert.equal(w.aim, null); assert.equal(w.fireLeft[0], KICK.fireShots - 1);
+});
+
+test('nişan süresi dolunca vuruş kendiliğinden çıkar', () => {
   const w = setup();
   w.ball.owner = 0;
-  step(w, 1 / 60, { fire: true, aim: { x: 0, z: -25 } });
-  assert.equal(w.ball.kind, 'fire'); assert.equal(w.ball.owner, null); assert.equal(w.players[0].dash, 0);
+  startAim(w, 0, 'fire');
+  run(w, Math.ceil(CINEMA.aim * CINEMA.aimScale * 60) + 2, { aim: { x: 0, z: -25 } });
+  assert.equal(w.ball.kind, 'fire'); assert.equal(w.aim, null);
 });
 
 test('topsuz sağ tık nişana değil topa doğru atılır', () => {
@@ -116,15 +129,14 @@ test('boşluk zıplatır, havada tekrar zıplamaz ve yakar top işlemez', () => 
   assert.equal(p.jump, 0); assert.ok(jump(w, 0));
 });
 
-test('yakar top ve kayma 3 saniyelik ortak enerjiyi kullanır', () => {
+test('yakar top enerji harcamaz ve enerji beklerken de atılır', () => {
   const w = setup(), p = w.players[0];
   w.ball.owner = 0;
   assert.ok(kick(w, 0, { x: 0, z: -25 }, 'fire'));
-  assert.equal(p.energyCd, ENERGY.cooldown); assert.equal(ENERGY.cooldown, 3);
-  w.ball.owner = 0; p.kickCd = 0;
-  assert.equal(kick(w, 0, { x: 0, z: -25 }, 'fire'), false); assert.equal(dash(w, 0, 1, 0), false);
-  p.energyCd = 0;
-  assert.ok(dash(w, 0, 1, 0));
+  assert.equal(p.energyCd, 0, 'yakar top enerji harcamaz');
+  w.ball.owner = 0; p.kickCd = 0; p.energyCd = 2;
+  assert.ok(kick(w, 0, { x: 0, z: -25 }, 'fire'), 'enerji beklerken de atılır');
+  assert.equal(ENERGY.cooldown, 3);
 });
 
 test('top taşıyana kayan oyuncu topu mutlaka çalar', () => {
@@ -163,25 +175,95 @@ test('aynı adımda basıp bırakmak da normal şuttur', () => {
   assert.equal(w.ball.owner, null); assert.equal(w.ball.kind, 'normal');
 });
 
-test('sol tık 2 saniye basılı kalınca rüzgar topu çıkar, bırakınca ikinci şut olmaz', () => {
+test('sol tık 1 saniye basılı kalınca rüzgar nişanı başlar, bırakınca rüzgar topu çıkar ve hak düşer', () => {
   const w = setup(), p = w.players[0];
   for (const t of w.players) if (t.id !== 0) t.burn = 99;
   w.ball.owner = 0;
   const aim = { x: p.x, z: p.z - 30 };
   run(w, Math.round(KICK.windCharge * 60) - 2, { hold: true, aim });
-  assert.equal(w.ball.owner, 0);
+  assert.equal(w.aim, null); assert.equal(w.ball.owner, 0);
   run(w, 3, { hold: true, aim });
-  assert.equal(w.ball.kind, 'wind'); assert.ok(Math.hypot(w.ball.vx, w.ball.vz) > KICK.normal);
-  const kicks = w.players[0].kickCd;
+  assert.equal(w.aim?.kind, 'wind', 'nişan başladı'); assert.equal(w.ball.owner, 0);
   step(w, 1 / 60, { release: true, aim });
-  assert.equal(w.ball.owner, null); assert.ok(p.kickCd <= kicks);
+  assert.equal(w.ball.kind, 'wind'); assert.equal(w.ball.owner, null); assert.equal(w.windLeft[0], KICK.windShots - 1);
+  assert.equal(w.fireLeft[0], KICK.fireShots, 'yakar top hakkı ayrı');
+});
+
+test('rüzgar nişanında rakip kayarak topu alırsa vuruş olmaz; yürüyerek alamaz', () => {
+  const w = setup(), p = w.players[0], r = w.players[5];
+  for (const t of w.players) if (t.id !== 0 && t.id !== 5) t.burn = 99;
+  Object.assign(p, { x: 0, z: 10, angle: Math.PI, guard: 0 }); w.ball.owner = 0;
+  r.human = true; Object.assign(r, { x: 0, z: 8.6, guard: 0, kickCd: 0, energyCd: 99 });
+  startAim(w, 0, 'wind');
+  const both = extra => ({ players: { 0: { hold: true, aim: { x: 0, z: -30 } }, 5: extra } });
+  for (let i = 0; i < 3; i++) step(w, 1 / 60, both({}));
+  assert.equal(w.ball.owner, 0, 'yürüyerek alınmaz');
+  r.energyCd = 0;
+  step(w, 1 / 60, both({ secondary: true }));
+  for (let i = 0; i < 3; i++) step(w, 1 / 60, both({}));
+  assert.equal(w.ball.owner, 5, 'kayarak aldı'); assert.equal(w.aim, null); assert.equal(w.windLeft[0], KICK.windShots);
+});
+
+test('rüzgar topu kaleye nişanlıysa uzaktan da kimse tutamadan gol olur', () => {
+  const w = setup(), p = w.players[0];
+  for (const t of w.players) t.human = true;
+  Object.assign(p, { x: 0, z: 30, angle: Math.PI }); w.ball.owner = 0;
+  // Yola takım arkadaşı ve rakipler (kaleci dahil) dizilir; hepsi girdisiz durur.
+  Object.assign(w.players[1], { x: 0, z: 15 }); Object.assign(w.players[6], { x: 0.3, z: 0 }); Object.assign(w.players[9], { x: 0, z: -PITCH.halfZ + 2 });
+  startAim(w, 0, 'wind');
+  step(w, 1 / 60, { players: { 0: { release: true, aim: { x: 0, z: -PITCH.halfZ - 2 } } } });
+  assert.equal(w.ball.kind, 'wind');
+  for (let i = 0; i < 600 && w.score[0] === 0; i++) step(w, 1 / 60, { players: {} });
+  assert.equal(w.score[0], 1);
+});
+
+test('rüzgar topu kaleye nişanlı değilse duvara çarpınca normal topa döner', () => {
+  const w = setup();
+  Object.assign(w.ball, { x: 0, z: 0, vx: KICK.wind, vz: 0, kind: 'wind', power: 10, last: 0, owner: null });
+  for (const t of w.players) t.burn = 99;
+  run(w, 90);
+  assert.equal(w.ball.kind, 'normal');
+});
+
+test('rüzgar şutu hakkı takımındır: 5 kez, bitince nişan başlamaz', () => {
+  const w = setup();
+  assert.equal(KICK.windShots, 5);
+  w.windLeft[0] = 0; w.ball.owner = 0;
+  assert.equal(startAim(w, 0, 'wind'), false);
+  assert.equal(kick(w, 0, { x: 0, z: -25 }, 'wind'), false);
+});
+
+test('botlar üstlerine gelen yakar toptan zıplayıp kurtulabilir', () => {
+  let saved = 0;
+  for (let k = 0; k < 20; k++) {
+    const w = setup(), p = w.players[6];
+    w.random = (() => { let s = k * 7919 + 1; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+    for (const t of w.players) if (t.id !== 6) t.burn = 99;
+    Object.assign(p, { x: 0, z: 0, guard: 0, energyCd: 99 });
+    w.shots = k + 1;
+    Object.assign(w.ball, { x: 0, z: 12, vx: 0, vz: -KICK.fire, kind: 'fire', power: 2, last: 0, owner: null });
+    run(w, 40);
+    if (p.burn <= 0) saved++;
+  }
+  assert.ok(saved > 8 && saved < 20, 'çoğu zıplar, her zaman değil: ' + saved);
+  assert.ok(BOT.fireJump.chance < 1);
+});
+
+test('rakip nişan alırken yakındaki bot üstüne kayıp topu alır', () => {
+  const w = setup(), p = w.players[0], r = w.players[6];
+  for (const t of w.players) if (t.id !== 0 && t.id !== 6) t.burn = 99;
+  Object.assign(p, { x: 0, z: 10, guard: 0 }); w.ball.owner = 0;
+  Object.assign(r, { x: 4, z: 6, energyCd: 0, stun: 0, think: 0 });
+  startAim(w, 0, 'wind');
+  run(w, 30, { hold: true, aim: { x: 0, z: -30 } });
+  assert.equal(w.ball.owner, 6); assert.equal(w.aim, null);
 });
 
 test('rüzgar topu rakibi savurur ve tutulamaz, gol olur', () => {
   const w = setup(), k = w.players[9];
   Object.assign(k, { x: 0, z: -PITCH.halfZ + 3, think: 99, guard: 0 });
-  Object.assign(w.ball, { x: 0, z: -PITCH.halfZ + 6, vx: 0, vz: -KICK.wind, kind: 'wind', power: 0.9, last: 0, owner: null });
-  run(w, 12);
+  Object.assign(w.ball, { x: 0, z: -PITCH.halfZ + 6, vx: 0, vz: -KICK.wind, kind: 'wind', power: 10, last: 0, owner: null });
+  run(w, 30);
   assert.equal(w.score[0], 1);
 });
 
@@ -199,23 +281,26 @@ test('Shift 3 saniye hızlı koşturur, sonra normale döner; enerji koşu bitin
   assert.equal(dash(w, 0, 1, 0), false); assert.equal(sprint(w, 0), false);
 });
 
-test('kayma, hızlı koşu ve rüzgar şutu aynı enerjiyi bekler', () => {
+test('kayma ve hızlı koşu aynı enerjiyi bekler; rüzgar şutu enerjiden bağımsız', () => {
   const w = setup(), p = w.players[0];
   assert.ok(dash(w, 0, 1, 0));
   assert.equal(sprint(w, 0), false);
   w.ball.owner = 0; p.kickCd = 0;
-  assert.equal(kick(w, 0, { x: 0, z: -25 }, 'wind'), false);
+  assert.ok(kick(w, 0, { x: 0, z: -25 }, 'wind'), 'enerji beklerken de rüzgar şutu');
   p.energyCd = 0;
   assert.ok(sprint(w, 0)); assert.equal(dash(w, 0, 1, 0), false);
 });
 
-test('enerji yokken basılı sol tık rüzgar çıkarmaz, bırakınca normal şut olur', () => {
+test('enerji yokken de basılı sol tık rüzgar nişanına geçer; rüzgar hakkı bittiyse bırakınca normal şut olur', () => {
   const w = setup(), p = w.players[0];
   for (const t of w.players) if (t.id !== 0) t.burn = 99;
   w.ball.owner = 0;
   const aim = { x: p.x, z: p.z - 30 };
-  for (let i = 0; i < Math.round(KICK.windCharge * 60) + 10; i++) { p.energyCd = 1; step(w, 1 / 60, { hold: true, aim }); }
-  assert.equal(w.ball.owner, 0);
+  for (let i = 0; i < Math.round(KICK.windCharge * 60) + 2; i++) { p.energyCd = 1; step(w, 1 / 60, { hold: true, aim }); }
+  assert.equal(w.aim?.kind, 'wind', 'enerji beklerken de nişan başlar');
+  w.aim = null; p.chargeSpent = false; p.charge = 0; w.windLeft[0] = 0;
+  for (let i = 0; i < Math.round(KICK.windCharge * 60) + 10; i++) step(w, 1 / 60, { hold: true, aim });
+  assert.equal(w.aim, null); assert.equal(w.ball.owner, 0);
   step(w, 1 / 60, { release: true, aim });
   assert.equal(w.ball.owner, null); assert.equal(w.ball.kind, 'normal');
 });
@@ -344,7 +429,7 @@ test('botlar tam maçta yakar top hakkını aşmaz', () => {
   for (const [team, n] of fires) assert.ok(n <= KICK.fireShots, 'takım ' + team + ' ' + n + ' yakar top attı');
 });
 
-test('rüzgar şarjı 2 saniye sürer', () => { assert.equal(KICK.windCharge, 2); });
+test('rüzgar ve yakar top 1 saniye basılı tutunca nişana geçer', () => { assert.equal(KICK.windCharge, 1); assert.equal(CINEMA.hold, 1); });
 
 test('sağ tık top sendeyken pas verir, enerji harcamaz', () => {
   const w = setup(), p = w.players[0];
@@ -355,7 +440,7 @@ test('sağ tık top sendeyken pas verir, enerji harcamaz', () => {
 
 test('yakar top çarpınca vurulanın çarpma noktası ve savrulma yönü kaydedilir', () => {
   const w = setup(), p = w.players[5];
-  Object.assign(p, { x: 0, z: 0, guard: 0, think: 2 });
+  Object.assign(p, { x: 0, z: 0, guard: 0, think: 2, dodgeShot: 0, dodgeOk: false }); w.players[0].x = 10; // santracı topun yolundan çekilir
   Object.assign(w.ball, { x: 0, z: 1, vz: -27, kind: 'fire', power: 1, last: 0 });
   run(w, 2);
   assert.ok(p.burn > 0); assert.ok(Math.abs(p.burnX) < 0.5 && Math.abs(p.burnZ) < 0.5); assert.ok(p.burnDZ < -0.9);
@@ -430,4 +515,45 @@ test('kayma her zaman topa doğrudur (ters yöne basılsa bile)', () => {
   Object.assign(w.ball, { owner: null, x: 6, z: 0, vx: 0, vz: 0 });
   step(w, 1 / 60, { x: -1, z: 0, secondary: true });
   assert.ok(p.dash > 0); assert.ok(p.dashX > 0.99, 'topa (+x) kayar');
+});
+
+test('maç başında santrayı mavi forvet orta yuvarlakta topun başında yapar', () => {
+  const w = createWorld(), t = w.players[w.kickoffTaker];
+  assert.equal(t.team, 0); assert.equal(t.role, 0);
+  assert.ok(Math.hypot(t.x - w.ball.x, t.z - w.ball.z) < 2, 'topun başında');
+  run(w, Math.ceil(MATCH.kickoff * 60) + 1);
+  assert.equal(w.ball.owner, t.id);
+});
+
+test('top ayakta değilken sol tık pas ister; topu taşıyan bot arkadaş ona pas verir', () => {
+  const w = setup(), me = w.players[0], mate = w.players[2];
+  for (const t of w.players) if (t.team === 1) t.burn = 99;
+  Object.assign(me, { x: 10, z: 0 }); Object.assign(mate, { x: 0, z: 0, think: 2 });
+  w.ball.owner = 2;
+  step(w, 1 / 60, { tap: true });
+  assert.ok(me.call > 0); assert.ok(w.events.some(e => e.type === 'call' && e.id === 0));
+  let passed = false;
+  for (let i = 0; i < 90 && !passed; i++) { step(w, 1 / 60, {}); passed = w.ball.last === 2 && w.ball.kind === 'pass' || w.ball.owner === 0; }
+  assert.ok(passed, 'bot pas isteyene pas verdi');
+});
+
+test('botlar rüzgar şutunu dolumla atar: önce dolum, sonra nişan, sonra rüzgar topu', () => {
+  const w = setup(), p = w.players[1];
+  for (const t of w.players) if (t.id !== 1) t.burn = 99;
+  Object.assign(p, { x: 0, z: -10, think: 0 }); w.ball.owner = 1;
+  p.plan = { kind: 'wind', goal: { x: 0, z: -PITCH.halfZ - 3 } };
+  let charged = false, aimed = false;
+  for (let i = 0; i < 200 && w.ball.kind !== 'wind'; i++) { step(w, 1 / 60); if (p.charge > 0.5) charged = true; if (w.aim?.id === 1) aimed = true; }
+  assert.ok(charged, 'dolum oldu'); assert.ok(aimed, 'nişan oldu'); assert.equal(w.ball.kind, 'wind');
+  assert.equal(w.windLeft[0], KICK.windShots - 1);
+});
+
+test('botlar yakar topu dolumla atar: dolumda fireCharge artar, nişandan sonra yakar top çıkar', () => {
+  const w = setup(), p = w.players[1], e = w.players[6];
+  for (const t of w.players) if (t.id !== 1 && t.id !== 6) t.burn = 99;
+  Object.assign(p, { x: 0, z: 0, think: 0 }); Object.assign(e, { x: 0, z: -6, think: 99, energyCd: 99 });
+  w.ball.owner = 1; p.plan = { kind: 'fire', enemy: 6 };
+  let charged = false, aimed = false;
+  for (let i = 0; i < 200 && w.ball.kind !== 'fire'; i++) { step(w, 1 / 60); if (p.fireCharge > 0.5) charged = true; if (w.aim?.id === 1) aimed = true; }
+  assert.ok(charged, 'dolum oldu'); assert.ok(aimed, 'nişan oldu'); assert.equal(w.ball.kind, 'fire');
 });

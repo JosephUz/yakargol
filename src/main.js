@@ -1,4 +1,5 @@
 import { createAudio } from './audio.js';
+import { createCinema } from './cinema.js';
 import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
 import { createRuzgarGosteri } from './gosteri-ruzgar.js';
 import { createGosteri, gosteriKip } from './gosteri.js';
@@ -10,7 +11,7 @@ import { onlineEnabled, serverHttp } from './platform.js';
 import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI, onTap } from './ui.js';
 import { createView } from './view/view.js';
-import { createWorld, step } from './world.js';
+import { canPower, createWorld, startAim, step } from './world.js';
 
 /**
  * İstemci uygulaması: dünya, görünüm, girdi, arayüz ve ekran akışı (giriş → maç ↔ mola / yardım → maç sonu).
@@ -18,14 +19,14 @@ import { createWorld, step } from './world.js';
  * çizim → karakter üstü gösterge; tabela ve kart kısa aralıkla tazelenir. Oyuncu doğunca (maç başı, gol sonrası
  * diziliş, kenardan dönüş) kamera topa çevrilir. Golde patlama olur, herkes fırlar (GOAL_BLAST), sonra santra. Fare kilidi düşerse (Esc) oyun molaya girer.
  *
- * Yakar top sineması (CINEMA): biri yakar top atınca simülasyon zamanı ölçeklenir: tutuşma (donuk) → uçuş (ağır
- * çekim) → çarpma (daha ağır). Simülasyon kuralları aynı kalır; yalnızca adım başına düşen gerçek zaman değişir.
- * İnsan oyuncuda tutuşma yerine nişan evresi vardır: top sendeyken sağ tık kısa basılırsa pas, CINEMA.hold'dan uzun
- * basılı kalırsa oyun donar ve CINEMA.aim saniye fareyle nişan alınır; bırakınca (sol tık ya da süre dolunca) yakar top fırlar.
+ * Yakar top ve rüzgar şutu sineması (CINEMA, cinema.js): top sendeyken sağ tık (yakar top) ya da sol tık (rüzgar)
+ * CINEMA.hold saniye basılı kalınca oyun ağır çekime geçer, CINEMA.aim saniye nişan alınır, bırakınca vuruş çıkar; bu
+ * sırada rakip kayarak topu alırsa vuruş olmaz. Uçuşta da ağır çekim, herkesin kamerası topu izler. Kısa basış: sağ tık
+ * pas, sol tık normal şut. Simülasyon kuralları aynı kalır; yalnızca adım başına düşen gerçek zaman değişir.
  *
  * **Çevrim içi** (webde, config.js → ONLINE; bkz. lobby.js, net/): maçı sunucu koşturur, bu sayfa girdiyi yollar ve
- * gelen durumu çizer (net/client.js). Sinemayı da sunucu yürütür (herkes aynı anda donar / ağır çekime geçer); nişan
- * evresinde nişan noktası buradan gider. Çevrim içinde mola maçı durdurmaz.
+ * gelen durumu çizer (net/client.js). Sinemayı da sunucu yürütür (herkes aynı anda ağır çekime geçer); nişan
+ * evresinde nişan noktası girdiyle gider. Çevrim içinde mola maçı durdurmaz.
  *
  * Dokunmatik kip (telefon, tablet, Android uygulaması; ?touch=1 ile masaüstünde de): joystick ve düğmeler (touch.js),
  * hafif görüntü, önemli anlarda titreşim; uygulamada Android geri tuşu mola / devam / çıkış olur.
@@ -65,11 +66,14 @@ export async function start(root) {
   try { savedCam = localStorage.getItem('yg.cam'); } catch { /* yok */ }
   // Gösteride kamerayı sahne seçer (maç sahnesi izometrik, rüzgar sahnesi omuz üstü); kaydedilmiş seçim okunmaz, yazılmaz.
   setCamera(gosteri ? gosteri.kamera || 'iso' : touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
-  const toggleCamera = () => setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso');
+  // Omuz kamerasına geçince bakış kaldığı yerden değil topa dönük başlar.
+  const toggleCamera = () => { setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso'); if (view.cameraMode === 'shoulder') view.faceBall(w); };
   onTap(camButton, toggleCamera);
   const ui = createUI(root);
   const audio = createAudio();
+  // cine: sinemanın görüntü durumu (bkz. syncCine); cinema: tek başına oyunda evreyi yürüten (cinema.js).
   let cine = null, rightHold = null, online = false;
+  const cinema = createCinema();
   let w = createWorld(), screen = 'home', started = false, acc = 0, uiClock = 0, helpReturn = 'home', pausedAt = 0, last = performance.now();
   view.faceBall(w);
 
@@ -103,7 +107,7 @@ export async function start(root) {
   }
   function begin() {
     if (online) { showLobby(); return; }
-    endCinema(); rightHold = null;
+    endCinema(); cinema.reset(); rightHold = null;
     // Gösteride her maç rastgele tohumla kurulur (bkz. gosteri.tohum): klipler birbirinin tekrarı olmasın.
     w = createWorld(gosteri ? gosteri.tohum() : undefined); view.faceBall(w);
     started = true; acc = 0;
@@ -130,7 +134,7 @@ export async function start(root) {
   }
   function menu() {
     if (online) { leaveRoom(); return; }
-    endCinema(); started = false; w = createWorld(); view.faceBall(w); show('home');
+    endCinema(); cinema.reset(); started = false; w = createWorld(); view.faceBall(w); show('home');
   }
 
   ui.button('start', () => { if (online) leaveRoom(); begin(); }); ui.button('restart', begin); ui.button('again', begin);
@@ -163,7 +167,7 @@ export async function start(root) {
     },
     onStart(msg, first) {
       if (!first) return;
-      online = true; endCinema(); rightHold = null;
+      online = true; endCinema(); cinema.reset(); rightHold = null;
       w = net.world; view.faceBall(w);
       started = true; acc = 0;
       macBasladi(); // ölçüm: çevrimiçi maç başladı (yalnız first === true, yani gerçek başlangıç)
@@ -204,7 +208,7 @@ export async function start(root) {
   }
   function leaveRoom() {
     net?.leave();
-    online = false; endCinema(); started = false; w = createWorld(); view.faceBall(w);
+    online = false; endCinema(); cinema.reset(); started = false; w = createWorld(); view.faceBall(w);
     lobby.status('');
     show('home');
   }
@@ -214,128 +218,124 @@ export async function start(root) {
     net.connect(lobby.nick());
   }
 
-  /** Yakar top çıktı: oyun donar, top alev alır; kamera topa döner. */
-  function startCinema(e) {
-    if (cine) return;
-    const p = w.players[e.id];
-    cine = { phase: 'ignite', t: 0 };
-    view.cinemaStart();
-    view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z });
-    audio.play('ignite');
-    ui.cinema(true, who(p));
-  }
   const who = p => (p.id === w.me ? 'SEN' : TEAMS.names[p.team] + ' · ' + p.name);
-  const canFire = () => { const p = w.players[w.me]; return w.ball.owner === w.me && p.energyCd <= 0 && w.fireLeft[p.team] > 0 && p.kickCd <= 0 && p.stun <= 0; };
-  const fireBlocked = () => { const p = w.players[w.me]; return w.fireLeft[p.team] <= 0 ? 'TAKIMIN YAKAR TOP HAKKI BİTTİ' : p.energyCd > 0 ? 'ENERJİ DOLMADI' : null; };
-  /** Sağ tık, top sendeyken: simülasyona gitmez; kısa basış pas olur, basılı tutuş nişana geçer (tickRightHold). */
+  const mine = () => w.players[w.me];
+  /** Yakar top / rüzgar şutu neden atılamıyor (null: atılabilir). Enerji gerekmez, yalnız takımın hakkı. */
+  const powerBlocked = kind => {
+    const p = mine(), left = (kind === 'fire' ? w.fireLeft : w.windLeft)[p.team];
+    return left <= 0 ? (kind === 'fire' ? 'TAKIMIN YAKAR TOP HAKKI BİTTİ' : 'TAKIMIN RÜZGAR HAKKI BİTTİ') : null;
+  };
+  const myAim = () => (w.aim && w.aim.id === w.me ? w.aim : null);
+  /**
+   * Sağ tık, top sendeyken: simülasyona gitmez; kısa basış pas olur, basılı tutuş yakar top nişanına geçer
+   * (tickRightHold). Yakar top nişanındayken sağ tık bırakılınca (ya da sol tık) `fire`: vuruş çıkar.
+   */
   function route(cmd) {
+    const aim = myAim();
+    if (aim && aim.kind === 'fire') {
+      if (cmd.secondaryUp || !input.rightHeld() || cmd.tap) cmd.fire = true;
+      cmd.secondary = false; cmd.tap = false;
+      return cmd;
+    }
     const owns = w.ball.owner === w.me;
     if (cmd.secondary && owns) { cmd.secondary = false; rightHold = { t: 0, warned: false }; }
     if (rightHold) {
       if (!owns) rightHold = null;
       else if (cmd.secondaryUp || !input.rightHeld()) { cmd.pass = true; rightHold = null; }
     }
+    // Yakar top dolumu sürüyor: dünyada sayılır, karakterin çevresinde alev olarak herkese görünür.
+    cmd.held2 = !!rightHold;
     return cmd;
   }
   function tickRightHold(dt) {
-    if (!rightHold || cine) return;
+    if (!rightHold || w.aim) return;
     rightHold.t += dt;
     if (rightHold.t < CINEMA.hold) return;
-    if (canFire()) { rightHold = null; if (online) net.aim(); else startAim(); }
-    else if (!rightHold.warned) { rightHold.warned = true; const why = fireBlocked(); if (why) ui.message(why, 1.2); }
+    const why = powerBlocked('fire');
+    if (!why && canPower(w, w.me, 'fire')) { rightHold = null; if (online) net.aim(); else startAim(w, w.me, 'fire'); }
+    else if (!rightHold.warned) { rightHold.warned = true; if (why) ui.message(why, 1.2); }
   }
   /** Dolum halkası ve topun rengi için şu an hazırlanan vuruş (yoksa null). */
   function chargeState() {
     if (!active()) return null;
-    const p = w.players[w.me];
-    if (cine && cine.phase === 'aim' && cine.mine !== false) return { kind: 'fire', p: 1 - cine.t / CINEMA.aim, text: 'BIRAK: YAKAR TOP', full: true };
+    const p = mine(), aim = myAim();
+    if (aim) return { kind: aim.kind, p: 1 - (cine?.phase === 'aim' ? cine.t : 0) / CINEMA.aim, text: aim.kind === 'wind' ? 'BIRAK: RÜZGAR ŞUTU' : 'BIRAK: YAKAR TOP', full: true };
     if (cine) return null;
     if (rightHold) {
-      const why = fireBlocked(), full = rightHold.t >= CINEMA.hold;
+      const why = powerBlocked('fire'), full = rightHold.t >= CINEMA.hold;
       return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? why + ' · BIRAK: PAS' : 'BIRAK: PAS · TUT: YAKAR TOP' };
     }
     if (p.charge > 0 && w.ball.owner === w.me) {
-      const full = p.charge >= KICK.windCharge, wait = full && p.energyCd > 0;
-      return { kind: wait ? 'blocked' : 'wind', p: p.charge / KICK.windCharge, full: full && !wait, text: wait ? 'ENERJİ BEKLENİYOR · BIRAK: ŞUT' : 'BIRAK: ŞUT · TUT: RÜZGAR' };
+      const why = powerBlocked('wind'), full = p.charge >= KICK.windCharge;
+      return { kind: why && full ? 'blocked' : 'wind', p: p.charge / KICK.windCharge, full: full && !why, text: why && full ? why + ' · BIRAK: ŞUT' : 'BIRAK: ŞUT · TUT: RÜZGAR' };
     }
     return null;
   }
 
-  /** Nişan: oyun donar, top ayakta alev alır, fare serbest; bırakınca fireNow. */
-  function startAim() {
-    cine = { phase: 'aim', t: 0 };
-    view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z });
-    audio.play('ignite');
-    ui.cinema(true, 'NİŞAN AL · BIRAK: ŞUT', 1);
-  }
-  /** Nişan evresinde bırakıldı mı (sağ tık bırakıldı, sol tık ya da süre doldu). */
-  const aimReleased = () => input.take('secondaryUp') | !input.rightHeld() | input.take('tap') | cine.t >= CINEMA.aim;
-  function tickAim(dt) {
-    cine.t += dt;
-    const p = w.players[w.me], aim = view.aim(input.move(view));
-    p.angle = Math.atan2(aim.x - p.x, aim.z - p.z);
-    ui.cinemaAim(1 - cine.t / CINEMA.aim);
-    if (aimReleased()) fireNow();
-  }
-  /** Nişanlanan yöne yakar top; kamera bu bakışı kaydeder (uçuştan sonra buraya döner). */
-  function fireNow() {
-    view.cinemaStart();
-    const cmd = input.read(view);
-    step(w, STEP, { aim: cmd.aim, fire: true });
-    consume();
-    if (cine && cine.phase === 'aim') endCinema();
-  }
   function endCinema() {
     if (!cine) return;
     cine = null;
-    view.cinemaEnd();
+    view.cinemaEnd(w);
     ui.cinema(false);
   }
-  /** Sinemanın evresine göre simülasyon zaman ölçeği ve alev yoğunluğu. */
+  /**
+   * Görüntüyü sinema evresine uydurur (her kare). Evre tek başına oyunda cinema.js'ten, çevrim içinde durum paketinden
+   * gelir (w.cine): nişanda "NİŞAN AL" / "… NİŞAN ALIYOR", uçuşta "YAKAR TOP!" ya da "RÜZGAR ŞUTU!" ve vuranın adı.
+   * Sinema başlarken kamera bakışı kaydedilir, bitince geri döner.
+   */
+  function syncCine(dt) {
+    const s = online ? w.cine : cinema.state;
+    if (!s) { endCinema(); return; }
+    const p = w.players[s.id], self = s.id === w.me;
+    if (!cine) cine = { phase: null };
+    if (cine.phase !== s.phase || cine.id !== s.id) {
+      const first = cine.phase === null;
+      Object.assign(cine, { phase: s.phase, kind: s.kind, id: s.id, mine: self, t: 0 });
+      if (s.phase === 'aim') {
+        view.event({ type: s.kind === 'fire' ? 'ignite' : 'blow', x: w.ball.x, z: w.ball.z });
+        audio.play('ignite');
+        ui.cinema(true, self ? 'NİŞAN AL · BIRAK: ŞUT' : who(p) + ' NİŞAN ALIYOR', self ? 1 : null, s.kind);
+      } else if (s.phase === 'impact') {
+        view.event({ type: 'impact', x: w.ball.x, z: w.ball.z }); audio.play('impact');
+      } else {
+        // Nişansız başlayan uçuş (ör. eski sunucu): alev patlaması burada.
+        if (first && s.kind === 'fire') { view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z }); audio.play('ignite'); }
+        ui.cinema(true, who(p), null, s.kind);
+      }
+    }
+    cine.t += dt;
+    if (cine.phase === 'aim' && cine.mine) ui.cinemaAim(1 - cine.t / CINEMA.aim);
+  }
+  /** Sinemanın görüntüsü: zaman ölçeği (oyuncu sallanması), alev yoğunluğu ve kameranın topu izlemesi. */
   function cinemaLook() {
     if (!cine) return null;
-    if (cine.phase === 'aim') return { scale: 0, heat: Math.min(1, cine.t / 0.6), track: false };
-    if (cine.phase === 'ignite') return { scale: 0, heat: Math.min(1, cine.t / CINEMA.ignite) };
-    if (cine.phase === 'flight') return { scale: CINEMA.flightScale, heat: Math.max(0.35, 1 - cine.t / CINEMA.flightMax) };
-    return { scale: CINEMA.impactScale, heat: 1 };
-  }
-  function tickCinema(dt) {
-    if (!cine) return;
-    if (cine.phase === 'aim') { tickAim(dt); return; }
-    cine.t += dt;
-    if (cine.phase === 'ignite' && cine.t >= CINEMA.ignite) Object.assign(cine, { phase: 'flight', t: 0 });
-    else if (cine.phase === 'flight' && (w.ball.kind !== 'fire' || cine.t >= CINEMA.flightMax)) endCinema();
-    else if (cine.phase === 'impact' && cine.t >= CINEMA.impact) endCinema();
+    const scale = { aim: CINEMA.aimScale, flight: CINEMA.flightScale, wind: CINEMA.windScale, impact: CINEMA.impactScale }[cine.phase] ?? 1;
+    const heat = cine.kind !== 'fire' ? 0 : cine.phase === 'aim' ? Math.min(1, cine.t / 0.6) : cine.phase === 'flight' ? Math.max(0.35, 1 - cine.t / CINEMA.flightMax) : 1;
+    // Kendi nişanında kamera senin elinde; başkası nişan alırken kamera ona döner. Uçuşta kamerayı chase() sürer.
+    return { scale, heat, track: cine.phase === 'aim' && !cine.mine };
   }
   /**
-   * Çevrim içi sinema: evreyi sunucu söyler (durum paketindeki cine). Evre değişince görüntü (şeritler, alev, kamera)
-   * ona uyar; senin nişanındaysa nişan noktası ve bırakış sunucuya gider.
+   * Top ayaktan çıkınca (yakar top / rüzgar uçuşu) **herkesin kamerası topu kovalar**: kamera oyuncu biçiminde bir odak
+   * noktasını izler. Omuzda odak topun CINEMA.chase birim gerisidir ve bakış topun gidiş yönüne döner (kamera topun
+   * arkasından onunla gider); izometrikte kadraj topa kayar. Uçuş yoksa null (kendi oyuncun); sinema bitince kamera
+   * topa bakarak oyuncuya geçer (view.cinemaEnd).
    */
-  function syncNetCinema(dt) {
-    const sc = w.cine;
-    if (!sc) { endCinema(); return; }
-    const p = w.players[sc.id], mine = sc.id === w.me;
-    if (!cine) {
-      cine = { phase: sc.phase, t: 0, mine, sent: false };
-      view.cinemaStart();
-      view.event({ type: 'ignite', x: w.ball.x, z: w.ball.z });
-      audio.play('ignite');
-      if (sc.phase === 'aim') ui.cinema(true, mine ? 'NİŞAN AL · BIRAK: ŞUT' : who(p) + ' NİŞAN ALIYOR', mine ? 1 : null);
-      else ui.cinema(true, who(p));
-    } else if (cine.phase !== sc.phase) {
-      if (cine.phase === 'aim') ui.cinema(true, who(p));
-      if (sc.phase === 'impact') { view.event({ type: 'impact', x: w.ball.x, z: w.ball.z }); audio.play('impact'); }
-      Object.assign(cine, { phase: sc.phase, t: 0 });
+  const ballFocus = { x: 0, z: 0, angle: 0, team: 0, role: 0, burn: 0, stun: 0, air: 0, jump: 0, sprint: 0, vx: 0, vz: 0, on: false, yaw: 0 };
+  function focusFor(dt) {
+    const flying = cine && (cine.phase === 'flight' || cine.phase === 'wind' || cine.phase === 'impact');
+    if (!flying) { ballFocus.on = false; return null; }
+    const b = w.ball, speed = Math.hypot(b.vx, b.vz), iso = view.cameraMode === 'iso';
+    if (!ballFocus.on) {
+      const me = mine();
+      Object.assign(ballFocus, { x: me.x, z: me.z, on: true, yaw: speed > 1 ? Math.atan2(b.vx, b.vz) : view.yaw });
     }
-    cine.t += dt;
-    if (cine.phase === 'aim' && mine && active() && !cine.sent) {
-      const aim = view.aim(input.move(view));
-      p.angle = Math.atan2(aim.x - p.x, aim.z - p.z);
-      ui.cinemaAim(1 - cine.t / CINEMA.aim);
-      const go = !!aimReleased();
-      if (go) cine.sent = true;
-      net.aimAt(aim, go);
-    }
+    if (speed > 1) ballFocus.yaw += Math.atan2(Math.sin(Math.atan2(b.vx, b.vz) - ballFocus.yaw), Math.cos(Math.atan2(b.vx, b.vz) - ballFocus.yaw)) * Math.min(1, dt * CINEMA.chaseTurn);
+    const back = iso ? 0 : CINEMA.chase;
+    const tx = b.x - Math.sin(ballFocus.yaw) * back, tz = b.z - Math.cos(ballFocus.yaw) * back;
+    const k = 1 - Math.exp(-dt * (iso ? 5 : 9));
+    ballFocus.x += (tx - ballFocus.x) * k; ballFocus.z += (tz - ballFocus.z) * k;
+    if (!iso) view.setLook(ballFocus.yaw);
+    return ballFocus;
   }
 
   function consume() {
@@ -347,21 +347,16 @@ export async function start(root) {
       gosteri?.olay?.(e, w);
       // Gösteride titreşim yok: kipin "izleyeni" oyuncu değil kamera, telefonu her golde titretmenin anlamı yok.
       if (touch && !gosteri) buzz(e, me);
-      if (!online && e.type === 'kick' && e.kind === 'fire') {
-        if (cine && cine.phase === 'aim') { Object.assign(cine, { phase: 'flight', t: 0 }); ui.cinema(true, 'SEN'); }
-        else startCinema(e);
-      }
-      if (!online && e.type === 'burn' && cine) {
-        Object.assign(cine, { phase: 'impact', t: 0 });
-        view.event({ type: 'impact', x: e.x, z: e.z });
-        audio.play('impact');
-      }
+      // Tek başına oyunda sinemayı bu sayfa yürütür; çevrim içinde evre sunucudan gelir.
+      if (!online) cinema.event(e);
       if (e.type === 'goal') { ui.message(ui.teamName(e.team) + ' TAKIM · GOOOL!', 2.2); audio.play('boom'); view.faceBall(w); }
       if (e.type === 'lineup') view.faceBall(w);
       if (e.type === 'return' && e.id === me) view.faceBall(w);
       if (e.type === 'burn' && e.attacker === me) ui.message('YAKALADIN! Şimdi golü bul.', 1.8);
       if (e.type === 'receive' && e.id === me) ui.message('TOP SENDE', 0.75);
       if (e.type === 'steal' && e.from === me && e.stun) ui.message('TOPU KAPTIRDIN · SERSEMLEDİN', 1.4);
+      if (e.type === 'aimLost' && e.id === me) ui.message('KAYARAK TOPU ALDILAR · VURUŞ YOK', 1.6);
+      if (e.type === 'aimLost' && e.by === me) ui.message('KAYARAK ALDIN · VURUŞU ENGELLEDİN', 1.6);
       if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
     }
     w.events.length = 0;
@@ -373,7 +368,7 @@ export async function start(root) {
   const refresh = () => { if (!gosteri) ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen); };
   /**
    * Gösteri sahnesinin zaman ölçeği ve görüntüsü (rüzgar sahnesi ilk çarpmada ve golde ağır çekime geçer, bkz.
-   * gosteri-ruzgar.js bakis). Sahnesi olmayan ya da ölçek sürmeyen kipte null: o zaman yakar top sineması geçerlidir.
+   * gosteri-ruzgar.js bakis). Sahnesi olmayan ya da ölçek sürmeyen kipte null: o zaman sinema (cinema.js) geçerlidir.
    */
   const gosteriBakis = () => (gosteri?.bakis ? gosteri.bakis() : null);
 
@@ -386,58 +381,53 @@ export async function start(root) {
       // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).
       const move = active() ? input.move(view) : null;
       if (active()) {
-        const cmd = route(input.read(view));
-        if (!cine) net.input(cmd, dt);
+        net.input(route(input.read(view)), dt);
         tickRightHold(dt);
       } else net.input({ x: 0, z: 0, aim: null, hold: false }, dt);
-      net.update(dt, cine ? null : move);
-      syncNetCinema(dt);
+      net.update(dt, w.cine ? null : move);
     } else if (active()) {
-      acc += dt * (gosteriBakis()?.scale ?? (cine ? cinemaLook().scale : 1));
+      // Nişanda ve uçuşta ağır çekim (cinema.js): adım başına düşen gerçek zaman küçülür, kurallar aynı kalır.
+      acc += dt * (gosteriBakis()?.scale ?? cinema.scale());
       for (let n = 0; acc >= STEP && n < MAX_STEPS; n++) {
-        const was = cine;
         // Gösteride insan girdisi okunmaz: maç sahnesinde on koltuğu da bot yapay zekâsı sürer (bkz. world.js step),
         // rüzgar sahnesinde girdiyi sahnenin kendisi verir (yalnız şutçuya; bkz. gosteri-ruzgar.js girdi).
         step(w, STEP, gosteri ? gosteri.girdi?.(STEP, w) || {} : route(input.read(view)));
         consume();
         acc -= STEP;
-        if (screen || (cine && !was)) { if (cine) acc = 0; break; }
+        if (screen) break;
       }
       if (!gosteri) tickRightHold(dt);
-      tickCinema(dt);
+      cinema.tick(w, dt);
       // Maç bittiyse birkaç saniye sonra yenisi kurulur: gösteri girdisiz döner durur.
       if (gosteri) gosteri.guncelle(dt, w, begin);
     } else acc = 0;
+    if (started) syncCine(dt);
     // Gösteride arayüz yoktur (bkz. style.css `.gosteri`): panel, gösterge ve işaret güncellemeleri hiç koşmaz.
     // Rüzgar sahnesi yine de ayaktaki topun dolum rengini ister (bkz. gosteri-ruzgar.js sarj → view/ballview.js).
     const charge = gosteri ? gosteri.sarj?.(w) || null : chargeState();
     if (!gosteri) {
       ui.tickMessage(dt, w, active());
       ui.charge(charge);
-      const me = w.players[w.me];
+      const me = mine();
       ui.speed(active() && !cine && me.sprint > 0 && me.burn <= 0);
       input.sync(w, active());
-      // İzometrikte nişan oku: top sendeyken ya da yakar top nişanında.
-      const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === w.me && !cine) || (cine?.phase === 'aim' && cine.mine !== false));
+      // İzometrikte nişan oku: top sendeyken ya da kendi nişanında.
+      const aiming = active() && view.cameraMode === 'iso' && ((w.ball.owner === w.me && !cine) || !!myAim());
       view.showAim(aiming ? view.aim(input.move(view)) : null);
     }
     // Çevrim içinde durum pakette gelir: görüntü molada da oynar (sinemada ölçek sunucudan).
     const drawDt = online && started ? dt : screen ? 0 : dt;
     // Rüzgar sahnesi çizimden hemen önce kendi kadrajını kurar ve yükleme kıvılcımlarını saçar (bkz. gosteri-ruzgar.js cizim).
     gosteri?.cizim?.(drawDt, w, view);
-    // Gösteride kamera senin oyuncunu değil sahnenin odağını izler (maçta aksiyonun ağırlık merkezi, rüzgar sahnesinde top).
-    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : gosteriBakis() || cinemaLook(), charge, gosteri ? gosteri.odak(drawDt, w) : null);
+    // Gösteride kamera senin oyuncunu değil sahnenin odağını izler (maçta aksiyonun ağırlık merkezi, rüzgar sahnesinde top);
+    // izometrikte uçuş sırasında kadraj topu izler.
+    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', gosteriBakis() || cinemaLook(), charge, gosteri ? gosteri.odak(drawDt, w) : focusFor(drawDt));
     if (!gosteri) {
       ui.overhead(w, dt, active(), view.project);
       ui.ballMark(w, active() && !cine, view.project);
     }
     uiClock -= dt;
     if (uiClock <= 0) { uiClock = 0.08; refresh(); }
-  }
-  /** Çevrim içi sinemanın görüntüsü: ölçek oyuncu sallanması için, alev yoğunluğu evreden. */
-  function netLook() {
-    const look = cinemaLook();
-    return look && cine.phase === 'aim' && !cine.mine ? { ...look, track: true } : look;
   }
 
   /**

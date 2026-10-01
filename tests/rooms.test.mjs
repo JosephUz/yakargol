@@ -90,7 +90,7 @@ test('kopan oyuncunun koltuğu tutulur, o sürede bot oynar; token ile geri dön
   rooms.close();
 });
 
-test('yakar top nişanı: maç donar, bırakınca yakar top uçar (herkes için ağır çekim)', async () => {
+test('yakar top nişanı: maç ağır çekime geçer, bırakınca yakar top uçar (herkes için ağır çekim)', async () => {
   const { rooms, join } = setup();
   const a = join('Ali');
   a.say({ t: 'create' }); a.say({ t: 'start' });
@@ -99,14 +99,17 @@ test('yakar top nişanı: maç donar, bırakınca yakar top uçar (herkes için 
   Object.assign(w.ball, { owner: 0, x: 0, z: 10 });
   for (const q of w.players.slice(1)) q.stun = 5;
   a.say({ t: 'aim' });
-  assert.equal(room.cine?.phase, 'aim');
+  assert.equal(w.aim?.kind, 'fire');
   const t0 = w.time;
-  await wait(120);
-  assert.equal(w.time, t0, 'nişanda maç donar');
+  await wait(300);
+  assert.equal(room.cinema.state?.phase, 'aim');
+  const slow = w.time - t0;
+  assert.ok(slow > 0.02 && slow < 0.2, 'nişanda maç ağır çekimde sürer: ' + slow.toFixed(3));
   a.say({ t: 'in', mv: [0, 0], aim: [0, -20], hold: false, e: 'f' });
-  await wait(60);
+  await wait(80);
   assert.equal(w.fireLeft[0], 4, 'yakar top hakkı düştü');
-  assert.ok(['flight', 'impact'].includes(room.cine?.phase) || w.ball.kind === 'fire', 'yakar top uçuşta');
+  assert.ok(['flight', 'impact'].includes(room.cinema.state?.phase) || w.ball.kind === 'fire', 'yakar top uçuşta');
+  assert.equal(a.last('s').cine[0] !== undefined, true, 'evre durum paketinde');
   rooms.close();
 });
 

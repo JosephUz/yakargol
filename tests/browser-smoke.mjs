@@ -62,10 +62,10 @@ try {
   assert.equal(await game(() => window.__yakarGol.world().ball.kind), 'pass');
   assert.equal(await cinema(), null);
 
-  // Sağ tık basılı: oyun donar, top alev alır, nişan alınır; bırakınca yakar top ağır çekimde uçar, hak 3'ten 2'ye iner.
+  // Sağ tık 1 sn basılı: oyun ağır çekime geçer, top alev alır, nişan alınır; bırakınca yakar top ağır çekimde uçar, hak 5'ten 4'e iner.
   await ready();
   await page.mouse.move(700, 500); await page.mouse.down({ button: 'right' });
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(450);
   assert.ok(await page.locator('#yg-charge').isVisible(), 'sağ tık dolum halkası yok');
   assert.match(await page.locator('#yg-charge-text').textContent(), /BIRAK: PAS/);
   assert.equal(await cinema(), null, 'dolum bitmeden nişana geçti');
@@ -74,9 +74,13 @@ try {
   assert.ok(await page.locator('#yg-cine').isVisible());
   assert.ok(await page.locator('#yg-cine-aim').isVisible());
   assert.equal(await game(() => window.__yakarGol.world().ball.owner), 0);
-  const frozen = await game(() => window.__yakarGol.world().time);
-  await page.waitForTimeout(500);
-  assert.equal(await game(() => window.__yakarGol.world().time), frozen, 'nişanda oyun durmadı');
+  const aimT0 = await game(() => window.__yakarGol.world().time);
+  await page.waitForTimeout(300);
+  const aimSlow = (await game(() => window.__yakarGol.world().time)) - aimT0;
+  assert.ok(aimSlow > 0.03 && aimSlow < 0.2, 'nişanda oyun ağır çekimde sürmeli: ' + aimSlow);
+  // Nişanda karakterin çevresinde alev dilleri (vuruş çıkmadan herkes görür).
+  assert.ok(await game(() => window.__yakarGol.view().aura(0).fire), 'yakar top nişanında karakterin çevresinde alev');
+  assert.match(await page.locator('#yg-cine-title').textContent(), /YAKAR TOP/);
   assert.equal(await cinema(), 'aim');
   await page.screenshot({ path: 'artifacts/03-fire.png' });
   // Uçuşu görmek için yolu boşalt: botlar kısa süre kenarda (dolum sırasında yaklaşıp ilk karede vurulabiliyorlar).
@@ -85,14 +89,23 @@ try {
   await page.waitForFunction(() => window.__yakarGol.state().cine === 'flight', null, { timeout: 2000 });
   assert.equal(await game(() => window.__yakarGol.world().ball.kind), 'fire');
   assert.ok(await game(() => window.__yakarGol.view().flames.visible));
-  assert.match(await page.locator('#yg-over-energy-text').textContent(), /ENERJİ \d/);
+  assert.equal(await game(() => window.__yakarGol.world().players[0].energyCd), 0, 'yakar top enerji harcamaz');
   const t0 = await game(() => window.__yakarGol.world().time);
   await page.waitForTimeout(500);
   const slow = (await game(() => window.__yakarGol.world().time)) - t0;
-  assert.ok(slow > 0.05 && slow < 0.35, 'ağır çekim değil: ' + slow);
+  assert.ok(slow > 0.05 && slow < 0.45, 'ağır çekim değil: ' + slow);
+  // Top ayaktan çıktı: kamera topu kovalar (odak topun yakınında).
+  assert.ok(await game(() => { const v = window.__yakarGol.view(), b = window.__yakarGol.world().ball, c = v.camera.position; return Math.hypot(b.x - c.x, b.z - c.z) < 12; }), 'kamera topu kovalamıyor');
   await page.screenshot({ path: 'artifacts/09-fire-flight.png' });
   await page.waitForFunction(() => window.__yakarGol.state().cine === null, null, { timeout: 5000 });
   assert.ok(await page.locator('#yg-cine').isHidden());
+  // Kovalama bitti: kamera kaldığı yere değil topa bakarak oyuncuya döner.
+  const afterCine = await game(() => {
+    const v = window.__yakarGol.view(), w = window.__yakarGol.world(), p = w.players[0];
+    const toBall = Math.atan2(w.ball.x - p.x, w.ball.z - p.z);
+    return Math.abs(Math.atan2(Math.sin(v.yaw - toBall), Math.cos(v.yaw - toBall)));
+  });
+  assert.ok(afterCine < 0.35, 'sinemadan sonra kamera topa bakmalı: ' + afterCine.toFixed(2));
   assert.equal(await page.locator('#yg-fire-left').textContent(), '4 / 5');
   assert.equal(await page.locator('#yg-blue-fire i.used').count(), 1);
   assert.equal(await page.locator('#yg-orange-fire i.used').count(), 0);
@@ -123,18 +136,31 @@ try {
   assert.equal(await game(() => window.__yakarGol.world().ball.kind), 'normal');
   assert.equal(await game(() => window.__yakarGol.view().ballCore.material.color.getHexString()), 'ffffff');
 
-  // Basılı sol tık: şarj göstergesi, 2 sn'de rüzgar topu.
+  // Basılı sol tık: şarj göstergesi, 1 sn'de ağır çekimde rüzgar nişanı; bırakınca rüzgar şutu, hak 5'ten 4'e iner.
   await ready();
+  assert.equal(await page.locator('#yg-wind-left').textContent(), '5 / 5');
+  assert.equal(await page.locator('#yg-blue-wind i').count(), 5);
   await page.mouse.move(700, 500); await page.mouse.down();
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(450);
   assert.ok(await page.locator('#yg-charge').isVisible(), 'rüzgar dolum halkası yok');
   assert.match(await page.locator('#yg-charge-text').textContent(), /TUT: RÜZGAR/);
+  assert.ok(await game(() => window.__yakarGol.view().aura(0).wind), 'rüzgar dolumunda karakterin çevresinde rüzgar');
   await page.screenshot({ path: 'artifacts/06-wind-charge.png' });
-  await page.waitForFunction(() => window.__yakarGol.world().ball.kind === 'wind', null, { timeout: 6000 });
-  assert.ok(await game(() => window.__yakarGol.view().gusts.visible));
-  await page.waitForTimeout(120);
-  await page.screenshot({ path: 'artifacts/07-wind.png' });
+  await page.waitForFunction(() => window.__yakarGol.state().cine === 'aim', null, { timeout: 3000 });
+  assert.equal(await game(() => window.__yakarGol.world().aim?.kind), 'wind');
+  assert.match(await page.locator('#yg-cine-title').textContent(), /RÜZGAR ŞUTU/);
+  assert.match(await page.locator('#yg-charge-text').textContent(), /BIRAK: RÜZGAR/);
+  await page.screenshot({ path: 'artifacts/06b-wind-aim.png' });
   await page.mouse.up();
+  await page.waitForFunction(() => window.__yakarGol.world().ball.kind === 'wind', null, { timeout: 2000 });
+  assert.equal(await cinema(), 'wind');
+  assert.ok(await game(() => window.__yakarGol.view().gusts.visible));
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: 'artifacts/07-wind.png' });
+  await page.waitForFunction(() => window.__yakarGol.state().cine === null, null, { timeout: 9000 });
+  assert.equal(await page.locator('#yg-wind-left').textContent(), '4 / 5');
+  assert.equal(await page.locator('#yg-blue-wind i.used').count(), 1);
+  assert.equal(await page.locator('#yg-fire-left').textContent(), '3 / 5', 'rüzgar yakar top hakkını harcamaz (önceki iki yakar top)');
 
   // Shift: 1 sn hızlı koşu, enerji harcar.
   await game(() => { const p = window.__yakarGol.world().players[0]; p.energyCd = 0; });

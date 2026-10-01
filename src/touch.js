@@ -86,13 +86,13 @@ export function createTouch(root, sink) {
       for (const f of fingers.values()) release(f);
       fingers.clear();
     },
-    /** Düğme yazıları ve enerji dolumu: topsuzken PAS düğmesi KAY olur, ŞUT sönük kalır. */
+    /** Düğme yazıları ve enerji dolumu: topsuzken PAS düğmesi KAY, ŞUT düğmesi PAS İSTE olur. */
     sync(w, visible) {
       el.pad.hidden = !visible;
       if (!visible) return;
       const p = w.players[w.me], owns = w.ball.owner === w.me, cd = Math.min(1, p.energyCd / ENERGY.cooldown).toFixed(3);
       el.pass.classList.toggle('dash', !owns);
-      el.shoot.classList.toggle('idle', !owns);
+      el.shoot.classList.toggle('call', !owns);
       el.pass.style.setProperty('--cd', owns ? 0 : cd);
       el.sprint.style.setProperty('--cd', cd);
     },

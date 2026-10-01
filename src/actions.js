@@ -3,8 +3,8 @@ import { distance } from './math.js';
 
 /**
  * Oyuncu eylemleri: zıplama, kayma, hızlı koşu, şut ve pas. İnsan girdisi de bot kararları da buradan geçer; eylem yapılamıyorsa
- * (maç bitti, başlama beklemesi, kenarda, enerji ya da şut beklemesi) false döner. Enerjili beceriler (kayma, hızlı
- * koşu, yakar top ve rüzgar şutu) ENERGY.cooldown ortak geri sayımını başlatır.
+ * (maç bitti, başlama beklemesi, kenarda, enerji ya da şut beklemesi) false döner. Enerjiyi yalnız kayma ve hızlı koşu
+ * kullanır (ENERGY.cooldown ortak geri sayımı); yakar top ve rüzgar şutu enerjiden bağımsızdır, yalnız takım hakkına bakar.
  */
 export function emit(w, type, data = {}) { w.events.push({ type, ...data }); }
 
@@ -40,14 +40,45 @@ export function sprint(w, id) {
   return true;
 }
 
-/** Şut: top bendeyse `aim` noktasına doğru. Yakar top ve rüzgar şutu enerji ister; yakar top takım başına maçta KICK.fireShots kez. */
+/** Yakar top / rüzgar şutu için takımın kalan hakkı. */
+export const shotsLeft = (w, p, kind) => (kind === 'fire' ? w.fireLeft : w.windLeft)[p.team];
+
+/** Bu oyuncu şu an yakar top (fire) ya da rüzgar şutu (wind) atabilir mi: top onda ve takım hakkı var (enerji gerekmez). */
+export function canPower(w, id, kind) {
+  const p = w.players[id];
+  return !idle(w, p) && !w.blast && w.ball.owner === id && p.kickCd <= 0 && shotsLeft(w, p, kind) > 0;
+}
+
+/**
+ * Nişan başlat (yakar top ya da rüzgar şutu): oyun ağır çekime geçer (bkz. cinema.js), nişan alan kıpırdamaz, vuruş
+ * bırakınca (releaseAim) ya da süre dolunca çıkar. Bu arada rakip kayarak topu alırsa nişan bozulur (world.js step).
+ */
+export function startAim(w, id, kind) {
+  if (w.aim || !canPower(w, id, kind)) return false;
+  const p = w.players[id];
+  w.aim = { id, kind, t: 0, target: { x: p.x + Math.sin(p.angle) * 20, z: p.z + Math.cos(p.angle) * 20 } };
+  p.charge = 0; p.vx = 0; p.vz = 0;
+  emit(w, 'aim', { id, kind });
+  return true;
+}
+
+/** Nişanı bırak: vuruş nişan noktasına çıkar. */
+export function releaseAim(w) {
+  const a = w.aim; if (!a) return false;
+  w.aim = null;
+  return kick(w, a.id, a.target, a.kind);
+}
+
+/**
+ * Şut: top bendeyse `aim` noktasına doğru. Yakar top ve rüzgar şutu enerji istemez; takım başına maçta KICK.fireShots
+ * yakar top ve KICK.windShots rüzgar şutu.
+ */
 export function kick(w, id, aim, kind = 'normal') {
   const p = w.players[id], b = w.ball;
   if (idle(w, p) || p.kickCd > 0 || b.owner !== id) return false;
   if (!KINDS.includes(kind)) kind = 'normal';
   const powered = kind === 'fire' || kind === 'wind';
-  if (powered && p.energyCd > 0) return false;
-  if (kind === 'fire' && w.fireLeft[p.team] <= 0) return false;
+  if (powered && shotsLeft(w, p, kind) <= 0) return false;
   const dx = aim.x - p.x, dz = aim.z - p.z, d = Math.hypot(dx, dz);
   if (d < 0.05) return false;
   const speed = KICK[kind];
@@ -58,8 +89,9 @@ export function kick(w, id, aim, kind = 'normal') {
     power: kind === 'fire' ? KICK.firePower : kind === 'wind' ? WIND.power : 0,
   });
   p.kickCd = KICK.cooldown; p.charge = 0;
-  if (powered) p.energyCd = ENERGY.cooldown;
   if (kind === 'fire') w.fireLeft[p.team]--;
+  if (kind === 'wind') w.windLeft[p.team]--;
+  w.shots = (w.shots || 0) + 1;
   if (kind === 'pass') p.stats.passes++;
   emit(w, 'kick', { id, kind, x: b.x, z: b.z });
   return true;

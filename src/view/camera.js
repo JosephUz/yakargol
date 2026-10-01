@@ -7,7 +7,8 @@ import { benchX, benchZ, lift } from './actors.js';
  * Omuz kamerası (tek kamera): senin oyuncunun (w.me) arkasında ve biraz sağında, zıplayınca onunla yükselir; yanınca kenardaki
  * yerine geçer. Yatay bakış (yaw) ve dikey eğim (pitch) fareyle döner. Nişan ekran ortasından zemine inen ışındır,
  * hareket bakış yönüne göredir. Oyuncu doğunca (maç başı, gol sonrası diziliş, kenardan dönüş) kamera topa çevrilir.
- * Yakar top sinemasında bakış kaydedilir, kamera yumuşakça topu izler (track), sinema bitince eski bakışa döner.
+ * Yakar top sinemasında kamera topu izler (track / kovalama); sinema bitince kaldığı yere değil **topa** döner (faceBall):
+ * kontrol oyuncuya her geri geçişte (kovalama, başkasının nişanı, kenardan dönüş, kamera değişimi) bakış topa çevrilir.
  *
  * **İzometrik** kip (telefonda varsayılan, bkz. CAMERA.iso): ortografik kamera oyuncuyu sabit bir yan açıdan (futbol yayını
  * gibi) izler; bakış dönmez, topa çevrilmez, hareket ekrana göredir. Nişan: fare varsa imlecin sahadaki noktası (pointer),
@@ -24,7 +25,7 @@ export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
   const iso = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, CAMERA.far);
   let mode = 'shoulder', hero = null, pointer = null;
   const ray = new T.Raycaster(), ground = new T.Plane(new T.Vector3(0, 1, 0), 0), point = new T.Vector3();
-  let yaw = Math.PI, pitch = CAMERA.pitch, saved = null, shake = 0;
+  let yaw = Math.PI, pitch = CAMERA.pitch, shake = 0;
   const spot = p => ({ x: p.burn > 0 ? benchX(p.team) : p.x, z: p.burn > 0 ? benchZ(p) : p.z });
 
   const active = () => (mode === 'iso' ? iso : camera);
@@ -47,8 +48,6 @@ export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
     },
     /** Kamera sarsıntısı (gol patlaması): verilen güçle başlar, hızla söner. */
     shake(power) { shake = Math.max(shake, power); },
-    save() { saved = { yaw, pitch }; },
-    restore() { if (saved) { yaw = saved.yaw; pitch = saved.pitch; saved = null; } },
     /** Bakışı topa doğru yumuşakça çevirir (sinema). */
     track(w, dt) {
       if (mode === 'iso') return;

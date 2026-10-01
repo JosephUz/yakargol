@@ -10,8 +10,8 @@ export const C2S = {
   MOVE: 'move',     // { id, slot } — yalnızca yönetici: oyuncuyu koltuğa taşır, koltuk doluysa ikisi yer değiştirir
   START: 'start',   // yalnızca yönetici
   LEAVE: 'leave',
-  INPUT: 'in',      // { mv: [x, z], aim: [x, z], hold, e: 'basışlar' } — bkz. EDGES
-  AIM: 'aim',       // yakar top nişanını başlat (sağ tık basılı, top sende)
+  INPUT: 'in',      // { mv: [x, z], aim: [x, z], hold (sol tık basılı), h2 (sağ tık basılı, top sende), e: 'basışlar' } — bkz. EDGES
+  AIM: 'aim',       // yakar top nişanını başlat (sağ tık basılı, top sende); bırakınca girdide 'f' basışı
   PING: 'ping',
 };
 export const S2C = {

@@ -10,8 +10,9 @@ import { clamp } from './math.js';
  *    "insan" işaretlenir (bkz. world.js step) ama yalnız şutçuya girdi verilir: kalan dokuzu girdisiz, yani hareketsiz
  *    kalır. Şutçunun `guard`'ı sahne boyunca açık tutulur, böylece sahnelenmiş vuruş çalınamaz (bkz. ball.js carry).
  *  - Şutçu rüzgar şutunu KICK.windCharge saniye yükler (sol tıkı basılı tutmakla birebir aynı yol: `hold` girdisi,
- *    bkz. world.js shoot); yükleme boyunca top camgöbeğine döner ve çevresine rüzgar kıvılcımları saçılır. Süre
- *    dolunca rüzgar topu kendiliğinden çıkar, yoldaki rakipleri tek tek savurur (ball.js blow) ve gol olur.
+ *    bkz. world.js shoot), sonra nişan evresi gelir (world.js aiming); yükleme ve nişan boyunca top camgöbeğine döner
+ *    ve çevresine rüzgar kıvılcımları saçılır. Nişan süresi dolunca rüzgar topu kendiliğinden çıkar, yoldaki rakipleri
+ *    tek tek savurur (ball.js blow) ve gol olur.
  *  - Kamera **omuz üstüdür** (izometrik değil): şutçunun arkasından kaleye bakar, top giderken odak topun
  *    GOSTERI_RUZGAR.kamera.iz birim gerisinde yumuşakça onu izler.
  *  - İlk çarpmada ve golde kısa ağır çekim olur (GOSTERI_RUZGAR.agir); ekranda yalnız bu sahneye özel, büyük bir
@@ -21,7 +22,7 @@ import { clamp } from './math.js';
  * Arayüzün gizlenmesi, girdinin okunmaması, ölçümün gitmemesi ve sunucuya bağlanılmaması `?gosteri=1` ile ortaktır
  * (bkz. main.js, style.css `.gosteri`). `?gosteri=1` ve normal oyun bu dosyadan hiç etkilenmez.
  */
-const YAZI = { yukleme: 'Sol tık 2 sn basılı: RÜZGAR ŞUTU', carpma: 'Önüne çıkanı savurur!' };
+const YAZI = { yukleme: 'Sol tık 1 sn basılı: RÜZGAR ŞUTU', carpma: 'Önüne çıkanı savurur!' };
 
 export function createRuzgarGosteri(root) {
   const yaziEl = root.querySelector('#yg-gosteri-yazi');
@@ -175,8 +176,8 @@ export function createRuzgarGosteri(root) {
   /** Yüklenen vuruşun görüntüsü: ayaktaki top camgöbeğine döner ve dolum arttıkça parlar (bkz. view/ballview.js). */
   function sarj(w) {
     if (!sahne || sahne.evre !== 'yukleme' || w.ball.owner !== sahne.atan) return null;
-    const p = w.players[sahne.atan];
-    return { kind: 'wind', p: p.charge / KICK.windCharge, full: p.charge >= KICK.windCharge, text: '' };
+    const p = w.players[sahne.atan], nisan = w.aim && w.aim.id === sahne.atan;
+    return { kind: 'wind', p: nisan ? 1 : p.charge / KICK.windCharge, full: nisan || p.charge >= KICK.windCharge, text: '' };
   }
 
   /** Simülasyonun zaman ölçeği (main.js): ilk çarpmada ve golde kısa ağır çekim. */

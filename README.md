@@ -45,10 +45,10 @@ Normal oyun ve çevrim içi maç bu ayarlardan hiç etkilenmez. Kod: `src/goster
 
 `https://yakargol.josephuz.com/?gosteri=ruzgar` maç değil, rüzgar şutunu anlatan **sahnelenmiş** bir vuruştur (içerik
 videosu için). Bir bot orta sahada topla durur; rakipler (kaleci dahil) kaleyle onun arasına, topun yolu üstüne
-dizilir ve kıpırdamaz — top çalmaz, saldırmaz; takım arkadaşları da yanlarda durup izler. Bot sol tıkı 2 saniye basılı
+dizilir ve kıpırdamaz — top çalmaz, saldırmaz; takım arkadaşları da yanlarda durup izler. Bot sol tıkı 1 saniye basılı
 tutmuş gibi rüzgar şutunu yükler (top camgöbeğine döner, çevresine rüzgar kıvılcımları saçılır), sonra kaleye vurur:
 top yoldaki beş rakibi tek tek savurur ve gol olur. İlk çarpmada ve golde kısa ağır çekim olur; ekranda yalnız bu
-sahneye özel, büyük bir açıklama yazısı durur (yükleme: "Sol tık 2 sn basılı: RÜZGAR ŞUTU", çarpma: "Önüne çıkanı
+sahneye özel, büyük bir açıklama yazısı durur (yükleme: "Sol tık 1 sn basılı: RÜZGAR ŞUTU", çarpma: "Önüne çıkanı
 savurur!"). Yazı bilerek kadrajın orta yatay bandında ve yanlardan içeridedir: içerik betiği 16:9 kaydı dikey videoya
 keserken yanlardan ~%15 kırpar ve üst / alt kısma kendi yazısını koyar.
 
@@ -91,8 +91,9 @@ değiştirilemez). Simge ve açılış görseli `node scripts/icons.mjs` ile ür
 | WASD / oklar | Baktığın yöne göre hareket. Topa yaklaşınca otomatik alırsın. |
 | Fare | Bak ve nişan al (fare kilitlenir; nişan ekran ortasındaki nişangah). |
 | Sol tık | Bırakınca nişangaha doğru normal (beyaz) şut. |
-| Sol tık basılı (2 sn) | **Rüzgar topu**: şarj dolunca kendiliğinden çıkar. |
-| Sağ tık | Top sendeyken **kısa bas: pas**, **2 sn basılı tut: yakar top** (oyun durur, 2,5 sn nişan al, bırak); topsuzken topa doğru **kayma** (basılan yön ne olursa olsun). |
+| Sol tık (top sende değilken) | **Pas iste**: başında "PAS!" çıkar, topu taşıyan bot arkadaşın sana pas verir. |
+| Sol tık basılı (1 sn) | **Rüzgar şutu**: oyun ağır çekime geçer, 2 sn nişan al, bırak. Durdurulamaz; kaleye nişanlıysa her yerden gol, değilse ilk duvarda biter. Takım başına 5 hak. Nişan alırken rakip kayarak topu alırsa vuruş olmaz. |
+| Sağ tık | Top sendeyken **kısa bas: pas**, **1 sn basılı tut: yakar top** (oyun ağır çekime geçer, 2 sn nişan al, bırak); topsuzken topa doğru **kayma** (basılan yön ne olursa olsun). |
 | Shift | 3 saniye **hızlı koşu** (rüzgar çizgileri, geniş kamera açısı), sonra yorulur normale dönersin (enerji koşu bitince dolmaya başlar). |
 | Boşluk | Zıpla; havadayken yakar top seni yakamaz. |
 | V / 🎥 | Kamera: omuz ↔ **izometrik** (masaüstünde omuzla başlar, seçim hatırlanır). İzometrik futbol yayını gibi sabit yan açıdır (fare / parmak açıyı döndürmez, topa çevrilmez); masaüstünde fare kilitlenmez, şut / pas / yakar top imlecin sahadaki noktasına gider; telefonda nişan hareket / bakış yönü, rakip kaleye dönüksen kale. Yerde ok gösterir. |
@@ -106,8 +107,8 @@ Ekran yatay; dik tutunca "yan çevir" uyarısı çıkar. Tarayıcıda maça gire
 | Sol yarı | Parmağın değdiği yerde **joystick** belirir (analog). Hızlı koşu yalnız **KOŞ** düğmesiyle. |
 | 🎥 | Telefonda **izometrik** kamerayla başlar (yukarıdan eğik, oyuncu ortada); nişan koştuğun / baktığın yön, rakip kaleye dönüksen kalenin ortası, yerde ok gösterir. 🎥 omuz kamerasına geçirir (seçim hatırlanır). Masaüstünde omuzla başlar, V ya da 🎥 ile geçilir. Ayarlar `CAMERA.iso`. |
 | Sağ yarı | Parmak kaydırmak kamerayı çevirir (omuzda bakış / nişan, farenin karşılığı). |
-| ŞUT | Dokun: şut; basılı tut: rüzgar topu. Basılıyken parmağı kaydırmak nişan alır. |
-| PAS / KAY | Top sendeyken dokun: pas; 2 sn basılı tut: yakar top nişanı (izometrikte joystick, omuzda parmakla nişan al, bırak). Topsuzken: topa doğru kay. |
+| ŞUT / PAS İSTE | Top sende değilken PAS İSTE: dokun, pas iste. Top sendeyken dokun: şut; 1 sn basılı tut: rüzgar şutu nişanı (ağır çekim; izometrikte joystick, omuzda parmakla nişan al, bırak). |
+| PAS / KAY | Top sendeyken dokun: pas; 1 sn basılı tut: yakar top nişanı (izometrikte joystick, omuzda parmakla nişan al, bırak). Topsuzken: topa doğru kay. |
 | ZIPLA / KOŞ | Boşluk / Shift. Düğmelerde enerji dolumu görünür. |
 
 Telefonda dolum halkası ve enerji / sersemlik göstergesi karakterin üstünde değil ekranın altındadır. Top ekranda değilse ekranın kenarında topun yönünü gösteren işaret çıkar (yakar topta kırmızı), top görününce kaybolur. Koşarken karakter gittiği yöne döner, dururken nişana. Mobilde görüntü hafifler (piksel oranı, gölge haritası), önemli anlarda kısa titreşim olur. Ayarlar `TOUCH` (config.js).
@@ -116,21 +117,29 @@ Telefonda dolum halkası ve enerji / sersemlik göstergesi karakterin üstünde 
 
 Maç 5 dakika; yalnız goller puan verir, beraberlikte **altın gol**. Saha 52×80 birim; aut yok, top duvardan seker.
 
-- **Enerji**: kayma, hızlı koşu, yakar top ve rüzgar şutu tek enerjiyi paylaşır. Hangisi kullanılırsa kullanılsın hepsi
-  birden **3 saniye** bekler. Geri sayım karakterinin sırtında görünür (dolunca kısa bir "HAZIR"); sol alttaki kart
-  da gösterir. Enerji yokken sol tıkı basılı tutarsan şarj dolu bekler: enerji gelince rüzgar topu çıkar, önce bırakırsan
-  normal şut.
+- **Enerji**: yalnız kayma ve hızlı koşu enerji kullanır; biri kullanılınca ikisi birden **3 saniye** bekler. Geri sayım
+  karakterinin sırtında görünür (dolunca kısa bir "HAZIR"); sol alttaki kart da gösterir. Yakar top ve rüzgar şutu
+  **enerjiden bağımsızdır**: yalnız takımın hakkı sayılır. Takımın rüzgar hakkı bittiyse sol tıkı basılı tutarsan şarj
+  dolu bekler, bırakınca normal şut.
 - **Dolum halkası**: sol tık ya da sağ tık basılıyken nişangahın çevresinde halka dolar ve hangi vuruşun hazırlandığını
   yazar (camgöbeği rüzgar, turuncu yakar top; yapılamıyorsa gri ve sebebi). Ayaktaki top da vuruşun rengine bürünür.
 - **Yakar top** hakkı **takımındır**: her takım maç boyunca **5 kez** atar (takımdaki herkes aynı haktan harcar). İki
-  takımın kalan hakları skor tabelasında alev damlalarıyla görünür. Sağ tık 2 saniye dolunca oyun
-  durur, top ayağında alev alır ve 2,5 saniye fareyle nişan alırsın; sağ tıkı bırakınca (ya da sol tık / süre dolunca) top
-  çıkar. Bot atınca oyun 0,8 saniye donar. Sonra sinema şeritleri arasında top **ağır çekimde** uçar ve kamera onu izler;
-  birine çarparsa çarpma daha da ağır çekimde, vurulan geriye savrulup düşerek gösterilir. Sinema bitince kamera eski
-  bakışına döner.
+  takımın kalan hakları skor tabelasında alev damlalarıyla görünür. Sağ tık 1 saniye dolunca oyun
+  **ağır çekime** geçer, top ayağında alev alır ve 2 saniye fareyle nişan alırsın; sağ tıkı bırakınca (ya da sol tık /
+  süre dolunca) top çıkar. Botlar da aynı yoldan atar: önce dolum (çevrelerinde alev ya da rüzgar), sonra ağır çekimde
+  kısa nişan; o sırada kayarak topu ayaklarından alabilirsin. Sinema şeritleri arasında top **ağır çekimde** uçar ve herkesin kamerası
+  onu izler; birine çarparsa çarpma daha da ağır çekimde, vurulan geriye savrulup düşerek gösterilir. Sinema bitince
+  kamera kaldığı yere değil topa dönük olarak sana geçer (kenardan dönüşte ve omuz kamerasına geçişte de). Zıplayan yanmaz: botlar üstlerine gelen yakar toptan çoğu zaman zıplayıp kurtulur.
+- **Nişan sırasında** (yakar top ya da rüzgar) nişan alan kıpırdamaz, oyun ağır çekimde sürer: rakip **kayarak** topu
+  ayağından alırsa vuruş olmaz (yürüyerek alınamaz). Botlar rakip nişan alırken üstüne koşup kayar.
 - Yakar top doğrudan gol olmaz; değdiği rakibi 4 saniye kenara gönderir, top boşta kalır. Dönüşte kısa korunma vardır.
-- **Rüzgar topu** normalden hızlıdır, az yavaşlar; gücü sürerken yolundaki rakipleri kenara savurur, rakipler onu tutamaz
-  ve gol olur.
+- **Pas isteme**: top ayağında değilken sol tık (dokunmatikte PAS İSTE) 1,6 saniye başında "PAS!" yazdırır; topu taşıyan
+  bot arkadaşın kısa bir tepkiyle çoğu zaman sana pas verir.
+- **Rüzgar şutu** hakkı da takımındır: maç boyunca **5 kez** (skor tabelasında camgöbeği damlalar, yakar top hakkından
+  ayrı). Sol tık 1 saniye dolunca ağır çekimde 2 saniye nişan alınır, bırakınca çıkar. Top bilerek normal şuttan yavaştır
+  ve hiç yavaşlamaz, herkesin kamerası onu izler. **Durdurulamaz**: kimse (kaleci ve takım arkadaşları dahil) tutamaz,
+  yolundaki rakipleri kenara savurur. Kaleye nişan alındıysa nereden vurulursa vurulsun gol olur; nişan kaleye değilse
+  ilk duvara çarpınca normal topa döner.
 - **Top kapma** topa yakınlıkla olur: taşınan topa 1,1 birim yaklaşınca kaparsın, boştaki topu 1,3 birimden yakalarsın.
   Topu **yürüyerek kaptıran 2 saniye**, **kayarak kaptıran 1,5 saniye sersemler**: kıpırdayamaz, şut / pas / kayma / koşu /
   zıplama yapamaz, topu geri kapamaz; başında yıldızlar döner, kendi süren sırtında görünür.

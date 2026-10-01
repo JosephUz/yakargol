@@ -33,8 +33,8 @@ export const MOVE = { speed: 7, dribble: 7, accel: 16, margin: 0.6 };
 export const JUMP = { time: 0.7, height: 1.8 };
 
 /**
- * Enerji: dört beceri tek bir enerjiyi paylaşır: kayma (sağ tık, topsuz), yakar top (sağ tık, top sende), hızlı koşu
- * (Shift) ve rüzgar şutu (sol tık basılı). Hangisi kullanılırsa kullanılsın `cooldown` saniye hepsi birden bekler.
+ * Enerji: kayma (sağ tık, topsuz) ve hızlı koşu (Shift) tek bir enerjiyi paylaşır; hangisi kullanılırsa kullanılsın
+ * `cooldown` saniye ikisi birden bekler. Yakar top ve rüzgar şutu enerjiden bağımsızdır (yalnız takım hakkı).
  */
 export const ENERGY = { cooldown: 3 };
 
@@ -52,31 +52,36 @@ export const DASH = { time: 0.45, speed: 18, guard: 0.5, steal: 1.6, lift: 0.18 
 export const SPRINT = { time: 3, mult: 1.6 };
 
 /**
- * Şut hızları: normal (sol tık, beyaz), rüzgar (sol tık `windCharge` saniye basılı), yakar top (sağ tık basılı,
- * kırmızı ve alevli, gol olmaz, rakibi yakar) ve pas (sağ tık kısa). `reach` topun ayaktan çıktığı mesafe, `lock`
- * şutu atanın topu hemen geri yakalamaması için kısa kilit, `firePower` yakar topun ateşli kaldığı süre. Yakar top
- * özeldir: her **takım** maç boyunca yalnızca `fireShots` kez atabilir (takımdaki herkes aynı haktan harcar; kalan
- * haklar skor tabelasında iki takım için de görünür).
+ * Şut hızları: normal (sol tık, beyaz), rüzgar (sol tık `windCharge` saniye basılı → nişan → bırak), yakar top (sağ tık
+ * basılı → nişan → bırak; kırmızı ve alevli, gol olmaz, rakibi yakar) ve pas (sağ tık kısa). Rüzgar topu bilerek daha
+ * yavaştır: herkes kamerada izler. `reach` topun ayaktan çıktığı mesafe, `lock` şutu atanın topu hemen geri
+ * yakalamaması için kısa kilit, `firePower` yakar topun ateşli kaldığı süre. Yakar top da rüzgar şutu da özeldir: her
+ * **takım** maç boyunca `fireShots` yakar top ve ayrıca `windShots` rüzgar şutu atabilir (takımdaki herkes aynı
+ * haktan harcar; kalan haklar skor tabelasında iki takım için de görünür).
  */
-export const KICK = { normal: 29, wind: 38, fire: 27, pass: 20, cooldown: 0.32, lock: 0.18, reach: 0.95, firePower: 1.25, windCharge: 2, fireShots: 5 };
+export const KICK = { normal: 29, wind: 28, fire: 27, pass: 20, cooldown: 0.32, lock: 0.18, reach: 0.95, firePower: 1.25, windCharge: 1, fireShots: 5, windShots: 5 };
 
 /**
- * Yakar top sineması (yalnızca görünüm; simülasyon aynı kalır, yalnızca zaman ölçeklenir). Yakar top çıkınca oyun
- * `ignite` saniye donar ve top ayakta alev alır; sonra top `flightScale` hızında (ağır çekim) uçar, en çok `flightMax`
- * gerçek saniye; birine çarparsa çarpma `impact` saniye `impactScale` hızında (daha ağır) gösterilir. Bu sırada kamera
- * topa döner, sinema bitince eski bakışına geri döner. Süreler gerçek saniyedir.
- * İnsan oyuncu için tutuşma nişan evresidir: top sendeyken sağ tık `hold` saniyeden uzun basılı kalınca oyun donar,
- * en çok `aim` saniye fareyle nişan alınır; sağ tık bırakılınca (ya da sol tık / süre dolunca) yakar top çıkar. Daha kısa
- * basış pastır. Vurulan oyuncu kenara gitmeden önce `knock` simülasyon saniyesi çarpma noktasında geriye savrulur.
+ * Yakar top ve rüzgar şutu sineması (bkz. cinema.js; simülasyon kuralları aynı kalır, yalnızca zaman ölçeklenir).
+ * **Nişan**: top sendeyken sağ tık (yakar top) ya da sol tık (rüzgar) `hold` saniye basılı kalınca oyun **ağır çekime**
+ * (`aimScale`) geçer ve en çok `aim` gerçek saniye nişan alınır; tuş bırakılınca (ya da süre dolunca) vuruş çıkar.
+ * Nişan sırasında nişan alan kıpırdamaz, herkes ağır çekimde oynamayı sürdürür: rakip **kayarak** topu ayağından alırsa
+ * vuruş olmaz (yürüyerek alınamaz). Daha kısa basış: sağ tık pas, sol tık normal şut.
+ * **Uçuş**: yakar top `flightScale` hızında en çok `flightMax` gerçek saniye uçar, çarparsa çarpma `impact` saniye
+ * `impactScale` hızında gösterilir; rüzgar topu `windScale` hızında en çok `windMax` saniye. İkisinde de herkesin
+ * kamerası topu kovalar (omuzda topun `chase` birim gerisinden, gidiş yönüne `chaseTurn` hızıyla döner; izometrikte
+ * kadraj topa kayar), sinema bitince kamera topa bakarak oyuncuya geçer. Botlar da dolum ve nişanla atar (bkz. BOT, ai.js).
+ * Vurulan oyuncu kenara gitmeden önce `knock` simülasyon saniyesi çarpma noktasında geriye savrulur.
  */
-export const CINEMA = { hold: 2, aim: 2.5, knock: 0.45, ignite: 0.8, flightScale: 0.35, flightMax: 2.6, impact: 0.9, impactScale: 0.15, turn: 7 };
+export const CINEMA = { hold: 1, aim: 1.2, aimScale: 0.35, knock: 0.45, flightScale: 0.6, flightMax: 1.8, windScale: 1, windMax: 4, impact: 0.5, impactScale: 0.25, turn: 7, chase: 5, chaseTurn: 6 };
 
 /**
- * Rüzgar topu: `power` saniye boyunca rüzgarlıdır. Bu sürede yavaşlaması azdır (`friction`), değdiği rakipleri
- * yoluna dik yönde savurur (`push` hızıyla `knock` saniye) ve rakipler onu tutamaz; her savuruşta hızının `keep`
- * katı kalır. Gol olur. Süre bitince normal topa döner.
+ * Rüzgar topu **durdurulamaz**: yavaşlamaz (`friction`), kimse (kaleci ve takım arkadaşları dahil) onu tutamaz, değdiği
+ * rakipleri yoluna dik yönde savurur (`push` hızıyla `knock` saniye) ve hızının `keep` katıyla yoluna devam eder.
+ * Kaleye nişan alındıysa her yerden gol olur; nişan kaleye değilse ilk duvara çarpınca normal topa döner. `power`
+ * yalnız güvenlik sınırıdır (saniye).
  */
-export const WIND = { power: 0.9, friction: 0.1, push: 12, knock: 0.35, keep: 0.85 };
+export const WIND = { power: 10, friction: 0, push: 12, knock: 0.35, keep: 1 };
 
 /**
  * Top: sürtünme (1/sn), duvar sekmeleri, boştaki topu yakalama yarıçapı (`catch`, oyuncudan topa), yakar topun yaktığı ve
@@ -93,6 +98,12 @@ export const BALL = { friction: 0.38, sideBounce: 0.88, endBounce: 0.8, catch: 1
  * kapan taşıyanın bakışına göre `behindDot` gerisindeyse (arkadan) ancak hızlı koşudaysa kapar; kayma her yönden çalar.
  * Çalınan top `lock` saniye kimse tarafından yeniden çalınamaz (karşılıklı kaymalar topu her karede el değiştirmesin).
  */
+/**
+ * Pas isteme: top ayağında değilken sol tık (dokunmatikte ŞUT / PAS İSTE) `time` saniye "PAS!" der; topu taşıyan takım
+ * arkadaşı bot ise kısa bir tepkiyle (`BOT.reactMin`-`reactMax`) `BOT.callChance` ile ona pas verir.
+ */
+export const CALL = { time: 1.6 };
+
 export const STEAL = { reach: 1.1, loserCooldown: 0.65, guard: 0.25, stun: 2, dashStun: 1.5, behindDot: -0.3, lock: 0.3 };
 
 /** Yanma: kenarda bekleme, çarpan topun kalan hızı ve kilidi, sahaya dönüşteki ve başlama vuruşundaki korunma. */
@@ -106,11 +117,16 @@ export const BURN = { time: 4, ballKeep: 0.12, ballLock: 0.2, returnGuard: 1.5, 
  * saniye arası rastgele bir gecikmeyle `escape` ağırlıklarından birini seçer: sürmeye devam (baskı yapandan uzağa döner,
  * `commit` saniye kararında kalır; bu sürede önden kapılabilir), boştaki arkadaşa pas (`passRange` içinde), `wallAhead`
  * ileriye duvardan sektirme, şut (kaleye yakınsa çok daha olası) ya da yakar top.
- * Yakar top `dodgeRange` içindeyse `dodgeChance` ile kaçar. Kaleci top kalesine `keeperRange` yaklaşınca çıkar.
+ * Botlar da yakar top ve rüzgar şutunu insan gibi atar: önce `CINEMA.hold` saniye dolum (çevresinde alev / rüzgar), sonra
+ * ağır çekimde `aimTime` simülasyon saniyesi nişan, sonra vuruş; bu arada kayılarak topu alınabilir. Rüzgarı rakip
+ * kaleye `windRange` içinden `windChance` ile çeker. Takım arkadaşı pas isterse `callChance` ile ona verir.
+ * Yakar top üstüne gelirken (çarpmaya `fireJump.time` sn kala, `fireJump.miss` birimden yakın geçecekse) `fireJump.chance` ile
+ * zıplayıp kurtulur (havadakini yakar top yakmaz). Rakip yakar top ya da rüzgar nişanı alırken `aimRush` içindeki saha
+ * oyuncuları üstüne koşar, `aimDash` kadar yaklaşınca kayıp topu ayağından almaya çalışır. Kaleci top kalesine `keeperRange` yaklaşınca çıkar.
  * `chasers` topa koşan saha oyuncusu sayısı (1: yalnız en yakını; gösteri kipinde daha çok, bkz. GOSTERI.bot); topa
  * koşmayanlar evlerinden topa doğru `homeX` / `homeZ` oranında esner.
  */
-export const BOT = { think: 0.5, thinkJitter: 0.35, threat: 9, shootRange: 16, fireRange: 7, fireChance: 0.24, pressure: 4.5, reactMin: 0.15, reactMax: 0.6, commit: 0.6, escape: { dribble: 3.5, pass: 2.5, wall: 1.5, shoot: 1.5, fire: 1 }, passRange: 26, wallAhead: 9, passChance: 0.2, dodgeRange: 10, dodgeChance: 0.25, keeperRange: 5, sprintRange: 12, dashRange: 4, dashChance: 0.35, chasers: 1, homeX: 0.3, homeZ: 0.45 };
+export const BOT = { think: 0.5, thinkJitter: 0.35, threat: 9, shootRange: 16, fireRange: 7, fireChance: 0.24, pressure: 4.5, reactMin: 0.15, reactMax: 0.6, commit: 0.6, escape: { dribble: 3.5, pass: 2.5, wall: 1.5, shoot: 1.5, fire: 1 }, passRange: 26, wallAhead: 9, passChance: 0.2, fireJump: { time: 0.45, miss: 1.7, chance: 0.75 }, aimRush: 18, aimDash: 7, aimTime: 0.28, windRange: 34, windChance: 0.1, callChance: 0.9, keeperRange: 5, sprintRange: 12, dashRange: 4, dashChance: 0.35, chasers: 1, homeX: 0.3, homeZ: 0.45 };
 
 /**
  * Omuz kamerası: oyuncunun `back` gerisinde, `side` sağında ve `height` yukarıda. Fare kilitliyken yatay / dikey bakış
@@ -181,7 +197,7 @@ export const GOSTERI = {
    * Gösteride bot ayarları (yalnız bu kipte; normal oyun BOT'u kullanır, bkz. ai.js). Daha çok yakar top, daha çok
    * kayma, daha uzaktan şut, topa iki oyuncu birden koşar ve takım topun çevresinde toplanır: klipte sürekli kargaşa olur.
    */
-  bot: { ...BOT, think: 0.28, thinkJitter: 0.2, shootRange: 21, fireRange: 12, fireChance: 0.72, pressure: 6, dodgeChance: 0.45, sprintRange: 7, dashRange: 5.5, dashChance: 0.75, passChance: 0.3, escape: { dribble: 2.5, pass: 2, wall: 1, shoot: 2.5, fire: 3.5 }, chasers: 2, homeX: 0.55, homeZ: 0.7 },
+  bot: { ...BOT, think: 0.28, thinkJitter: 0.2, shootRange: 21, fireRange: 12, fireChance: 0.72, pressure: 6, fireJump: { time: 0.45, miss: 1.7, chance: 0.45 }, sprintRange: 7, dashRange: 5.5, dashChance: 0.75, passChance: 0.3, escape: { dribble: 2.5, pass: 2, wall: 1, shoot: 2.5, fire: 3.5 }, chasers: 2, homeX: 0.55, homeZ: 0.7 },
 };
 
 /**
@@ -193,10 +209,10 @@ export const GOSTERI = {
 export const GOSTERI_RUZGAR = {
   /**
    * Evre süreleri (gerçek saniye): diziliş kurulduktan sonraki bekleme, golden sonraki bekleme (gol patlaması bu
-   * süre boyunca sürer, bkz. gosteri-ruzgar.js olay), güvenlik üst sınırları. Toplam tur ≈ 9 sn: 25 sn'lik bir
+   * süre boyunca sürer, bkz. gosteri-ruzgar.js olay), güvenlik üst sınırları. Toplam tur ≈ 9 sn (yükleme 1 sn + nişan; bekleme bunu dengeler): 25 sn'lik bir
    * klipte en az iki tam gol çıkar.
    */
-  hazir: 1.6, bitis: 3.3, yuklemeEnCok: 4, ucusEnCok: 5,
+  hazir: 2.6, bitis: 3.3, yuklemeEnCok: 4, ucusEnCok: 5,
   /**
    * Sahneye özel top ayarı: rüzgar topu normalde WIND.power (0,9 sn) sonra sıradan topa döner. Orta sahadan atılan
    * şutun kaleye varması bundan uzun sürer; rüzgar bitince kalan rakipler topu yakalar ve sahne golsüz kalırdı.

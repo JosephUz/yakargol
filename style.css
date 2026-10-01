@@ -195,7 +195,9 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .tbtn.shoot{right:0;bottom:0;width:96px;height:96px;background:#efbf77e6;color:#203e33;border-color:#fff3}
 #yakar-gol .tbtn.shoot b{font-size:18px}
 #yakar-gol .tbtn.shoot.on{background:#ffda99}
-#yakar-gol .tbtn.shoot.idle{opacity:.5}
+#yakar-gol .tbtn.shoot .when-free,#yakar-gol .tbtn.shoot.call .when-ball{display:none}
+#yakar-gol .tbtn.shoot.call .when-free{display:block;font-size:14px}
+#yakar-gol .tbtn.shoot.call{background:#efbf77b3}
 #yakar-gol .tbtn.pass{right:112px;bottom:4px;width:78px;height:78px;border-color:#ff9a5c99}
 #yakar-gol .tbtn.pass .when-free,#yakar-gol .tbtn.pass.dash .when-ball{display:none}
 #yakar-gol .tbtn.pass.dash .when-free{display:block}
@@ -345,3 +347,17 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
   max-width:60vw;padding:12px 32px;border-radius:999px;text-align:center;pointer-events:none;
   background:#0b221fd9;border:2px solid #ffffff2b;box-shadow:0 12px 38px #04140f8c;
   font:900 clamp(18px,2.4vw,38px)/1.2 Segoe UI,Arial,sans-serif;color:#fff6dc;text-shadow:0 3px 14px #05211bcc}
+
+/* Rüzgar şutu hakkı: skor tabelasında yakar top damlalarının yanında camgöbeği damlalar; sinemada camgöbeği başlık. */
+#yakar-gol .pips{display:inline-flex;flex-direction:column;gap:3px;align-items:center}
+#yakar-gol .winds{display:inline-flex;gap:4px}
+#yakar-gol .winds i{width:10px;height:6px;border-radius:6px;background:linear-gradient(90deg,#e9fdff,#5fe6ff 60%,#1aa9c9);box-shadow:0 0 7px #5fe6ff99;transition:opacity .3s,filter .3s}
+#yakar-gol .winds i.used{opacity:.25;filter:grayscale(1);box-shadow:none}
+#yakar-gol #yg-cine.wind .cine-title strong{background:linear-gradient(180deg,#f2feff,#8ff3ff 45%,#1aa9c9);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 3px 14px #1ac8ff99)}
+#yakar-gol #yg-cine.wind .cine-title span{background:#06222acc;color:#c9f7ff}
+#yakar-gol .wind-row #yg-wind-left{color:#8ff3ff}
+#yakar-gol #yg-wind-left.empty{color:#9aa39c}
+@media(max-height:560px){#yakar-gol .winds i{width:7px;height:5px}}
+/* Pas isteyenin başında "PAS!" (sarı, hafif zıplar). */
+#yakar-gol .actor-label.call{background:#efbf77;color:#203e33;text-shadow:none;font-size:12px;animation:ygCall .5s ease-in-out infinite alternate}
+@keyframes ygCall{to{margin-top:-4px}}

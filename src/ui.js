@@ -3,8 +3,7 @@ import { benchX, lift } from './view/actors.js';
 
 /**
  * Arayüz (DOM): ekranlar (giriş, yardım, mola, maç sonu), skor tabelası ve saat, sol alttaki oyuncu kartı, yanma
- * perdesi, ortadaki mesaj ve **karakterin sırtındaki gösterge**: enerji geri sayımı (kayma, hızlı koşu, yakar ve rüzgar
- * şutu ortak), enerji dolunca kısa "HAZIR" ve top kaptırınca sersemlik süresi. Nişangahın çevresinde **dolum halkası**:
+ * perdesi, ortadaki mesaj ve **karakterin sırtındaki gösterge**: enerji geri sayımı (kayma ve hızlı koşu ortak), enerji dolunca kısa "HAZIR" ve top kaptırınca sersemlik süresi. Nişangahın çevresinde **dolum halkası**:
  * sol tık (rüzgar) ve sağ tık (yakar top) basılıyken hangi vuruşun hazırlandığını ve ne kadar dolduğunu gösterir. Simülasyonu yalnızca okur.
  */
 const SCREENS = ['home', 'help', 'pause', 'results', 'lobby'];
@@ -45,16 +44,17 @@ export function createUI(root) {
   const el = {
     screens: Object.fromEntries(SCREENS.map(s => [s, $(s)])),
     playing: ['scoreboard', 'controls', 'player', 'pause-open'].map($),
-    blue: $('blue-score'), orange: $('orange-score'), fires: [$('blue-fire'), $('orange-fire')], timer: $('timer'), period: $('period'),
+    blue: $('blue-score'), orange: $('orange-score'), fires: [$('blue-fire'), $('orange-fire')], winds: [$('blue-wind'), $('orange-wind')], timer: $('timer'), period: $('period'),
     side: $('side'), ball: $('ball-status'), energyText: $('energy-text'), energyFill: $('energy-fill'),
     burn: $('burn'), burnCount: $('burn-count'), crosshair: $('crosshair'), message: $('message'),
     over: $('overhead'), overEnergy: $('over-energy'), overEnergyText: $('over-energy-text'), overEnergyFill: $('over-energy-fill'),
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
-    ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'),
+    ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'), windLeft: $('wind-left'), cineTitle: $('cine-title'),
     site: $('site'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
   };
   // Skor tabelasındaki alev damlaları hak sayısı kadar (KICK.fireShots).
   for (const node of el.fires) node.innerHTML = '<i></i>'.repeat(KICK.fireShots);
+  for (const node of el.winds) node.innerHTML = '<i></i>'.repeat(KICK.windShots);
   let messageTime = 0, readyTime = 0, lastEnergy = 0;
 
   return {
@@ -88,6 +88,10 @@ export function createUI(root) {
         node.title = TEAMS.names[team] + ' takımının yakar top hakkı: ' + w.fireLeft[team];
         [...node.children].forEach((pip, i) => pip.classList.toggle('used', i >= w.fireLeft[team]));
       });
+      el.winds.forEach((node, team) => {
+        node.title = TEAMS.names[team] + ' takımının rüzgar şutu hakkı: ' + w.windLeft[team];
+        [...node.children].forEach((pip, i) => pip.classList.toggle('used', i >= w.windLeft[team]));
+      });
       const left = Math.max(0, Math.ceil(MATCH.duration - w.time));
       el.timer.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
       el.period.textContent = w.overtime ? 'ALTIN GOL' : '5v5 · TEK MAÇ';
@@ -98,6 +102,8 @@ export function createUI(root) {
       el.energyFill.style.width = (1 - p.energyCd / ENERGY.cooldown) * 100 + '%';
       el.fireLeft.textContent = w.fireLeft[p.team] + ' / ' + KICK.fireShots;
       el.fireLeft.classList.toggle('empty', w.fireLeft[p.team] <= 0);
+      el.windLeft.textContent = w.windLeft[p.team] + ' / ' + KICK.windShots;
+      el.windLeft.classList.toggle('empty', w.windLeft[p.team] <= 0);
       el.burn.hidden = !playing || !!screen || p.burn <= 0;
       el.burnCount.textContent = p.burn.toFixed(1) + ' sn';
     },
@@ -155,9 +161,11 @@ export function createUI(root) {
     /** Hızlı koşuda ekran kenarlarında hız çizgileri. */
     speed(on) { el.speed.hidden = !on; },
 
-    /** Yakar top sineması: sinema şeritleri ve "YAKAR TOP!" yazısı (atanın adıyla). */
-    cinema(on, who = '', aim = null) {
+    /** Sinema şeritleri ve "YAKAR TOP!" ya da "RÜZGAR ŞUTU!" yazısı (atanın adıyla); aim: nişan süresi çubuğu (1 → 0). */
+    cinema(on, who = '', aim = null, kind = 'fire') {
       el.cine.hidden = !on;
+      el.cine.classList.toggle('wind', kind === 'wind');
+      el.cineTitle.textContent = kind === 'wind' ? 'RÜZGAR ŞUTU!' : 'YAKAR TOP!';
       el.cineWho.textContent = who;
       el.cineAim.hidden = aim === null;
       if (aim !== null) el.cineAimFill.style.width = aim * 100 + '%';

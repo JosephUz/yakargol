@@ -63,15 +63,15 @@ try {
   await page.waitForTimeout(200);
   assert.ok(!(await stickShown()), 'parmak kalkınca joystick kaybolur');
 
-  // PAS basılı: dolum halkası → nişan (oyun donar) → joystick'le nişan döner (izometrik) → bırakınca yakar top.
+  // PAS basılı: dolum halkası → nişan (ağır çekim) → joystick'le nişan döner (izometrik) → bırakınca yakar top.
   await giveBall();
   await page.waitForTimeout(100);
   assert.ok(!(await page.locator('#yg-t-pass.dash').isVisible()), 'top sendeyken PAS');
   const [px, py] = await center('#yg-t-pass');
   await touch('touchStart', [[px, py]]);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(450);
   assert.ok(await page.locator('#yg-charge').isVisible(), 'basılıyken dolum halkası');
-  await page.waitForTimeout(1300);
+  await page.waitForTimeout(800);
   assert.equal(await game(() => window.__yakarGol.state().cine), 'aim');
   const angle = () => game(() => window.__yakarGol.world().players[0].angle);
   const a0 = await angle();

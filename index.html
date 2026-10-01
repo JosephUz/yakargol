@@ -27,9 +27,9 @@
     </header>
 
     <div id="yg-scoreboard" hidden>
-      <div class="team blue-text"><span class="fires" id="yg-blue-fire"></span>MAVİ <b id="yg-blue-score">0</b></div>
+      <div class="team blue-text"><span class="pips"><span class="fires" id="yg-blue-fire"></span><span class="winds" id="yg-blue-wind"></span></span>MAVİ <b id="yg-blue-score">0</b></div>
       <div class="clock"><span id="yg-timer">05:00</span><small id="yg-period">5v5 · TEK MAÇ</small></div>
-      <div class="team orange-text"><b id="yg-orange-score">0</b> TURUNCU<span class="fires" id="yg-orange-fire"></span></div>
+      <div class="team orange-text"><b id="yg-orange-score">0</b> TURUNCU<span class="pips"><span class="fires" id="yg-orange-fire"></span><span class="winds" id="yg-orange-wind"></span></span></div>
     </div>
 
     <section id="yg-home" class="home">
@@ -64,7 +64,7 @@
       <div id="yg-over-stun" class="over-row stun" hidden><span id="yg-over-stun-text">SERSEM</span><div class="over-bar"><i id="yg-over-stun-fill"></i></div></div>
       <div id="yg-over-energy" class="over-row energy" hidden><span id="yg-over-energy-text">ENERJİ</span><div class="over-bar"><i id="yg-over-energy-fill"></i></div></div>
     </div>
-    <div id="yg-cine" hidden><i class="cine-bar top"></i><i class="cine-bar bottom"></i><div class="cine-title"><strong>YAKAR TOP!</strong><span id="yg-cine-who"></span><div id="yg-cine-aim" class="cine-aim" hidden><i id="yg-cine-aim-fill"></i></div></div></div>
+    <div id="yg-cine" hidden><i class="cine-bar top"></i><i class="cine-bar bottom"></i><div class="cine-title"><strong id="yg-cine-title">YAKAR TOP!</strong><span id="yg-cine-who"></span><div id="yg-cine-aim" class="cine-aim" hidden><i id="yg-cine-aim-fill"></i></div></div></div>
     <div id="yg-ballmark" hidden aria-hidden="true"><i></i></div>
     <div id="yg-message" role="status" hidden></div>
     <div id="yg-burn" hidden><strong>YANDIN!</strong><span id="yg-burn-count"></span><small>Birazdan kenardan oyuna döneceksin.</small></div>
@@ -75,6 +75,7 @@
       <div class="meter-label"><span>ENERJİ</span><span id="yg-energy-text">HAZIR</span></div>
       <div class="meter"><i id="yg-energy-fill"></i></div>
       <div class="meter-label fire-row"><span>TAKIMIN YAKAR TOPU</span><span id="yg-fire-left">5 / 5</span></div>
+      <div class="meter-label wind-row"><span>TAKIMIN RÜZGAR ŞUTU</span><span id="yg-wind-left">5 / 5</span></div>
     </aside>
 
     <div id="yg-touch" hidden>
@@ -82,7 +83,7 @@
       <div class="touch-zone right" data-t="look"></div>
       <div id="yg-stick" hidden><i></i></div>
       <div class="touch-buttons">
-        <div id="yg-t-shoot" class="tbtn shoot" data-t="shoot" role="button" aria-label="Şut"><b>ŞUT</b><small>TUT: RÜZGAR</small></div>
+        <div id="yg-t-shoot" class="tbtn shoot" data-t="shoot" role="button" aria-label="Şut ya da pas iste"><b class="when-ball">ŞUT</b><small class="when-ball">TUT: RÜZGAR</small><b class="when-free">PAS İSTE</b></div>
         <div id="yg-t-pass" class="tbtn pass" data-t="pass" role="button" aria-label="Pas, yakar top ya da kay"><b class="when-ball">PAS</b><small class="when-ball">TUT: YAKAR</small><b class="when-free">KAY</b></div>
         <div id="yg-t-jump" class="tbtn jump" data-t="jump" role="button" aria-label="Zıpla"><b>ZIPLA</b></div>
         <div id="yg-t-sprint" class="tbtn sprint" data-t="sprint" role="button" aria-label="Hızlı koş"><b>KOŞ</b></div>
@@ -97,8 +98,8 @@
     <div id="yg-controls" hidden>
       <span><kbd>W A S D</kbd> Hareket</span>
       <span><kbd>FARE</kbd> Bak / nişan</span>
-      <span><kbd>SOL TIK</kbd> Şut · 2 sn tut: Rüzgar</span>
-      <span><kbd>SAĞ TIK</kbd> Pas · basılı: Yakar top · topsuz: Kay</span>
+      <span><kbd>SOL TIK</kbd> Şut · 1 sn tut: Rüzgar · topsuz: Pas iste</span>
+      <span><kbd>SAĞ TIK</kbd> Pas · 1 sn tut: Yakar top · topsuz: Kay</span>
       <span><kbd>SHIFT</kbd> Hızlı koş</span>
             <span><kbd>BOŞLUK</kbd> Zıpla</span>
       <span><kbd>V</kbd> Kamera</span>
@@ -112,19 +113,21 @@
           <dt>Sol yarı</dt><dd>Parmağını koy, joystick belirir: sürükleyerek koş. Hızlı koşu yalnız KOŞ düğmesiyle.</dd>
           <dt>Kamera 🎥</dt><dd>Telefonda izometrik (sabit yan açı) başlar: nişan koştuğun yöndür, rakip kaleye dönüksen kaleye kilitlenir (yerdeki ok gösterir). 🎥 ile omuz kamerasına geçersin (ortadaki artı nişangahtır).</dd>
           <dt>Sağ yarı</dt><dd>Parmağını kaydırarak kamerayı çevir (omuzda bakış ve nişan).</dd>
-          <dt>ŞUT</dt><dd>Dokun: şut. 2 saniye basılı tut: rüzgar topu (halka dolar). Basılıyken parmağını kaydırarak nişan al.</dd>
-          <dt>PAS / KAY</dt><dd>Top sendeyken dokun: pas. 2 saniye basılı tut: oyun durur, top alev alır; joystick ile (omuzda parmak kaydırarak) nişan al, bırakınca yakar top uçar (takım başına 5 hak). Topsuzken: topa doğru kay, topu mutlaka çal.</dd>
-          <dt>ZIPLA / KOŞ</dt><dd>Havadayken yakar top seni yakamaz. Koşu 3 saniye sürer; kayma, koşu, yakar ve rüzgar aynı enerjiyi kullanır (düğmelerde dolum).</dd>
+          <dt>ŞUT</dt><dd>Dokun: şut. 1 saniye basılı tut: oyun ağır çekime geçer, 2 saniye içinde nişan al (izometrikte joystick, omuzda parmak kaydırarak), bırakınca rüzgar şutu çıkar (takım başına 5 hak). Kaleye nişanlıysan nereden vurursan vur gol olur; değilse ilk duvarda biter. Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
+          <dt>PAS İSTE</dt><dd>Top sende değilken ŞUT düğmesi PAS İSTE olur: dokun, başında "PAS!" çıkar; topu taşıyan bot arkadaşın sana pas verir.</dd>
+          <dt>PAS / KAY</dt><dd>Top sendeyken dokun: pas. 1 saniye basılı tut: oyun ağır çekime geçer, top alev alır; nişan al, bırakınca yakar top uçar (takım başına 5 hak). Yakar toptan zıplayarak kurtulunur. Topsuzken: topa doğru kay, topu mutlaka çal; rakip nişan alırken kayarak vuruşunu engelle.</dd>
+          <dt>ZIPLA / KOŞ</dt><dd>Havadayken yakar top seni yakamaz. Koşu 3 saniye sürer; kayma ve koşu aynı enerjiyi kullanır (düğmelerde dolum). Yakar top ve rüzgar şutu enerji istemez.</dd>
           <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, kaptıran sersemler. Arkadan düz koşuyla alınmaz; koş ya da kay.</dd>
         </dl>
         <dl class="desktop-only">
           <dt>WASD / Oklar</dt><dd>Baktığın yöne göre hareket et. Topa yaklaşınca otomatik alırsın.</dd>
           <dt>Fare + sol tık</dt><dd>Kamera omzunun üstünde; fareyle bak, nişangaha doğru beyaz şut çek (bırakınca çıkar). Gol atmanın yolu bu!</dd>
-          <dt>Sol tık basılı</dt><dd>2 saniye tut (nişangahtaki camgöbeği halka dolar): rüzgar topu. Çok hızlıdır, yolundaki rakipleri savurur, tutulamaz ve gol olur.</dd>
-          <dt>Sağ tık</dt><dd>Top sendeyken kısa bas: pas. 2 saniye basılı tut (nişangahtaki turuncu halka dolar): oyun durur, top alev alır, 2,5 saniye fareyle nişan al ve bırak: kırmızı alevli yakar top ağır çekimde uçar (takım başına maç boyunca yalnızca 5 kez; kalan haklar skor tabelasında); topsuzken topa doğru kay (hangi yöne basarsan bas). Top taşıyana kayarak dokunursan topu mutlaka çalarsın. Yakar top doğrudan gol olmaz.</dd>
+          <dt>Sol tık basılı</dt><dd>1 saniye tut (camgöbeği halka dolar): oyun ağır çekime geçer, 2 saniye fareyle nişan al ve bırak: rüzgar şutu. Durdurulamaz, kimse tutamaz, yolundakileri savurur; kaleye nişanlıysa her yerden gol olur, değilse ilk duvarda biter. Takım başına maçta 5 rüzgar şutu (skor tabelasında camgöbeği damlalar). Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
+          <dt>Sol tık (topsuz)</dt><dd>Pas iste: başında "PAS!" çıkar, topu taşıyan bot arkadaşın sana pas verir.</dd>
+          <dt>Sağ tık</dt><dd>Top sendeyken kısa bas: pas. 1 saniye basılı tut (turuncu halka dolar): oyun ağır çekime geçer, top alev alır, 2 saniye fareyle nişan al ve bırak: kırmızı alevli yakar top ağır çekimde uçar (takım başına maçta 5 kez; kalan haklar skor tabelasında). Yakar top doğrudan gol olmaz; zıplayan kurtulur. Topsuzken topa doğru kay (hangi yöne basarsan bas). Top taşıyana kayarak dokunursan topu mutlaka çalarsın; rakip nişan alırken kayarak vuruşunu engellersin.</dd>
           <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, boştaki topa yaklaşınca yakalarsın. Topu yürüyerek kaptıran 2 saniye, kayarak kaptıran 1,5 saniye sersemler: kıpırdayamaz, şut atamaz, topu geri kapamaz. Arkadan düz koşuyla alınmaz; hızlı koş ya da kay.</dd>
           <dt>Shift</dt><dd>3 saniye hızlı koşu, sonra yorulur normale dönersin (enerji koşu bitince dolmaya başlar).</dd>
-          <dt>Enerji</dt><dd>Kayma, hızlı koşu, yakar top ve rüzgar şutu aynı enerjiyi kullanır: biri kullanılınca hepsi 3 saniye bekler. Geri sayım karakterinin sırtında görünür.</dd>
+          <dt>Enerji</dt><dd>Kayma ve hızlı koşu aynı enerjiyi kullanır: biri kullanılınca ikisi de 3 saniye bekler. Yakar top ve rüzgar şutu enerji istemez, yalnız takımın hakkı (5'er) sayılır. Geri sayım karakterinin sırtında görünür.</dd>
           <dt>Boşluk</dt><dd>Zıpla. Havadayken yakar top seni yakamaz.</dd>
           <dt>V</dt><dd>Kamera: omuz ↔ izometrik (futbol yayını gibi sabit yan açı, kaleler sağda ve solda). İzometrikte fare kilitlenmez: şut, pas ve yakar top imlecin sahada gösterdiği yere gider (yerdeki ok).</dd>
           <dt>Esc</dt><dd>Fareyi bırakır ve oyunu durdurur. Devam edince fare yeniden kilitlenir.</dd>
