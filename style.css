@@ -335,3 +335,13 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol.gosteri canvas{cursor:none}
 #yakar-gol #yg-gosteri{position:absolute;left:22px;bottom:18px;z-index:6;font:900 13px/1 Segoe UI,Arial,sans-serif;letter-spacing:3px;
   color:#f6efd9cc;text-shadow:0 2px 8px #10302bcc;pointer-events:none}
+
+/* Rüzgar şutu gösteri sahnesinin (?gosteri=ruzgar; bkz. src/gosteri-ruzgar.js) ekrandaki açıklama yazısı. Yeri
+   bilerek seçilidir: içerik betiği 16:9 kaydı dikey videoya keserken yanlardan ~%15 kırpar ve üst / alt kısma kendi
+   yazısını koyar. Bu yüzden yazı görüntünün orta yatay bandında (dikeyde %32: kadrajın gökyüzü şeridi — dizilen
+   rakipleri, kaleyi ve savrulmayı hiçbir evrede kapatmaz) ve yanlardan iyice içeride (en çok 60vw, yani ~%70'lik
+   dikey kırpımın da içinde) durur. Yalnız bu sahnede açılır: öbür kiplerde öğe `hidden` kalır. */
+#yakar-gol #yg-gosteri-yazi{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);z-index:7;
+  max-width:60vw;padding:12px 32px;border-radius:999px;text-align:center;pointer-events:none;
+  background:#0b221fd9;border:2px solid #ffffff2b;box-shadow:0 12px 38px #04140f8c;
+  font:900 clamp(18px,2.4vw,38px)/1.2 Segoe UI,Arial,sans-serif;color:#fff6dc;text-shadow:0 3px 14px #05211bcc}

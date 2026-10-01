@@ -27,7 +27,7 @@ tünel → **Published application routes** içindeki rota `yakargol-sunucu.jose
 `node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran görüntüleri `artifacts/`.
 Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak). Çevrim içi için
 `node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar top nişanı, mola; uygulama kipinde "Yakında").
-Gösteri kipi için `node tests/gosteri-smoke.mjs`.
+Gösteri kipi için `node tests/gosteri-smoke.mjs`, rüzgar şutu gösteri sahnesi için `node tests/gosteri-ruzgar-smoke.mjs`.
 
 ## Gösteri kipi (içerik klipleri)
 
@@ -40,6 +40,24 @@ için yakındır; yakar top ağır çekimi bu kipte de çalışır. Arayüz gizl
 kurulur: kip girdisiz döner durur. Her maç **rastgele tohumla** kurulur (normal maçta tohum sabittir, `MATCH.seed`):
 girdi olmadığı için sabit tohumda her maç birebir aynı maçın tekrarı olur, klipler birbirinin kopyası çıkardı.
 Normal oyun ve çevrim içi maç bu ayarlardan hiç etkilenmez. Kod: `src/gosteri.js`.
+
+### Rüzgar şutu sahnesi (`?gosteri=ruzgar`)
+
+`https://yakargol.josephuz.com/?gosteri=ruzgar` maç değil, rüzgar şutunu anlatan **sahnelenmiş** bir vuruştur (içerik
+videosu için). Bir bot orta sahada topla durur; rakipler (kaleci dahil) kaleyle onun arasına, topun yolu üstüne
+dizilir ve kıpırdamaz — top çalmaz, saldırmaz; takım arkadaşları da yanlarda durup izler. Bot sol tıkı 2 saniye basılı
+tutmuş gibi rüzgar şutunu yükler (top camgöbeğine döner, çevresine rüzgar kıvılcımları saçılır), sonra kaleye vurur:
+top yoldaki beş rakibi tek tek savurur ve gol olur. İlk çarpmada ve golde kısa ağır çekim olur; ekranda yalnız bu
+sahneye özel, büyük bir açıklama yazısı durur (yükleme: "Sol tık 2 sn basılı: RÜZGAR ŞUTU", çarpma: "Önüne çıkanı
+savurur!"). Yazı bilerek kadrajın orta yatay bandında ve yanlardan içeridedir: içerik betiği 16:9 kaydı dikey videoya
+keserken yanlardan ~%15 kırpar ve üst / alt kısma kendi yazısını koyar.
+
+Kamera `?gosteri=1`den farklı olarak **omuz üstüdür** (izometrik değil): şutçunun arkasından kaleye bakar, top
+giderken onu yumuşakça izler. Sahne ~9 saniyede bir yeniden kurulur ve döner; her turda diziliş, şut yönü ve kamera
+açısı hafif değişir, böylece 25 saniyelik bir klipte en az iki tam gol çıkar ve turlar birbirinin kopyası olmaz.
+Arayüzün gizli olması, girdinin okunmaması, ölçümün gitmemesi ve sunucuya bağlanılmaması `?gosteri=1` ile ortaktır.
+`?gosteri=1` ve normal oyun bu sahneden hiç etkilenmez. Kod: `src/gosteri-ruzgar.js`, ayarlar `config.js` →
+`GOSTERI_RUZGAR`.
 
 ## Çok oyunculu
 
@@ -159,6 +177,7 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `src/audio.js` | Kısa sentez sesler |
 | `src/main.js` | Uygulama: ekran akışı, sabit adım döngüsü, olayların tüketilmesi, test kancası (`?test`) |
 | `src/gosteri.js` | Gösteri kipi (`?gosteri=1`, yalnız web): bot-bot maç, arayüzsüz, kamera aksiyonu izler |
+| `src/gosteri-ruzgar.js` | Rüzgar şutu gösteri sahnesi (`?gosteri=ruzgar`): sahnelenmiş vuruş, omuz kamerası, açıklama yazısı, döngü |
 | `src/view/view.js` | Görünüm: renderer, ışıklar, sahne bileşenlerinin toplanması, kare çizimi |
 | `src/view/camera.js` | Omuz kamerası: takip, bakış, nişan ışını, bakış yönlü hareket, topa dönme |
 | `src/view/pitch.js` | Saha ve çevresi (kaleler, duvarlar, tel örgü, apartmanlar, ağaçlar) |
@@ -171,5 +190,6 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/touch-smoke.mjs` | Dokunmatik dumanı testi (telefon taklidi) |
 | `tests/rooms.test.mjs`, `tests/online-smoke.mjs` | Oda testleri (sahte soket) ve iki sekmeli çevrim içi dumanı testi |
 | `tests/gosteri-smoke.mjs` | Gösteri kipi dumanı testi (arayüz gizli, ağ ve ölçüm yok, kamera aksiyonda, maç yenilenir) |
+| `tests/gosteri-ruzgar-smoke.mjs` | Rüzgar sahnesi dumanı testi (diziliş, kimse saldırmaz, yükleme / çarpma / gol, döngü, yazının yeri) |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |
 | `scripts/build-web.mjs`, `scripts/apk.mjs`, `scripts/icons.mjs` | Uygulama dosyalarını toplama, APK derleme, simge / açılış / mağaza görselleri |

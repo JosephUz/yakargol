@@ -14,10 +14,12 @@ import { benchX, benchZ, lift } from './actors.js';
  * yoksa (dokunmatik) hareket ya da bakış yönü, rakip kaleye dönükse kalenin ortası (aim).
  *
  * `isoOverride`: izometrik ayarların üstüne yazılır (gösteri kipi daha yakın ve tam aksiyonun üstüne bakan bir kadraj
- * ister, bkz. config.js GOSTERI.iso).
+ * ister, bkz. config.js GOSTERI.iso). `omuzOverride`: omuz kamerasının mesafesi / yüksekliği (rüzgar şutu gösteri
+ * sahnesi şutçunun biraz daha gerisinden ve yukarısından bakar, bkz. config.js GOSTERI_RUZGAR.omuz).
  */
-export function createShoulderCamera(isoOverride = null) {
+export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
   const ISO = { ...CAMERA.iso, ...(isoOverride || {}) };
+  const OMUZ = { back: CAMERA.back, side: CAMERA.side, height: CAMERA.height, ...(omuzOverride || {}) };
   const camera = new T.PerspectiveCamera(CAMERA.fov, 1, 0.1, CAMERA.far);
   const iso = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, CAMERA.far);
   let mode = 'shoulder', hero = null, pointer = null;
@@ -54,6 +56,15 @@ export function createShoulderCamera(isoOverride = null) {
       yaw += Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw)) * k;
       pitch += (CAMERA.pitch + 0.06 - pitch) * k;
     },
+    /**
+     * Bakışı doğrudan ayarlar: gösteri sahneleri kadrajı kendileri kurar (rüzgar sahnesi kamerayı şut çizgisine
+     * bakacak biçimde çevirir, bkz. src/gosteri-ruzgar.js). İzometrikte bakış dönmediği için yok sayılır.
+     */
+    setLook(nextYaw, nextPitch) {
+      if (mode === 'iso') return;
+      yaw = nextYaw;
+      if (nextPitch !== undefined) pitch = nextPitch;
+    },
     look(dx, dy) {
       if (mode === 'iso') return;
       yaw -= dx * CAMERA.yawSpeed;
@@ -84,7 +95,7 @@ export function createShoulderCamera(isoOverride = null) {
         iso.updateMatrixWorld();
         return;
       }
-      camera.position.set(x - fx * CAMERA.back - fz * CAMERA.side, CAMERA.height + (p.jump > 0 || p.air > 0 ? lift(p) : 0), z - fz * CAMERA.back + fx * CAMERA.side);
+      camera.position.set(x - fx * OMUZ.back - fz * OMUZ.side, OMUZ.height + (p.jump > 0 || p.air > 0 ? lift(p) : 0), z - fz * OMUZ.back + fx * OMUZ.side);
       if (shake > 0) {
         camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
         shake = Math.max(0, shake - dt * 0.9);
