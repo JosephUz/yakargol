@@ -15,12 +15,26 @@ import { isApp } from './platform.js';
  *  - Maç bitince karne açılmaz: GOSTERI.yenidenBasla saniye sonra yeni maç kurulur, kip girdisiz döner.
  *  - Her maç rastgele tohumla kurulur (tohum): art arda çekilen klipler aynı maçın tekrarı olmaz.
  * Uygulamada (isApp) açılmaz: Play Store sürümüne yeni bir kip girmez.
+ *
+ * `?gosteri` adresinin ikinci sahnesi `?gosteri=ruzgar`dır (gosteri-ruzgar.js): maç değil, rüzgar şutunu anlatan
+ * sahnelenmiş bir vuruş. Arayüzün gizlenmesi, girdinin okunmaması, ölçümün ve ağın kesilmesi iki sahnede de ortaktır;
+ * hangisinin açık olduğunu aşağıdaki `gosteriKip` söyler.
  */
-export function gosteriAcik() {
-  if (isApp()) return false;
+
+/**
+ * Hangi gösteri sahnesi açık: `'mac'` (`?gosteri=1`, bu dosyadaki kendi kendine oynayan maç), `'ruzgar'`
+ * (`?gosteri=ruzgar`, rüzgar şutunu anlatan sahnelenmiş vuruş — bkz. gosteri-ruzgar.js) ya da `null` (kapalı).
+ * Uygulamada (isApp) her ikisi de kapalıdır.
+ */
+export function gosteriKip() {
+  if (isApp()) return null;
   const v = new URLSearchParams(location.search).get('gosteri');
-  return v !== null && v !== '0';
+  if (v === null || v === '0') return null;
+  return v === 'ruzgar' ? 'ruzgar' : 'mac';
 }
+
+/** Herhangi bir gösteri sahnesi açık mı (arayüzü gizleyen, girdiyi ve ölçümü kesen ortak kurallar için). */
+export const gosteriAcik = () => gosteriKip() !== null;
 
 export function createGosteri() {
   const K = GOSTERI.kamera;

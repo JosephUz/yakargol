@@ -1,6 +1,7 @@
 import { createAudio } from './audio.js';
 import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
-import { createGosteri, gosteriAcik } from './gosteri.js';
+import { createRuzgarGosteri } from './gosteri-ruzgar.js';
+import { createGosteri, gosteriKip } from './gosteri.js';
 import { createInput } from './input.js';
 import { createLobby } from './lobby.js';
 import { createNetClient } from './net/client.js';
@@ -31,16 +32,21 @@ import { createWorld, step } from './world.js';
  *
  * **Gösteri kipi** (yalnız web, `?gosteri=1`; bkz. gosteri.js): içerik klipleri için menü atlanır, on koltuğu da bot
  * oynar, arayüz gizlenir, kamera aksiyonu izler; girdi okunmaz, ölçüm gitmez, sunucuya bağlanılmaz.
+ * `?gosteri=ruzgar` (bkz. gosteri-ruzgar.js) aynı kuralları paylaşan ikinci bir sahnedir: maç yerine rüzgar şutunu
+ * anlatan, dönüp duran sahnelenmiş bir vuruş. Sahne kendi girdisini, zaman ölçeğini (ağır çekim), kamerasını ve
+ * ekrandaki açıklama yazısını sürer; aşağıdaki `gosteri.*` çağrıları iki sahnenin ortak arayüzüdür (olmayan
+ * yetenekler sessizce atlanır).
  */
 const STEP = 1 / 60, MAX_STEPS = 5;
 
 export async function start(root) {
   const testMode = new URLSearchParams(location.search).has('test');
-  /** Gösteri kipi (yalnız web): açıksa oyun kendi kendine oynanır, bkz. gosteri.js. */
-  const gosteri = gosteriAcik() ? createGosteri() : null;
+  /** Gösteri sahnesi (yalnız web): `?gosteri=1` kendi kendine oynanan maç (gosteri.js), `?gosteri=ruzgar` rüzgar şutu sahnesi (gosteri-ruzgar.js). */
+  const kip = gosteriKip();
+  const gosteri = kip === 'ruzgar' ? createRuzgarGosteri(root) : kip ? createGosteri() : null;
   const touch = touchDevice();
   root.classList.toggle('touch', touch);
-  const view = createView(root.querySelector('#yg-view'), { mobile: touch, iso: gosteri ? GOSTERI.iso : null });
+  const view = createView(root.querySelector('#yg-view'), { mobile: touch, iso: gosteri ? GOSTERI.iso : null, omuz: gosteri?.omuz || null });
   /**
    * Kamera: masaüstünde omuz kamerasıyla, dokunmatikte izometrik başlar; 🎥 ya da V ile geçilir (seçim tarayıcıda hatırlanır).
    */
@@ -57,8 +63,8 @@ export async function start(root) {
   };
   let savedCam = null, unlockQuiet = false, input = null;
   try { savedCam = localStorage.getItem('yg.cam'); } catch { /* yok */ }
-  // Gösteride kamera hep izometriktir (futbol yayını gibi sabit yan açı); kaydedilmiş seçim okunmaz, yazılmaz.
-  setCamera(gosteri ? 'iso' : touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
+  // Gösteride kamerayı sahne seçer (maç sahnesi izometrik, rüzgar sahnesi omuz üstü); kaydedilmiş seçim okunmaz, yazılmaz.
+  setCamera(gosteri ? gosteri.kamera || 'iso' : touch ? (savedCam === 'shoulder' ? 'shoulder' : 'iso') : savedCam === 'iso' ? 'iso' : 'shoulder');
   const toggleCamera = () => setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso');
   onTap(camButton, toggleCamera);
   const ui = createUI(root);
@@ -337,6 +343,8 @@ export async function start(root) {
     for (const e of w.events) {
       view.event(e);
       audio.play(e.type);
+      // Rüzgar sahnesi olayları kendisi yürütür (şut çıktı, rakip savruldu, gol oldu): bkz. gosteri-ruzgar.js olay.
+      gosteri?.olay?.(e, w);
       // Gösteride titreşim yok: kipin "izleyeni" oyuncu değil kamera, telefonu her golde titretmenin anlamı yok.
       if (touch && !gosteri) buzz(e, me);
       if (!online && e.type === 'kick' && e.kind === 'fire') {
@@ -363,6 +371,11 @@ export async function start(root) {
   }
 
   const refresh = () => { if (!gosteri) ui.hud(w, started && screen !== 'home' && screen !== 'lobby', screen); };
+  /**
+   * Gösteri sahnesinin zaman ölçeği ve görüntüsü (rüzgar sahnesi ilk çarpmada ve golde ağır çekime geçer, bkz.
+   * gosteri-ruzgar.js bakis). Sahnesi olmayan ya da ölçek sürmeyen kipte null: o zaman yakar top sineması geçerlidir.
+   */
+  const gosteriBakis = () => (gosteri?.bakis ? gosteri.bakis() : null);
 
   function frame(now) {
     requestAnimationFrame(frame);
@@ -380,11 +393,12 @@ export async function start(root) {
       net.update(dt, cine ? null : move);
       syncNetCinema(dt);
     } else if (active()) {
-      acc += dt * (cine ? cinemaLook().scale : 1);
+      acc += dt * (gosteriBakis()?.scale ?? (cine ? cinemaLook().scale : 1));
       for (let n = 0; acc >= STEP && n < MAX_STEPS; n++) {
         const was = cine;
-        // Gösteride girdi okunmaz: on koltuğu da bot yapay zekâsı sürer (bkz. world.js step).
-        step(w, STEP, gosteri ? {} : route(input.read(view)));
+        // Gösteride insan girdisi okunmaz: maç sahnesinde on koltuğu da bot yapay zekâsı sürer (bkz. world.js step),
+        // rüzgar sahnesinde girdiyi sahnenin kendisi verir (yalnız şutçuya; bkz. gosteri-ruzgar.js girdi).
+        step(w, STEP, gosteri ? gosteri.girdi?.(STEP, w) || {} : route(input.read(view)));
         consume();
         acc -= STEP;
         if (screen || (cine && !was)) { if (cine) acc = 0; break; }
@@ -395,7 +409,8 @@ export async function start(root) {
       if (gosteri) gosteri.guncelle(dt, w, begin);
     } else acc = 0;
     // Gösteride arayüz yoktur (bkz. style.css `.gosteri`): panel, gösterge ve işaret güncellemeleri hiç koşmaz.
-    const charge = gosteri ? null : chargeState();
+    // Rüzgar sahnesi yine de ayaktaki topun dolum rengini ister (bkz. gosteri-ruzgar.js sarj → view/ballview.js).
+    const charge = gosteri ? gosteri.sarj?.(w) || null : chargeState();
     if (!gosteri) {
       ui.tickMessage(dt, w, active());
       ui.charge(charge);
@@ -408,8 +423,10 @@ export async function start(root) {
     }
     // Çevrim içinde durum pakette gelir: görüntü molada da oynar (sinemada ölçek sunucudan).
     const drawDt = online && started ? dt : screen ? 0 : dt;
-    // Gösteride kamera senin oyuncunu değil aksiyonun ağırlık merkezini izler (bkz. gosteri.odak).
-    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : cinemaLook(), charge, gosteri ? gosteri.odak(drawDt, w) : null);
+    // Rüzgar sahnesi çizimden hemen önce kendi kadrajını kurar ve yükleme kıvılcımlarını saçar (bkz. gosteri-ruzgar.js cizim).
+    gosteri?.cizim?.(drawDt, w, view);
+    // Gösteride kamera senin oyuncunu değil sahnenin odağını izler (maçta aksiyonun ağırlık merkezi, rüzgar sahnesinde top).
+    view.render(w, drawDt, started && screen !== 'home' && screen !== 'lobby', online ? netLook() : gosteriBakis() || cinemaLook(), charge, gosteri ? gosteri.odak(drawDt, w) : null);
     if (!gosteri) {
       ui.overhead(w, dt, active(), view.project);
       ui.ballMark(w, active() && !cine, view.project);
@@ -432,6 +449,7 @@ export async function start(root) {
     window.__yakarGol = {
       world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, gosteri: !!gosteri, cine: cine && cine.phase }),
       odak: () => (gosteri ? gosteri.nokta() : null),
+      gosteriDurum: () => gosteri?.durum?.() ?? null,
       step: n => { for (let i = 0; i < n; i++) step(w, STEP); consume(); refresh(); },
     };
   }

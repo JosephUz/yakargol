@@ -183,3 +183,54 @@ export const GOSTERI = {
    */
   bot: { ...BOT, think: 0.28, thinkJitter: 0.2, shootRange: 21, fireRange: 12, fireChance: 0.72, pressure: 6, dodgeChance: 0.45, sprintRange: 7, dashRange: 5.5, dashChance: 0.75, passChance: 0.3, escape: { dribble: 2.5, pass: 2, wall: 1, shoot: 2.5, fire: 3.5 }, chasers: 2, homeX: 0.55, homeZ: 0.7 },
 };
+
+/**
+ * **Rüzgar şutu gösteri sahnesi** (yalnız web, `?gosteri=ruzgar`; bkz. src/gosteri-ruzgar.js): içerik videosu için
+ * sahnelenmiş tek bir vuruş — maç değil. Orta sahadaki bot rüzgar şutunu KICK.windCharge saniye yükler, kaleyle
+ * arasına dizilmiş rakipleri tek tek savurur ve gol olur; sahne `bitis` saniye sonra yeniden kurulur. Kamera omuz
+ * üstüdür (izometrik değil). Normal oyun ve `?gosteri=1` bu ayarlardan hiç etkilenmez.
+ */
+export const GOSTERI_RUZGAR = {
+  /**
+   * Evre süreleri (gerçek saniye): diziliş kurulduktan sonraki bekleme, golden sonraki bekleme (gol patlaması bu
+   * süre boyunca sürer, bkz. gosteri-ruzgar.js olay), güvenlik üst sınırları. Toplam tur ≈ 9 sn: 25 sn'lik bir
+   * klipte en az iki tam gol çıkar.
+   */
+  hazir: 1.6, bitis: 3.3, yuklemeEnCok: 4, ucusEnCok: 5,
+  /**
+   * Sahneye özel top ayarı: rüzgar topu normalde WIND.power (0,9 sn) sonra sıradan topa döner. Orta sahadan atılan
+   * şutun kaleye varması bundan uzun sürer; rüzgar bitince kalan rakipler topu yakalar ve sahne golsüz kalırdı.
+   * Burada top `ruzgar` saniye rüzgarlı kalır: dizilen beş rakibin hepsi savrulur ve her tur gol olur. Mekanik aynıdır
+   * (savurur, tutulamaz, gol olur), yalnız süresi sahne için uzatılır — ve yalnız bu adreste.
+   */
+  ruzgar: 2.6,
+  /** Savrulan rakip (yalnız bu sahnede): WIND.knock yerine `knock` saniye savrulur, `air` saniye havada takla atar. */
+  savrulma: { knock: 0.8, air: 0.85 },
+  /** Ağır çekim: ilk çarpmada ve golde `sure` gerçek saniye boyunca simülasyon `olcek` hızında akar. */
+  agir: { olcek: 0.35, sure: 0.6 },
+  /** Şutu atan: orta sahada, x'te ±`x`, z'de `z` ± `jitter` (dünyanın tohumlu rastgelesi; her tur hafif değişir). */
+  atan: { x: 4, z: 3, jitter: 1.5 },
+  /** Nişan: kale ağzında ±`x` (PITCH.goal 5,8'den içeride, top hep ağa girer), kale çizgisinin `pay` birim gerisi. */
+  hedef: { x: 3, pay: 2 },
+  /**
+   * Rakip dizilişi: şut çizgisi üstünde, şutçuyla kale arasının `ilk` ile `son` oranları arasında eşit aralıklı beş
+   * rakip (kaleci en sonda, kaleye en yakın). Her birinin yeri ±`jitter` oranında kayar ve çizgiden `sapma` birim
+   * yana durur — BALL.hit (0,85) içinde kalır, yani top hepsine değer. Yan kayma sırayla sağa ve sola: rakipler
+   * sıra sıra iki yana savrulur.
+   */
+  dizi: { ilk: 0.1, son: 0.86, jitter: 0.03, sapma: [0.3, 0.6] },
+  /** Takım arkadaşları: şut çizgisinin `x` kadar yanında, `z` kadar ilerisinde durup izler (topa değmezler). */
+  arkadas: { x: [9, 13], z: [3, 18] },
+  /** Şutu atanın korunması (saniye): sahnelenmiş vuruş çalınamasın diye kimse topu kapamaz (bkz. ball.js carry). */
+  koruma: 60,
+  /** Bu sahnede omuz kamerası daha geride ve yukarıdadır (CAMERA.back / side / height üstüne yazılır). */
+  omuz: { back: 7.6, side: 1.2, height: 3.9 },
+  /**
+   * Kamera: `pitch` eğim (rad), `sapma` her turdaki açı oynaması (rad), `iz` odağın topun kaç birim gerisinde
+   * durduğu (top giderken kamera onu bu mesafeden izler), `yumusatma` odağın yumuşaklığı (1/sn), `sinir` odağın
+   * sahada kalabileceği yarı boy (kamera ağın arkasına geçmesin).
+   */
+  kamera: { pitch: 0.12, sapma: 0.08, iz: 5.5, yumusatma: 4, sinir: { x: 14, z: 36 } },
+  /** Yükleme sırasında şutu atanın çevresine saçılan rüzgar kıvılcımlarının aralığı (saniye). */
+  kivilcim: 0.18,
+};
