@@ -23,11 +23,22 @@ Tünel konteyneri oyunun ağ alanını paylaşır (`network_mode: service:game`)
 tünel → **Published application routes** içindeki rota `yakargol-sunucu.josephuz.com` → `http://localhost:5186` olarak kalır.
 `.env` git'e ve Docker imajına girmez. Güncelleme için aynı komut yeter; tüneli kapatmak için `docker compose --profile tunnel down`.
 
-**Testler**: `npm test` kural testlerini (Node, tarayıcısız) koşar. Tarayıcı dumanı testi çalışan sunucuya bağlanır:
-`node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran görüntüleri `artifacts/`.
+**Testler**: `npm test` kural ve "ana ekrana ekle" testlerini (Node, tarayıcısız) koşar. Tarayıcı dumanı testi çalışan
+sunucuya bağlanır: `node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran
+görüntüleri `artifacts/`.
 Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak). Çevrim içi için
 `node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar pas nişanı, mola; uygulama kipinde "Yakında").
 Gösteri kipi için `node tests/gosteri-smoke.mjs`, rüzgar şutu gösteri sahnesi için `node tests/gosteri-ruzgar-smoke.mjs`.
+Üst çubuktaki tam ekran düğmesinin dar yatay telefonda yerini ölçen test kendi sunucusunu açar: `npm run test:tamekran`.
+
+**Telefonda adres çubuğu**: oyun **ana ekrana eklenebilir** (`manifest.webmanifest`, Android'de "Uygulama olarak
+yükle", iOS'ta Paylaş → Ana Ekrana Ekle) — o kısayoldan açılınca tam ekran ve yatay başlar, adres çubuğu hiç çıkmaz.
+Simgenin PNG'leri şart: iOS `apple-touch-icon` SVG kabul etmez, Chrome Android de yükleme için 192/512 px PNG ister.
+`icon-192.png`, `icon-512.png`, `icon-maskable-512.png` ve `apple-touch-icon.png` `icon.svg`'den üretilir
+(`node scripts/ikon-web.mjs`; simge değişirse yeniden koştur). Sekmede kalanlar için üst çubukta **tam ekran** düğmesi var (`#yg-full`, sarı): maça girerken oyun zaten tam ekrana
+geçtiği için (`src/touch.js` → `enterFullscreen`) düğmenin işi giriş ekranı ile lobidir, maç başlayınca `← josephuz.com`
+gibi gizlenir ve skor tabelasına yer bırakır. Masaüstünde (orada F11 var) ve Play Store uygulamasında (`isApp`,
+kaldıracak tarayıcı çubuğu yok) hiç görünmez.
 
 ## Gösteri kipi (içerik klipleri)
 

@@ -20,8 +20,17 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.svg': 'image/svg+xml; charset=utf-8',
+  '.png': 'image/png',
 };
-const rootFiles = ['index.html', 'style.css', 'game.js'];
+/**
+ * manifest.webmanifest ve simgeler: ana ekrana eklenince oyun tam ekran açılır (bkz. index.html). Simgelerin PNG'leri
+ * şart — iOS `apple-touch-icon` SVG kabul etmez, Chrome Android "uygulama olarak yükle" için 192/512 px PNG ister;
+ * eksikse kısayol sıradan bir sekme gibi açılır ve adres çubuğu geri gelir (bkz. scripts/ikon-web.mjs).
+ */
+const rootFiles = ['index.html', 'style.css', 'game.js', 'manifest.webmanifest', 'icon.svg',
+  'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 /** Oyun dosyaları önbelleğe alınmaz: tek bir sürüm vardır ve güncelleme anında geçmelidir. */
 const noStore = 'no-store, no-cache, must-revalidate, max-age=0';
 /** Sürüm damgası: en yeni oyun dosyasının değişme zamanı; /health ile hangi yapının ayakta olduğu görülür. */

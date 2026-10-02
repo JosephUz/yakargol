@@ -1,0 +1,19 @@
+{
+  "name": "Yakar Gol · Mahalle Ligi",
+  "short_name": "Yakar Gol",
+  "lang": "tr",
+  "description": "5v5 mahalle futbolu: pas ver, duvardan sektir, kaleyi bul; ya da yakar pasla rakibi yakıp takımına yol aç.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#193d39",
+  "theme_color": "#193d39",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

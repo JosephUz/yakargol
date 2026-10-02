@@ -255,6 +255,14 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 /* Telefonda üst düğmeler simge: skor tabelasına yer kalsın. */
 #yakar-gol.touch .header-actions button{font-size:0;padding:0;width:40px;height:40px}
 #yakar-gol.touch .header-actions button::before{font-size:18px}
+/* Tam ekran düğmesi yalnız telefon tarayıcısında (`tam-ekran` sınıfını src/main.js verir: dokunmatik, uygulama değil,
+   tarayıcı destekliyor). Maça girerken oyun zaten tam ekrana geçtiği için düğme giriş ekranı ve lobide durur; maç
+   başlayınca `hidden` olur (ui.js → hud), skor tabelasıyla yan yana gelmez. Belirgin dursun diye sarı. */
+#yakar-gol #yg-full{display:none}
+/* `:not([hidden])` şart: kimlikli seçici `[hidden]`in display:none'ını yenerdi, düğme maç sırasında da kalırdı. */
+#yakar-gol.tam-ekran #yg-full:not([hidden]){display:block;background:#efbf77e8;color:#1c2b22;border-color:#ffda9955}
+#yakar-gol.tam-ekran #yg-full::before{content:"⛶";font-weight:900}
+#yakar-gol.tam-ekran #yg-full.on::before{content:"⤡"}
 #yakar-gol.touch #yg-cam::before{content:"🎥"}
 #yakar-gol.touch #yg-help-open::before{content:"?";font-weight:900}
 #yakar-gol.touch #yg-pause-open::before{content:"☰"}

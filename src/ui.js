@@ -50,7 +50,7 @@ export function createUI(root) {
     over: $('overhead'), overEnergy: $('over-energy'), overEnergyText: $('over-energy-text'), overEnergyFill: $('over-energy-fill'),
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
     ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'), windLeft: $('wind-left'), cineTitle: $('cine-title'),
-    site: $('site'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
+    site: $('site'), full: $('full'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
   };
   // Skor tabelasındaki alev damlaları hak sayısı kadar (KICK.fireShots).
   for (const node of el.fires) node.innerHTML = '<i></i>'.repeat(KICK.fireShots);
@@ -81,7 +81,10 @@ export function createUI(root) {
     /** Tabela, saat ve oyuncu kartı (sık değişmeyenler; kare başına değil, kısa aralıkla). */
     hud(w, playing, screen) {
       for (const node of el.playing) node.hidden = !playing;
+      // Giriş ekranı ve lobide duran üst çubuk düğmeleri; maç başlayınca skor tabelasına yer açılır. Tam ekran
+      // düğmesi zaten yalnız telefon tarayıcısında görünür (style.css → `#yakar-gol.tam-ekran #yg-full`).
       el.site.hidden = playing;
+      el.full.hidden = playing;
       el.crosshair.hidden = !playing || !!screen;
       el.blue.textContent = w.score[0]; el.orange.textContent = w.score[1];
       el.fires.forEach((node, team) => {
