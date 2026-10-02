@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Yakar Gol">
+  <!-- Ana ekran simgesi: uygulama simgesinin (scripts/icons.mjs) aynı alevli topu. Maskeli (maskable) simgede
+       kenarlardan %10 kırpılabilir; önemli her şey ortadaki %80'lik alanda durur. -->
+  <defs>
+    <linearGradient id="f" x1="0" y1="1" x2="0.6" y2="0"><stop offset="0" stop-color="#e8321a"/><stop offset=".55" stop-color="#ff7a2e"/><stop offset="1" stop-color="#ffd35c"/></linearGradient>
+    <linearGradient id="g" x1="0" y1="1" x2="0.6" y2="0"><stop offset="0" stop-color="#ff9a2e"/><stop offset="1" stop-color="#fff3a0"/></linearGradient>
+    <radialGradient id="b" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#f1ead6"/><stop offset="1" stop-color="#c9c0a6"/></radialGradient>
+    <clipPath id="c"><circle cx="44" cy="62" r="21"/></clipPath>
+  </defs>
+  <rect width="100" height="100" fill="#193d39"/>
+  <circle cx="50" cy="50" r="46" fill="#ffffff08"/>
+  <g transform="translate(50 50) scale(.86) translate(-50 -50)">
+    <path d="M27 74 C 16 50, 38 42, 44 16 C 52 32, 63 30, 67 10 C 82 34, 88 60, 66 80 Z" fill="url(#f)"/>
+    <path d="M34 72 C 28 56, 45 50, 50 32 C 56 44, 64 42, 67 30 C 76 48, 76 64, 62 76 Z" fill="url(#g)"/>
+    <circle cx="44" cy="62" r="21" fill="url(#b)"/>
+    <g clip-path="url(#c)" fill="#203e33" stroke="#203e33" stroke-width="1.6" stroke-linecap="round">
+      <polygon points="44.00,55.00 50.66,59.84 48.12,67.66 39.88,67.66 37.34,59.84"/>
+      <polygon points="44.00,83.00 37.34,78.16 39.88,70.34 48.12,70.34 50.66,78.16"/>
+      <polygon points="63.02,55.82 56.36,60.66 49.70,55.82 52.24,48.00 60.48,48.00"/>
+      <polygon points="55.76,78.05 53.22,70.23 59.88,65.39 66.54,70.23 64.00,78.05"/>
+      <polygon points="32.24,78.05 29.70,70.23 36.36,65.39 43.02,70.23 40.48,78.05"/>
+      <polygon points="24.98,55.82 27.52,48.00 35.76,48.00 38.30,55.82 31.64,60.66"/>
+      <line x1="44" y1="55" x2="44" y2="49"/>
+      <line x1="50.66" y1="59.84" x2="55.51" y2="56.32"/>
+      <line x1="48.12" y1="67.66" x2="49.97" y2="73.36"/>
+      <line x1="39.88" y1="67.66" x2="38.03" y2="73.36"/>
+      <line x1="37.34" y1="59.84" x2="32.49" y2="56.32"/>
+    </g>
+    <circle cx="44" cy="62" r="21" fill="none" stroke="#0f2a27" stroke-opacity=".35" stroke-width="1.2"/>
+  </g>
+</svg>

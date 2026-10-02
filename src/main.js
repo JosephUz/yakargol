@@ -7,8 +7,8 @@ import { createInput } from './input.js';
 import { createLobby } from './lobby.js';
 import { createNetClient } from './net/client.js';
 import { macBasladi, macBitti, macKontrol } from './olcum.js';
-import { onlineEnabled, serverHttp } from './platform.js';
-import { enterFullscreen, touchDevice } from './touch.js';
+import { isApp, onlineEnabled, serverHttp } from './platform.js';
+import { enterFullscreen, fullscreenOn, fullscreenSupported, toggleFullscreen, touchDevice } from './touch.js';
 import { createUI, onTap } from './ui.js';
 import { createView } from './view/view.js';
 import { canPower, createWorld, startAim, step } from './world.js';
@@ -69,6 +69,26 @@ export async function start(root) {
   // Omuz kamerasına geçince bakış kaldığı yerden değil topa dönük başlar.
   const toggleCamera = () => { setCamera(view.cameraMode === 'iso' ? 'shoulder' : 'iso'); if (view.cameraMode === 'shoulder') view.faceBall(w); };
   onTap(camButton, toggleCamera);
+  /**
+   * Tam ekran düğmesi — yalnız telefon tarayıcısında. Maça girerken oyun kendiliğinden tam ekrana geçtiği için
+   * (`enterFullscreen`) düğmenin işi giriş ekranı ve lobidir: oradaki adres çubuğunu da kaldırır. Bu yüzden maç
+   * başlayınca gizlenir (ui.js → hud, `← josephuz.com` ile aynı kural) ve skor tabelasıyla hiç yan yana gelmez;
+   * telefon dar yatay dururken (667x375) üst çubuğa beşinci simge binmiş olmaz.
+   *
+   * Play Store uygulamasında (Capacitor) kaldıracak tarayıcı çubuğu yok: `tam-ekran` sınıfı verilmez, düğme
+   * görünmez (style.css). Masaüstünde de görünmez; orada F11 var.
+   */
+  root.classList.toggle('tam-ekran', touch && !isApp() && fullscreenSupported());
+  const fullButton = root.querySelector('#yg-full');
+  const syncFull = () => {
+    const on = fullscreenOn();
+    fullButton.classList.toggle('on', on);
+    fullButton.textContent = on ? '⤡ Tam ekrandan çık' : '⛶ Tam ekran';
+    fullButton.setAttribute('aria-label', on ? 'Tam ekrandan çık' : 'Tam ekran');
+  };
+  onTap(fullButton, () => { toggleFullscreen(); setTimeout(syncFull, 120); });
+  document.addEventListener('fullscreenchange', syncFull);
+  syncFull();
   const ui = createUI(root);
   const audio = createAudio();
   // cine: sinemanın görüntü durumu (bkz. syncCine); cinema: tek başına oyunda evreyi yürüten (cinema.js).

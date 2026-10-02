@@ -105,3 +105,18 @@ export function enterFullscreen() {
   const go = document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
   Promise.resolve(go).then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
 }
+
+/** Tam ekran şu an açık mı (üst çubuktaki düğmenin simgesi buna göre). */
+export const fullscreenOn = () => !!document.fullscreenElement;
+
+/** Tarayıcı tam ekranı destekliyor mu (desteklemiyorsa üst çubukta düğme de görünmez). */
+export const fullscreenSupported = () => !!document.documentElement.requestFullscreen && document.fullscreenEnabled !== false;
+
+/**
+ * Üst çubuktaki tam ekran düğmesi: tarayıcı çubuklarını tümden kaldırır, tekrar basınca geri getirir. Maça girerken
+ * oyun zaten tam ekrana geçtiği için düğme giriş ekranı ve lobi içindir (bkz. src/main.js, ui.js → hud).
+ */
+export function toggleFullscreen() {
+  if (document.fullscreenElement) { document.exitFullscreen?.().catch(() => {}); return; }
+  enterFullscreen();
+}
