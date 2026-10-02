@@ -33,7 +33,9 @@ Gösteri kipi için `node tests/gosteri-smoke.mjs`, rüzgar şutu gösteri sahne
 
 **Telefonda adres çubuğu**: oyun **ana ekrana eklenebilir** (`manifest.webmanifest`, Android'de "Uygulama olarak
 yükle", iOS'ta Paylaş → Ana Ekrana Ekle) — o kısayoldan açılınca tam ekran ve yatay başlar, adres çubuğu hiç çıkmaz.
-Sekmede kalanlar için üst çubukta **tam ekran** düğmesi var (`#yg-full`, sarı): maça girerken oyun zaten tam ekrana
+Simgenin PNG'leri şart: iOS `apple-touch-icon` SVG kabul etmez, Chrome Android de yükleme için 192/512 px PNG ister.
+`icon-192.png`, `icon-512.png`, `icon-maskable-512.png` ve `apple-touch-icon.png` `icon.svg`'den üretilir
+(`node scripts/ikon-web.mjs`; simge değişirse yeniden koştur). Sekmede kalanlar için üst çubukta **tam ekran** düğmesi var (`#yg-full`, sarı): maça girerken oyun zaten tam ekrana
 geçtiği için (`src/touch.js` → `enterFullscreen`) düğmenin işi giriş ekranı ile lobidir, maç başlayınca `← josephuz.com`
 gibi gizlenir ve skor tabelasına yer bırakır. Masaüstünde (orada F11 var) ve Play Store uygulamasında (`isApp`,
 kaldıracak tarayıcı çubuğu yok) hiç görünmez.

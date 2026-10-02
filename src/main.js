@@ -86,7 +86,8 @@ export async function start(root) {
     fullButton.textContent = on ? '⤡ Tam ekrandan çık' : '⛶ Tam ekran';
     fullButton.setAttribute('aria-label', on ? 'Tam ekrandan çık' : 'Tam ekran');
   };
-  onTap(fullButton, () => { toggleFullscreen(); setTimeout(syncFull, 120); });
+  onTap(fullButton, toggleFullscreen);
+  // Yazı ve simge yalnız buradan güncellenir: tarayıcının kendi yolundan (Esc, F11) girip çıkmak da böyle sayılır.
   document.addEventListener('fullscreenchange', syncFull);
   syncFull();
   const ui = createUI(root);

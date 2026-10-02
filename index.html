@@ -13,7 +13,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Yakar Gol">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon.svg">
+<!-- iOS ana ekran simgesi SVG kabul etmez: PNG verilmezse iPhone simge yerine sayfanın ekran görüntüsünü koyar
+     (apple-touch-icon.png, 180x180; `node scripts/ikon-web.mjs` ile icon.svg'den üretilir). -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/style.css">
 <script type="importmap">{ "imports": { "three": "/vendor/three.module.js" } }</script>
 </head>
