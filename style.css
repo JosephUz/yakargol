@@ -245,6 +245,12 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .card dl{gap:8px 12px;font-size:11px;line-height:1.45}
 #yakar-gol .card .primary{margin-top:12px;min-height:42px}
 #yakar-gol .card.small button,#yakar-gol .card.small a.btn{margin-top:8px;padding:10px}
+/* Standart duraklatma menüsü iki satır uzadı (Kontroller + Müzik + ses sürgüsü): yatay telefonda süsler gider,
+   düğmeler sıkışır ki "Ana menü" ve "josephuz.com'a dön" kaydırmadan görünsün. */
+#yakar-gol #yg-pause .eyebrow,#yakar-gol #yg-pause h2{display:none}
+#yakar-gol #yg-pause .card{padding:14px 18px}
+#yakar-gol #yg-pause button,#yakar-gol #yg-pause a.btn{margin-top:6px;padding:9px}
+#yakar-gol #yg-pause .slider{margin-top:6px;font-size:11px}
 #yakar-gol #yg-final-score{font-size:28px;margin-bottom:8px}
 #yakar-gol td,#yakar-gol th{padding:5px 6px}
 #yakar-gol #yg-charge{width:74px;height:74px}

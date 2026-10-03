@@ -177,6 +177,20 @@ try {
   // sırasında gizlenir (☰ → mola menüsünden açılır), çünkü beşinci simge tabelanın üstüne binerdi (bkz. src/ui.js hud).
   assert.deepEqual(macDugmeler, ['yg-sound', 'yg-help-open', 'yg-pause-open', 'yg-cam'],
     'maçta üst çubukta yalnız bu dört simge olmalı: beşincisi tabelanın üstüne biner');
+  // 2b) Standart duraklatma menüsü dar yatay telefonda bütünüyle görünmeli: en alttaki "josephuz.com'a dön"
+  //     kaydırmadan okunsun (menü JOS-844'te Kontroller, Müzik ve ses sürgüsüyle uzadı).
+  await page.tap('#yg-pause-open');
+  await page.waitForTimeout(400);
+  const molaKart = await olc('#yg-pause .card'), molaSon = await olc("#yg-pause a.btn");
+  const molaDugmeler = await page.evaluate(() => [...document.querySelectorAll('#yg-pause .card > button, #yg-pause .card > a')]
+    .filter(n => getComputedStyle(n).display !== 'none').map(n => n.id || n.textContent.trim()));
+  await page.screenshot({ path: 'artifacts/mobil-duraklatma.png' });
+  console.log(JSON.stringify({ molaKart, molaSon, molaDugmeler }));
+  assert.deepEqual(molaDugmeler, ['yg-resume', 'yg-pause-help', 'yg-pause-sound', 'yg-pause-muzik', 'yg-restart', 'yg-menu', "josephuz.com'a dön"],
+    'duraklatma menüsünün sırası standart olmalı');
+  assert.ok(molaSon.bottom <= EKRAN.height, `duraklatma menüsünün son düğmesi ekrandan taşıyor (${molaSon.bottom} > ${EKRAN.height})`);
+  assert.ok(molaKart.bottom <= EKRAN.height, 'duraklatma kartı ekrandan taşıyor');
+
   assert.deepEqual(hatalar, [], 'tarayıcı hataları: ' + hatalar.join(' | '));
   await context.close();
 
