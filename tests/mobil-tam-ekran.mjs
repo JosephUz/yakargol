@@ -122,7 +122,7 @@ try {
   assert.deepEqual(macDugmeler, ['yg-sound', 'yg-help-open', 'yg-pause-open', 'yg-cam'],
     'maçta üst çubukta yalnız bu dört simge olmalı: beşincisi tabelanın üstüne biner');
   // 2b) Standart duraklatma menüsü dar yatay telefonda bütünüyle görünmeli: en alttaki "josephuz.com'a dön"
-  //     kaydırmadan okunsun (menü JOS-844'te Kontroller, Müzik ve ses sürgüsüyle uzadı).
+  //     kaydırmadan okunsun (menü JOS-844'te Kontroller ve Müzik ile uzadı).
   await page.tap('#yg-pause-open');
   await page.waitForTimeout(400);
   const molaKart = await olc('#yg-pause .card'), molaSon = await olc("#yg-pause a.btn");

@@ -16,9 +16,8 @@ import { gosteriAcik } from './gosteri.js';
  * Dosyalar **gerektiğinde** iner: öğeler ilk dokunuşta bir anlık sessiz sesle kurulur (aşağıya bak), gerçek mp3 ise
  * ancak o parça gerektiğinde `src`e konur — menüde yalnız sakin parça iner, maç parçası maç başlarken.
  *
- * Ses düzeyi efektlerin (audio.js) altındadır: varsayılan %35. Açık / kapalı ve düzey tarayıcıda saklanır
- * (`yg.muzik`, `yg.muzik.ses`); açma / kapama düğmesi hem üst çubukta hem mola menüsündedir (bkz. ui.js setMuzik),
- * ses düzeyi sürgüsü mola menüsündedir. Efekt sesi düğmesi (`yg.sound`) müziği etkilemez: ikisi bağımsızdır.
+ * Ses düzeyi efektlerin (audio.js) altındadır: varsayılan %35. Düzey sabit, menüde sürgü yok (cihazın sesinden ayarlanır). Açık / kapalı tarayıcıda saklanır
+ * (`yg.muzik`); açma / kapama düğmesi hem üst çubukta hem mola menüsündedir (bkz. ui.js setMuzik). Efekt sesi düğmesi (`yg.sound`) müziği etkilemez: ikisi bağımsızdır.
  *
  * Tarayıcının otomatik oynatma kuralı: ilk kullanıcı girdisine kadar hiç `play()` çağrılmaz. Dinlenen olaylar
  * **parmağın kalktığı** andır (`pointerup`, `touchend`, `click`, `keydown`): dokunmatik ekranda `pointerdown` ve
@@ -83,7 +82,9 @@ export function createMuzik(root) {
   const kapali = muzikKapali();
   let acik = true, ses = VARSAYILAN_SES;
   try { acik = localStorage.getItem('yg.muzik') !== 'off'; } catch { /* yok */ }
-  try { const v = Number(localStorage.getItem('yg.muzik.ses')); if (Number.isFinite(v) && v > 0 && v <= 1) ses = v; } catch { /* yok */ }
+  // Müzik düzeyi sabit (VARSAYILAN_SES): menüde ses sürgüsü yok, oyuncu bilgisayarın / telefonun sesinden ayarlar.
+  // Yusuf 4 Ekim: "menülerde müzik sesi olmasın, pc sesinden ayarlasınlar, standart bir ses yüksekliği belirle".
+  // Eski sürümden kalmış saklı düzey (`<oyun>.muzik.ses`) okunmaz.
   const sakla = (k, v) => { try { localStorage.setItem(k, v); } catch { /* yok */ } };
 
   /** ad -> { ad, el, gain, seviye, yuklendi } */

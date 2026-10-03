@@ -148,9 +148,10 @@ test('STANDART üst araç çubuğu: ← josephuz.com · Ses · Müzik · Kontrol
 test('STANDART duraklatma menüsü: DEVAM ET → · Kontroller F1 · Ses · Müzik · … · josephuz.com\'a dön', async () => {
   const html = await oku('index.html');
   const kart = html.slice(html.indexOf('<section id="yg-pause"'), html.indexOf('</section>', html.indexOf('<section id="yg-pause"')));
-  const sira = [...kart.matchAll(/id="(yg-[a-z-]+)"/g)].map(m => m[1]).filter(id => id !== 'yg-muzik-ses' && id !== 'yg-muzik-yuzde' && id !== 'yg-pause-note');
-  assert.deepEqual(sira, ['yg-pause', 'yg-resume', 'yg-pause-help', 'yg-pause-sound', 'yg-pause-muzik', 'yg-muzik-row', 'yg-restart', 'yg-menu'],
+  const sira = [...kart.matchAll(/id="(yg-[a-z-]+)"/g)].map(m => m[1]).filter(id => id !== 'yg-pause-note');
+  assert.deepEqual(sira, ['yg-pause', 'yg-resume', 'yg-pause-help', 'yg-pause-sound', 'yg-pause-muzik', 'yg-restart', 'yg-menu'],
     'duraklatma menüsünün sırası standart olmalı');
+  assert.ok(!kart.includes('type="range"'), 'menüde müzik sesi sürgüsü olmamalı (ses düzeyi sabit)');
   assert.ok(kart.includes('>DEVAM ET →<'), 'ilk düğme "DEVAM ET →" olmalı');
   assert.ok(kart.includes("josephuz.com'a dön"), 'menünün sonunda josephuz.com bağlantısı olmalı');
 });

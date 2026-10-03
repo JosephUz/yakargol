@@ -51,7 +51,7 @@ export function createUI(root) {
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
     ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'), windLeft: $('wind-left'), cineTitle: $('cine-title'),
     site: $('site'), full: $('full'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
-    muzik: $('muzik'), pauseMuzik: $('pause-muzik'), muzikRow: $('muzik-row'), muzikSes: $('muzik-ses'), muzikYuzde: $('muzik-yuzde'),
+    muzik: $('muzik'), pauseMuzik: $('pause-muzik'),
   };
   // Skor tabelasındaki alev damlaları hak sayısı kadar (KICK.fireShots).
   for (const node of el.fires) node.innerHTML = '<i></i>'.repeat(KICK.fireShots);
@@ -70,19 +70,15 @@ export function createUI(root) {
     },
 
     /**
-     * Müzik düğmeleri (üst çubuk ve mola menüsü) ve mola menüsündeki ses düzeyi sürgüsü; efekt sesinden **bağımsız**
-     * (bkz. muzik.js). `ses` 0-1. Gösteri kiplerinde müzik hiç kurulmaz: `setMuzikVar(false)` düğmeleri gizler.
+     * Müzik düğmeleri (üst çubuk ve mola menüsü); efekt sesinden **bağımsız** (bkz. muzik.js). Ses düzeyi sabit,
+     * menüde sürgü yok (oyuncu cihazın sesinden ayarlar). Gösteri kiplerinde müzik hiç kurulmaz: `setMuzikVar(false)` düğmeleri gizler.
      */
-    setMuzik(on, ses) {
+    setMuzik(on) {
       const yazi = on ? 'Müzik: açık' : 'Müzik: kapalı';
       for (const b of [el.muzik, el.pauseMuzik]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
-      el.muzikRow.classList.toggle('off', !on);
-      el.muzikYuzde.textContent = Math.round(ses * 100) + '%';
-      if (el.muzikSes.value !== String(Math.round(ses * 100))) el.muzikSes.value = String(Math.round(ses * 100));
     },
-    /** Müzik ayarı var mı (gösteri kiplerinde yok): düğmeler ve sürgü büsbütün gizlenir. */
-    setMuzikVar(gorunur) { muzikVar = gorunur; for (const n of [el.pauseMuzik, el.muzikRow]) n.hidden = !gorunur; },
-    onMuzikSes(fn) { el.muzikSes.oninput = () => fn(Number(el.muzikSes.value) / 100); },
+    /** Müzik ayarı var mı (gösteri kiplerinde yok): düğmeler büsbütün gizlenir. */
+    setMuzikVar(gorunur) { muzikVar = gorunur; el.pauseMuzik.hidden = !gorunur; },
 
     message(text, time = 2) { el.message.textContent = text; el.message.hidden = false; messageTime = time; },
 
