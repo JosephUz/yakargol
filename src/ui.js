@@ -51,22 +51,38 @@ export function createUI(root) {
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
     ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'), windLeft: $('wind-left'), cineTitle: $('cine-title'),
     site: $('site'), full: $('full'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
+    muzik: $('muzik'), pauseMuzik: $('pause-muzik'), muzikRow: $('muzik-row'), muzikSes: $('muzik-ses'), muzikYuzde: $('muzik-yuzde'),
   };
   // Skor tabelasındaki alev damlaları hak sayısı kadar (KICK.fireShots).
   for (const node of el.fires) node.innerHTML = '<i></i>'.repeat(KICK.fireShots);
   for (const node of el.winds) node.innerHTML = '<i></i>'.repeat(KICK.windShots);
-  let messageTime = 0, readyTime = 0, lastEnergy = 0;
+  let messageTime = 0, readyTime = 0, lastEnergy = 0, muzikVar = true;
 
   return {
     button: (id, fn) => onTap($(id), fn),
 
     show(screen) { for (const s of SCREENS) el.screens[s].hidden = screen !== s; },
 
-    /** Ses düğmeleri (üst çubuk ve mola menüsü) aynı durumu gösterir. */
+    /** Ses (efekt) düğmeleri — üst çubuk ve mola menüsü aynı durumu, standart yazıyla gösterir. */
     setSound(on) {
-      el.sound.textContent = on ? 'Ses açık' : 'Ses kapalı'; el.sound.classList.toggle('muted', !on);
-      el.pauseSound.textContent = on ? 'Ses: açık' : 'Ses: kapalı'; el.pauseSound.classList.toggle('muted', !on);
+      const yazi = on ? 'Ses: açık' : 'Ses: kapalı';
+      for (const b of [el.sound, el.pauseSound]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
     },
+
+    /**
+     * Müzik düğmeleri (üst çubuk ve mola menüsü) ve mola menüsündeki ses düzeyi sürgüsü; efekt sesinden **bağımsız**
+     * (bkz. muzik.js). `ses` 0-1. Gösteri kiplerinde müzik hiç kurulmaz: `setMuzikVar(false)` düğmeleri gizler.
+     */
+    setMuzik(on, ses) {
+      const yazi = on ? 'Müzik: açık' : 'Müzik: kapalı';
+      for (const b of [el.muzik, el.pauseMuzik]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
+      el.muzikRow.classList.toggle('off', !on);
+      el.muzikYuzde.textContent = Math.round(ses * 100) + '%';
+      if (el.muzikSes.value !== String(Math.round(ses * 100))) el.muzikSes.value = String(Math.round(ses * 100));
+    },
+    /** Müzik ayarı var mı (gösteri kiplerinde yok): düğmeler ve sürgü büsbütün gizlenir. */
+    setMuzikVar(gorunur) { muzikVar = gorunur; for (const n of [el.pauseMuzik, el.muzikRow]) n.hidden = !gorunur; },
+    onMuzikSes(fn) { el.muzikSes.oninput = () => fn(Number(el.muzikSes.value) / 100); },
 
     message(text, time = 2) { el.message.textContent = text; el.message.hidden = false; messageTime = time; },
 
@@ -85,6 +101,10 @@ export function createUI(root) {
       // düğmesi zaten yalnız telefon tarayıcısında görünür (style.css → `#yakar-gol.tam-ekran #yg-full`).
       el.site.hidden = playing;
       el.full.hidden = playing;
+      // Müzik düğmesi standart çubuğun parçasıdır; telefonda maç sırasında gizlenir, çünkü üst çubuktaki beşinci
+      // simge skor tabelasının üstüne biner (bkz. tests/mobil-tam-ekran.mjs). Müzik o sırada ☰ → mola menüsünden
+      // açılıp kapatılır; masaüstünde çubukta durmaya devam eder.
+      el.muzik.hidden = !muzikVar || (playing && root.classList.contains('touch'));
       el.crosshair.hidden = !playing || !!screen;
       el.blue.textContent = w.score[0]; el.orange.textContent = w.score[1];
       el.fires.forEach((node, team) => {

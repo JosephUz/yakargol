@@ -137,6 +137,18 @@ try {
   assert.ok(girisFull.left >= 0 && girisFull.right <= EKRAN.width, `tam ekran düğmesi ekrandan taşıyor (${girisFull.left}..${girisFull.right})`);
   assert.ok(girisFull.top >= 0 && girisFull.bottom <= EKRAN.height, 'tam ekran düğmesi ekranın dışında');
   assert.ok(!binisiyor(cubuk, logo), 'üst çubuk düğmeleri oyun adının üstüne biniyor');
+  // STANDART üst araç çubuğu: ← josephuz.com · Ses · Müzik · Kontroller F1 — bu sırayla, tek satırda, ekranın içinde.
+  assert.ok(cubuk.left >= 0 && cubuk.right <= EKRAN.width, `üst çubuk ekrandan taşıyor (${cubuk.left}..${cubuk.right})`);
+  const girisDugmeler = await page.evaluate(() => [...document.querySelectorAll('.header-actions > *')]
+    .filter(n => getComputedStyle(n).display !== 'none' && n.getBoundingClientRect().width > 0).map(n => n.id));
+  assert.deepEqual(girisDugmeler.slice(0, 4), ['yg-site', 'yg-sound', 'yg-muzik', 'yg-help-open'],
+    'giriş ekranında standart dörtlü bu sırayla başta olmalı: ' + girisDugmeler.join(', '));
+  const satir = await page.evaluate(() => {
+    const ust = [...document.querySelectorAll('.header-actions > *')].filter(n => n.getBoundingClientRect().width > 0)
+      .map(n => Math.round(n.getBoundingClientRect().top));
+    return new Set(ust).size;
+  });
+  assert.equal(satir, 1, 'standart araç çubuğu tek satırda kalmalı (düğmeler alt satıra kaydı)');
 
   // Düğme gerçekten tam ekrana sokup çıkarıyor (dokunuşla; Chromium başsızken de tam ekran isteğini karşılar).
   await page.tap('#yg-full');
@@ -161,7 +173,9 @@ try {
   console.log(JSON.stringify({ macFull, macCubuk, tabela, macDugmeler }));
   assert.ok(tabela.gorunur, 'maçta skor tabelası görünmeli');
   assert.ok(!macFull.gorunur, 'maç başlayınca tam ekran düğmesi gizlenmeli (tabelaya yer açılsın)');
-  assert.deepEqual(macDugmeler, ['yg-cam', 'yg-help-open', 'yg-pause-open', 'yg-sound'],
+  // Sıra standart araç çubuğununki (Ses · Müzik · Kontroller · oyuna özgü düğmeler); müzik düğmesi telefonda maç
+  // sırasında gizlenir (☰ → mola menüsünden açılır), çünkü beşinci simge tabelanın üstüne binerdi (bkz. src/ui.js hud).
+  assert.deepEqual(macDugmeler, ['yg-sound', 'yg-help-open', 'yg-pause-open', 'yg-cam'],
     'maçta üst çubukta yalnız bu dört simge olmalı: beşincisi tabelanın üstüne biner');
   assert.deepEqual(hatalar, [], 'tarayıcı hataları: ' + hatalar.join(' | '));
   await context.close();
@@ -179,7 +193,22 @@ try {
   assert.ok(!appFull.gorunur, 'Play Store uygulamasında tam ekran düğmesi görünmemeli');
   await appCtx.close();
 
+  // 4) Telefon dikey (390x844): oyunun üstünde "Telefonu yan çevir" perdesi vardır ama standart araç çubuğu yine de
+  //    ekranın içinde ve tek satırda kalmalı — ölçü dar ekran kurallarının (style.css max-width:650px) denetimidir.
+  const DIKEY = { width: 390, height: 844 };
+  const dikeyCtx = await browser.newContext({ viewport: DIKEY, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const dikeyPage = await dikeyCtx.newPage();
+  await dikeyPage.goto(url + '/?test=1');
+  await dikeyPage.waitForFunction(() => !!window.__yakarGol);
+  await dikeyPage.waitForTimeout(400);
+  const dikeyCubuk = await dikeyPage.evaluate(`(${OLC})('.header-actions')`), dikeyLogo = await dikeyPage.evaluate(`(${OLC})('.logo')`);
+  console.log(JSON.stringify({ dikey: `${DIKEY.width}x${DIKEY.height}`, dikeyCubuk, dikeyLogo }));
+  assert.ok(dikeyCubuk.left >= 0 && dikeyCubuk.right <= DIKEY.width, `dikeyde üst çubuk ekrandan taşıyor (${dikeyCubuk.left}..${dikeyCubuk.right})`);
+  assert.ok(!binisiyor(dikeyCubuk, dikeyLogo), 'dikeyde üst çubuk oyun adının üstüne biniyor');
+  await dikeyCtx.close();
+
   console.log(`Tam ekran düğmesi dar yatay telefonda (${EKRAN.width}x${EKRAN.height}) yerinde: giriş ekranında var, maçta yok, uygulamada hiç yok.`);
+  console.log('Standart üst araç çubuğu (← josephuz.com · Ses · Müzik · Kontroller F1) yatayda ve dikeyde tek satır, taşma yok.');
 } finally {
   await browser.close();
   sunucu?.kill();
