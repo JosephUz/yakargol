@@ -1,14 +1,22 @@
-// Oyun içi müzik (bkz. src/muzik.js): hangi sahnede hangi parçanın çaldığı, parçaların gerçekten durduğu ve **iki
-// dağıtım yolunun da** (yerel/tünel sunucusu ile Cloudflare'e ve Play Store paketine giden dist/ derlemesi) müziği
-// verdiği. Biri listeden düşerse oyun sessiz kalır ya da 404 alır — bu test tam olarak onu yakalar.
+// Oyun içi müzik (bkz. src/muzik.js). Burada ölçülenler **davranıştır**, kaynak koda uygulanan kalıplar değil:
+//  - hangi sahnede hangi parçanın çalacağı (sahneSec),
+//  - müziğin hangi adreste hiç kurulmayacağı (muzikKapali: gösteri kipleri ve otomatik tarayıcılar),
+//  - parça dosyalarının yerinde ve boyutunda olduğu, lisans notunun onları saydığı,
+//  - **iki dağıtım yolunun da** müziği gerçekten verdiği: sunucu çalıştırılıp `muzik/*.mp3` indirilir (Range isteği
+//    dahil — tarayıcı akışı sürdürürken onu yollar), dist/ derlemesi koşturulup içine bakılır. Biri listeden düşerse
+//    oyun sessiz kalır ya da 404 alır.
 //
 // Ayrıca STANDART üst araç çubuğu ve duraklatma menüsünün sırası: bütün JosephUz oyunlarında aynı olmalı
 // (← josephuz.com · Ses · Müzik · Kontroller F1). Tarayıcı ölçümleri tests/muzik-smoke.mjs dosyasındadır.
 import assert from 'node:assert/strict';
+import { execFile, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { MATCH } from '../src/config.js';
 import { DORUK, sahneSec } from '../src/muzik.js';
 
@@ -27,18 +35,50 @@ test('sahne seçimi: menü, lobi, mola ve karne sakin; maç ana tema; son dakika
   assert.equal(sahneSec(true, null, { ...dunya(0), winner: 1 }), 'sakin', 'maç bittiyse karne parçası');
 
   assert.equal(sahneSec(true, null, dunya(300)), 'mac', 'maç başı');
-  assert.equal(sahneSec(true, 'help', dunya(120)), 'mac', 'yardım perdesi maçın üstünde açılır: müzik maçın');
   assert.equal(sahneSec(true, null, dunya(DORUK + 1)), 'mac', 'son dakikaya bir saniye var');
   assert.equal(sahneSec(true, null, dunya(DORUK)), 'doruk', 'son dakika');
   assert.equal(sahneSec(true, null, dunya(5)), 'doruk');
   assert.equal(sahneSec(true, null, dunya(-30, { overtime: true })), 'doruk', 'altın gol');
+
+  // Kontroller perdesi saydamdır: çağıran (main.js `altEkran`) onun **altındaki** ekranı verir. Maçın üstünde
+  // açılınca müzik maçın müziğidir, molanın üstünde açılınca mola sürüyor sayılır — perde müziği oynatmaz.
+  assert.equal(sahneSec(true, null, dunya(120)), 'mac', 'Kontroller maçın üstünde: altındaki ekran yok → maç');
+  assert.equal(sahneSec(true, 'pause', dunya(120)), 'sakin', 'Kontroller molanın üstünde: altındaki ekran mola → sakin');
 });
 
-test('parçalar yerinde: 128 kbps, dosya başı 3 MB altı, lisans notu yanında', async () => {
+test('müzik hangi adreste hiç kurulmaz: gösteri kipleri ve otomatik tarayıcılar sessizdir', async t => {
+  const { muzikKapali } = await import('../src/muzik.js');
+  const eski = { window: globalThis.window, location: globalThis.location };
+  // muzik.js tarayıcı dosyasıdır: `location`, `window` ve `navigator.webdriver` burada taklit edilir.
+  const kur = (arama, webdriver = false) => {
+    globalThis.window = {};
+    globalThis.location = { search: arama, hostname: 'localhost', protocol: 'http:', host: 'localhost' };
+    Object.defineProperty(globalThis.navigator, 'webdriver', { value: webdriver, configurable: true });
+  };
+  t.after(() => {
+    globalThis.window = eski.window; globalThis.location = eski.location;
+    delete globalThis.navigator.webdriver;
+  });
+
+  kur(''); assert.equal(muzikKapali(), false, 'sıradan tarayıcıda müzik açıktır');
+  kur('?gosteri=1'); assert.equal(muzikKapali(), true, 'gösteri maçı: video betiği müziğini kendi ekler');
+  kur('?gosteri=ruzgar'); assert.equal(muzikKapali(), true, 'rüzgar sahnesi de sessizdir');
+  kur('?gosteri=1&muzik=1'); assert.equal(muzikKapali(), true, 'gösteriyi `?muzik=1` bile açamaz');
+  kur('', true); assert.equal(muzikKapali(), true, 'otomatik tarayıcı (Playwright) 6 MB ses indirmez');
+  kur('?muzik=1', true); assert.equal(muzikKapali(), false, 'müziği ölçen test `?muzik=1` ile açar');
+  kur('?muzik=0'); assert.equal(muzikKapali(), true, '`?muzik=0` elle kapatır');
+});
+
+test('parçalar yerinde: üçü ayrı beste, dosya başı 3 MB altı, lisans notu yanında', async () => {
+  const izler = new Map();
   for (const ad of PARCALAR) {
-    const bilgi = await stat(path.join(root, 'muzik', ad + '.mp3'));
-    assert.ok(bilgi.size > 500_000, `${ad}.mp3 eksik ya da bozuk (${bilgi.size} bayt)`);
-    assert.ok(bilgi.size <= 3 * 1024 * 1024, `${ad}.mp3 3 MB'tan büyük (${bilgi.size} bayt)`);
+    const bayt = await readFile(path.join(root, 'muzik', ad + '.mp3'));
+    assert.ok(bayt.length > 500_000, `${ad}.mp3 eksik ya da bozuk (${bayt.length} bayt)`);
+    assert.ok(bayt.length <= 3 * 1024 * 1024, `${ad}.mp3 3 MB'tan büyük (${bayt.length} bayt)`);
+    // Üçü aynı süre ve bit hızında olduğu için **boyutları da aynı**: ayrı beste olduklarını yalnız içerik söyler.
+    const iz = createHash('sha256').update(bayt).digest('hex');
+    assert.ok(!izler.has(iz), `${ad}.mp3 ile ${izler.get(iz)}.mp3 aynı dosya: üç ayrı parça olmalı`);
+    izler.set(iz, ad);
   }
   const lisans = await oku('muzik/LISANS.txt');
   assert.match(lisans, /© 2026 JosephUz/);
@@ -46,19 +86,52 @@ test('parçalar yerinde: 128 kbps, dosya başı 3 MB altı, lisans notu yanında
   for (const ad of PARCALAR) assert.ok(lisans.includes(ad + '.mp3'), `LISANS.txt ${ad} parçasını saymıyor`);
 });
 
-test('müzik iki dağıtım yolunda da verilir: sunucu ve dist/ derlemesi', async () => {
-  const sunucu = await oku('server.mjs');
-  assert.match(sunucu, /assetDirs = \['src', 'muzik'\]/, 'server.mjs muzik/ klasörünü servis etmeli');
-  assert.match(sunucu, /'\.mp3': 'audio\/mpeg'/, 'mp3 içerik türü tanımlı olmalı');
-  assert.match(sunucu, /Accept-Ranges/, 'ses dosyalarında Range desteklenmeli');
-  const derleme = await oku('scripts/build-web.mjs');
-  assert.match(derleme, /'muzik'\), path\.join\(dist, 'muzik'\)/, 'build-web.mjs muzik/ klasörünü dist/ altına kopyalamalı');
+/** İşletim sisteminin verdiği boş bir port: sabit port başka bir sunucuda açık olabilir. */
+const bosPort = () => new Promise((çöz, hata) => {
+  const s = createServer();
+  s.on('error', hata);
+  s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => çöz(port)); });
 });
 
-test('gösteri kipleri ve otomatik tarayıcılar sessiz: muzik.js hiç <audio> kurmaz', async () => {
-  const kaynak = await oku('src/muzik.js');
-  assert.match(kaynak, /if \(gosteriAcik\(\)\) return true/, '?gosteri=... müziği her durumda kapatmalı');
-  assert.match(kaynak, /navigator\.webdriver/, 'Playwright gibi otomatik tarayıcılar sessiz olmalı');
+test('sunucu müziği gerçekten veriyor: mp3, Range isteği ve lisans notu', async t => {
+  const port = await bosPort(), adres = `http://127.0.0.1:${port}`;
+  const sunucu = spawn(process.execPath, ['server.mjs'], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+  t.after(() => sunucu.kill());
+  const bitis = Date.now() + 20000;
+  let ayakta = false;
+  while (Date.now() < bitis && !ayakta) {
+    try { ayakta = (await fetch(adres + '/health')).ok; } catch { await new Promise(b => setTimeout(b, 150)); }
+  }
+  assert.ok(ayakta, `oyun sunucusu ${adres} adresinde açılmadı`);
+
+  for (const ad of PARCALAR) {
+    const y = await fetch(`${adres}/muzik/${ad}.mp3`);
+    assert.equal(y.status, 200, `${ad}.mp3 verilmiyor`);
+    assert.equal(y.headers.get('content-type'), 'audio/mpeg');
+    assert.equal(y.headers.get('accept-ranges'), 'bytes', 'ses dosyasında Range desteklenmeli');
+    const bayt = Buffer.from(await y.arrayBuffer());
+    assert.equal(bayt.subarray(0, 3).toString('latin1'), 'ID3', `${ad}.mp3 ID3 başlığıyla başlamıyor`);
+  }
+  // Tarayıcı akışı sürdürürken ya da ileri sararken `Range` yollar; karşılığı verilmezse parça baştan dinlenir.
+  const tam = await readFile(path.join(root, 'muzik', PARCALAR[0] + '.mp3'));
+  const dilim = await fetch(`${adres}/muzik/${PARCALAR[0]}.mp3`, { headers: { Range: 'bytes=100-199' } });
+  assert.equal(dilim.status, 206, 'Range isteğine 206 dönmeli');
+  assert.equal(dilim.headers.get('content-range'), `bytes 100-199/${tam.length}`);
+  assert.deepEqual(Buffer.from(await dilim.arrayBuffer()), tam.subarray(100, 200), 'verilen aralık dosyanınkiyle aynı değil');
+
+  assert.equal((await fetch(adres + '/muzik/LISANS.txt')).status, 200, 'lisans notu da yayımlanmalı');
+  assert.equal((await fetch(adres + '/muzik/../package.json')).status, 404, 'muzik/ dışına çıkılamamalı');
+});
+
+test('dist/ derlemesi (Cloudflare + Play Store paketi) müziği içine alıyor', async () => {
+  await promisify(execFile)(process.execPath, ['scripts/build-web.mjs'], { cwd: root });
+  for (const ad of [...PARCALAR.map(a => a + '.mp3'), 'LISANS.txt']) {
+    const bilgi = await stat(path.join(root, 'dist', 'muzik', ad));
+    assert.ok(bilgi.size > 0, `dist/muzik/${ad} eksik`);
+  }
+  // Göreli yol: Capacitor'ın `https://localhost/` kökünde de aynı dosya bulunur, bir sonraki APK'ya kendiliğinden girer.
+  assert.match(await readFile(path.join(root, 'dist', 'src', 'muzik.js'), 'utf8'), /`muzik\/\$\{p\.ad\}\.mp3`/,
+    'parça yolu göreli kalmalı (uygulamada kök farklıdır)');
 });
 
 test('STANDART üst araç çubuğu: ← josephuz.com · Ses · Müzik · Kontroller F1 (bu sırayla)', async () => {

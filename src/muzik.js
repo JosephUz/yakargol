@@ -8,15 +8,24 @@ import { gosteriAcik } from './gosteri.js';
  *  - **doruk** (`Son Dakika Golü` ↔ `Spor Marşı`): son dakika (saatte ≤ `DORUK` saniye kaldı) ve altın gol; parça
  *    bitince ana temaya, o da bitince yeniden heyecana döner, araya sessizlik girmez.
  *
- * Çalma `<audio>` öğeleriyledir (Web Audio gerekmez): dosya akarak iner, sahne değişince ses düzeyi karşılıklı
- * süzülür. Dosyalar **gerektiğinde** yüklenir: menüde yalnız sakin parça iner, maç parçası maç başlarken.
+ * Çalma `<audio>` öğeleriyledir (dosya akarak iner). **Ses düzeyi Web Audio kazanç düğümünden (`GainNode`) geçer:**
+ * iOS Safari'de `HTMLMediaElement.volume` salt okunurdur, orada öğenin kendi sesi yazılamaz — %35 varsayılan, sürgü ve
+ * çapraz geçiş yalnız kazanç düğümüyle çalışır. Web Audio yoksa öğenin `volume`una düşülür. Süzülme Web Audio varken
+ * tek bir düz rampayla ses iş parçacığında yürür (pürüzsüz); sayaç o sırada yalnız okunan değeri güncel tutar.
+ *
+ * Dosyalar **gerektiğinde** iner: öğeler ilk dokunuşta bir anlık sessiz sesle kurulur (aşağıya bak), gerçek mp3 ise
+ * ancak o parça gerektiğinde `src`e konur — menüde yalnız sakin parça iner, maç parçası maç başlarken.
  *
  * Ses düzeyi efektlerin (audio.js) altındadır: varsayılan %35. Açık / kapalı ve düzey tarayıcıda saklanır
  * (`yg.muzik`, `yg.muzik.ses`); açma / kapama düğmesi hem üst çubukta hem mola menüsündedir (bkz. ui.js setMuzik),
  * ses düzeyi sürgüsü mola menüsündedir. Efekt sesi düğmesi (`yg.sound`) müziği etkilemez: ikisi bağımsızdır.
  *
- * Tarayıcının otomatik oynatma kuralı: ilk kullanıcı dokunuşuna / tuşuna kadar hiç `play()` çağrılmaz, engellenirse
- * sonraki dokunuşta yeniden denenir. Sekme gizlenince durur, dönünce kaldığı yerden sürer.
+ * Tarayıcının otomatik oynatma kuralı: ilk kullanıcı girdisine kadar hiç `play()` çağrılmaz. Dinlenen olaylar
+ * **parmağın kalktığı** andır (`pointerup`, `touchend`, `click`, `keydown`): dokunmatik ekranda `pointerdown` ve
+ * `touchstart` tarayıcıya "kullanıcı izin verdi" saymaz, onlarla beklemek müziği ikinci dokunuşa bırakırdı. O ilk
+ * girdide üç parçanın da **kilidi açılır** (sessiz bir ses çalınıp durdurulur) ve ses bağlamı uyandırılır; böylece
+ * maç parçası, çizim döngüsünden — yani dokunuşun dışından — başlatıldığında iOS'ta da engellenmez.
+ * Sekme gizlenince durur, dönünce kaldığı yerden sürer.
  *
  * Dosya yolları **görelidir** (`muzik/...`): aynı dosyalar Capacitor'ın `https://localhost/` kökünde de çalışır,
  * bir sonraki APK'ya kendiliğinden girer (bkz. scripts/build-web.mjs). Bu görevde APK üretilmez.
@@ -33,6 +42,12 @@ const GECIS = 1.8;
 const VARSAYILAN_SES = 0.35;
 /** Süzülme saatinin adımı (sn). */
 const ADIM = 0.05;
+/**
+ * 8 kHz'de tek örneklik sessiz WAV. Öğenin kilidini ilk dokunuşta açmaya yarar: iOS/Android bir `<audio>` öğesine
+ * ancak kullanıcı girdisi içinde `play()` çağrıldıysa sonradan da izin verir ve bu izin `src` değişince sürer.
+ * Böylece kilit açılırken 2 MB'lık mp3 inmez — gerçek dosya o parça gerektiğinde konur.
+ */
+const SESSIZ = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQIAAAAAAA==';
 
 const kis = v => Math.max(0, Math.min(1, v));
 
@@ -40,13 +55,14 @@ const kis = v => Math.max(0, Math.min(1, v));
  * Hangi sahne çalmalı? Saf işlev: ekran akışından ve dünyanın durumundan okur, her kareden sorulabilir (aynı sahne
  * yeniden verilince hiçbir şey olmaz). Maç dışındaki her şey — giriş, lobi, mola, karne — sakin parçadır.
  *  - `started`: maç kuruldu mu (main.js `started`)
- *  - `screen`: açık perde ('home' | 'lobby' | 'pause' | 'results' | 'help' | null)
+ *  - `screen`: açık perde ('home' | 'lobby' | 'pause' | 'results' | null). Yardım perdesi (`help`) saydamdır:
+ *    çağıran onun **altındaki** ekranı verir (main.js `altEkran`), böylece molanın üstünde Kontroller açılınca
+ *    müzik maç parçasına atlamaz.
  *  - `w`: dünya (time, overtime, winner)
  */
 export function sahneSec(started, screen, w) {
   if (!started || !w || w.winner !== null) return 'sakin';
-  // Yardım perdesi maçın üstünde açılır: müzik maçın müziğidir. Mola "devre arası"dır, sakin parçaya döner.
-  if (screen && screen !== 'help') return 'sakin';
+  if (screen) return 'sakin'; // mola "devre arası"dır; giriş, lobi ve karne de sakin parçadır
   return w.overtime || MATCH.duration - w.time <= DORUK ? 'doruk' : 'mac';
 }
 
@@ -70,49 +86,97 @@ export function createMuzik(root) {
   try { const v = Number(localStorage.getItem('yg.muzik.ses')); if (Number.isFinite(v) && v > 0 && v <= 1) ses = v; } catch { /* yok */ }
   const sakla = (k, v) => { try { localStorage.setItem(k, v); } catch { /* yok */ } };
 
+  /** ad -> { ad, el, gain, seviye, yuklendi } */
   const parcalar = new Map();
-  /** Süren süzülmeler: öğe -> { bas, hedef, t, sure, bitince }. Tek bir sayaç hepsini yürütür. */
+  /** Süren süzülmeler: parça -> { bas, hedef, t, sure, bitince }. Tek bir sayaç hepsini yürütür. */
   const suzulme = new Map();
   let saat = null, sahneAdi = null, sira = 0, aktif = null, dokunuldu = false, gizli = false;
+  /** Ses bağlamı: ilk kullanıcı girdisinde kurulur. `false` = tarayıcıda Web Audio yok, öğenin kendi sesi kullanılır. */
+  let ctx = null;
 
   const hedefSes = () => (acik ? ses : 0);
 
+  /** Parçanın o anki `seviye` değerini çıkışa yazar (kazanç düğümüne, Web Audio yoksa öğenin kendi sesine). */
+  function cikisaYaz(p) {
+    if (!p.gain) { p.el.volume = p.seviye; return; }
+    const g = p.gain.gain, t = p.gain.context.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(p.seviye, t);
+  }
+
   function tik() {
-    for (const [a, f] of suzulme) {
+    for (const [p, f] of suzulme) {
       f.t += ADIM;
       const k = Math.min(1, f.t / f.sure);
-      a.volume = kis(f.bas + (f.hedef - f.bas) * k);
-      if (k >= 1) { suzulme.delete(a); f.bitince?.(); }
+      p.seviye = kis(f.bas + (f.hedef - f.bas) * k);
+      if (!p.gain) p.el.volume = p.seviye; // Web Audio varken rampa ses iş parçacığında yürür, burada yalnız sayılır
+      if (k >= 1) { suzulme.delete(p); p.seviye = f.hedef; cikisaYaz(p); f.bitince?.(); }
     }
     if (!suzulme.size && saat !== null) { clearInterval(saat); saat = null; }
   }
-  /** Öğenin sesini `sure` saniyede `hedef`e süzer; `sure` 0 ise anında. */
-  function suz(a, hedef, sure, bitince) {
-    if (sure <= 0) { suzulme.delete(a); a.volume = kis(hedef); bitince?.(); return; }
-    suzulme.set(a, { bas: a.volume, hedef, t: 0, sure, bitince });
+  /** Parçanın sesini `sure` saniyede `hedef`e süzer; `sure` 0 ise anında. */
+  function suz(p, hedef, sure, bitince) {
+    hedef = kis(hedef);
+    if (sure <= 0) { suzulme.delete(p); p.seviye = hedef; cikisaYaz(p); bitince?.(); return; }
+    if (p.gain) { // tek düz rampa: pürüzsüz, sekmenin kare hızından bağımsız
+      const g = p.gain.gain, t = p.gain.context.currentTime;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(p.seviye, t);
+      g.linearRampToValueAtTime(hedef, t + sure);
+    }
+    suzulme.set(p, { bas: p.seviye, hedef, t: 0, sure, bitince });
     saat = saat ?? setInterval(tik, ADIM * 1000);
   }
 
-  /** Parçanın `<audio>` öğesi; ilk istendiğinde kurulur (dosya o an inmeye başlar). */
+  /** Web Audio bağlamı (bir kez kurulur; yoksa `false`). Kullanıcı girdisi içinde çağrılmalı: orada uyandırılır. */
+  function baglam() {
+    if (ctx !== null) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    try { ctx = AC ? new AC() : false; } catch { ctx = false; }
+    return ctx;
+  }
+  const uyandir = () => { if (ctx && ctx.state === 'suspended') ctx.resume?.().catch(() => { /* kullanıcı girdisi bekler */ }); };
+
+  /**
+   * Parçanın kaydı; ilk istendiğinde kurulur. Öğe **sessiz** bir sesle doğar: gerçek dosya ancak `yukle` ile iner,
+   * ama öğenin kilidi ilk dokunuşta bu sessiz sesle açılabilir (bkz. SESSIZ).
+   */
   function parca(ad) {
-    let a = parcalar.get(ad);
-    if (a) return a;
-    a = new Audio();
-    a.preload = 'auto';
-    a.volume = 0;
-    a.hidden = true;
-    a.dataset.parca = ad;
-    // Göreli yol: hem web sunucusunda hem Capacitor'da (https://localhost/) aynı dosyayı bulur.
-    a.src = `muzik/${ad}.mp3`;
+    let p = parcalar.get(ad);
+    if (p) return p;
+    const el = new Audio();
+    el.preload = 'none';
+    el.hidden = true;
+    el.dataset.parca = ad;
+    el.src = SESSIZ;
+    p = { ad, el, gain: null, seviye: 0, yuklendi: false };
+    const c = baglam();
+    if (c) {
+      try {
+        p.gain = c.createGain();
+        p.gain.gain.value = 0;
+        c.createMediaElementSource(el).connect(p.gain).connect(c.destination);
+      } catch { p.gain = null; } // bağlanamadıysa öğenin kendi sesine düşülür
+    }
+    if (!p.gain) el.volume = 0;
     // Parça bitmeden önce öbürü üstüne açılsın: araya sessizlik girmez. `ended` yalnız yedektir (süre bilinmiyorsa).
-    a.addEventListener('timeupdate', () => {
-      if (a !== aktif || a.loop || !Number.isFinite(a.duration)) return;
-      if (a.duration - a.currentTime <= GECIS + ADIM) sonraki();
+    el.addEventListener('timeupdate', () => {
+      if (p !== aktif || el.loop || !Number.isFinite(el.duration)) return;
+      if (el.duration - el.currentTime <= GECIS + ADIM) sonraki();
     });
-    a.addEventListener('ended', () => { if (a === aktif) sonraki(); });
-    root.appendChild(a);
-    parcalar.set(ad, a);
-    return a;
+    el.addEventListener('ended', () => { if (p === aktif) sonraki(); });
+    root.appendChild(el);
+    parcalar.set(ad, p);
+    return p;
+  }
+
+  /** Gerçek mp3'ü `src`e koyar (ilk kez gerektiğinde): dosya o an inmeye başlar. */
+  function yukle(p) {
+    if (p.yuklendi) return;
+    p.yuklendi = true;
+    p.el.preload = 'auto';
+    // Göreli yol: hem web sunucusunda hem Capacitor'da (https://localhost/) aynı dosyayı bulur.
+    p.el.src = `muzik/${p.ad}.mp3`;
   }
 
   /** Şu an çalması gereken parçanın adı (hiçbiri değilse null). */
@@ -122,9 +186,10 @@ export function createMuzik(root) {
     return liste?.length ? liste[sira % liste.length] : null;
   }
 
-  function calistir(a) {
-    const s = a.play();
-    // Otomatik oynatma engellendiyse ilk dokunuş sayılmaz: bir sonraki dokunuşta yeniden denenir.
+  function calistir(p) {
+    uyandir();
+    const s = p.el.play();
+    // Otomatik oynatma engellendiyse ilk girdi sayılmaz: bir sonraki girdide yeniden denenir.
     if (s?.catch) s.catch(() => { dokunuldu = false; });
   }
 
@@ -139,16 +204,17 @@ export function createMuzik(root) {
     if (!ad) {
       if (!aktif) return;
       const eski = aktif; aktif = null;
-      suz(eski, 0, sure, () => { eski.pause(); if (!koru) eski.currentTime = 0; });
+      suz(eski, 0, sure, () => { eski.el.pause(); if (!koru) eski.el.currentTime = 0; });
       return;
     }
     const yeni = parca(ad);
+    yukle(yeni);
     if (aktif === yeni) { calistir(yeni); suz(yeni, hedefSes(), Math.min(sure, 0.3)); return; }
-    if (aktif) { const eski = aktif; suz(eski, 0, sure, () => { eski.pause(); eski.currentTime = 0; }); }
+    if (aktif) { const eski = aktif; suz(eski, 0, sure, () => { eski.el.pause(); eski.el.currentTime = 0; }); }
     aktif = yeni;
     // Tek parçalı sahne (sakin, maç) kendi kendine döner: `ended` hiç gelmez, araya sessizlik girmez.
-    yeni.loop = SAHNELER[sahneAdi].length < 2;
-    yeni.volume = 0;
+    yeni.el.loop = SAHNELER[sahneAdi].length < 2;
+    yeni.seviye = 0; cikisaYaz(yeni);
     calistir(yeni);
     suz(yeni, hedefSes(), sure);
   }
@@ -156,22 +222,46 @@ export function createMuzik(root) {
   /** Aynı sahnenin sıradaki parçası (dorukta heyecan ↔ ana tema). */
   function sonraki() {
     const liste = SAHNELER[sahneAdi];
-    if (!liste || liste.length < 2) { if (aktif) { aktif.currentTime = 0; calistir(aktif); } return; }
+    if (!liste || liste.length < 2) { if (aktif) { aktif.el.currentTime = 0; calistir(aktif); } return; }
     sira++;
     uygula();
   }
 
-  /** İlk kullanıcı girdisi: tarayıcı buradan sonra çalmaya izin verir. */
+  /**
+   * İlk kullanıcı girdisi: tarayıcı buradan sonra çalmaya izin verir. Burada ses bağlamı uyanır ve **bütün**
+   * parçaların kilidi açılır — maç parçası çizim döngüsünden (dokunuşun dışından) başlatıldığında iOS'ta da çalsın.
+   */
   function ilkDokunus() {
     if (kapali || dokunuldu) return;
     dokunuldu = true;
+    if (acik) kilitleriAc(); // kapalıyken hiç öğe kurulmaz; açılınca `ac()` kilitleri orada açar
     uygula(0.8);
   }
+  /**
+   * Ses bağlamını uyandırır ve üç parçanın da kilidini açar. Kullanıcı girdisi içinden çağrılmalı. Müzik kapalıyken
+   * hiç çağrılmaz (o zaman tek bir ses öğesi bile kurulmaz); kullanıcı müziği açtığında — o da bir tıklamadır —
+   * `ac()` buraya uğrar, böylece iOS'ta maç parçası yine ilk dokunuşla açılmış sayılır.
+   */
+  function kilitleriAc() {
+    baglam(); uyandir();
+    for (const liste of Object.values(SAHNELER)) for (const ad of liste) kilidiAc(parca(ad));
+  }
+  /** Öğeyi kullanıcı girdisi içinde bir anlık sessiz sesle çalıp durdurur: tarayıcı o öğeye kalıcı izin verir. */
+  function kilidiAc(p) {
+    if (p.yuklendi || p.kilitAcildi) return;
+    p.kilitAcildi = true;
+    const s = p.el.play();
+    const dur = () => { if (!p.yuklendi && p !== aktif) { p.el.pause(); p.el.currentTime = 0; } };
+    if (s?.then) s.then(dur, () => { /* kilit açılmadı: parça gerektiğinde yeniden denenir */ });
+    else dur();
+  }
   if (!kapali) {
-    for (const ev of ['pointerdown', 'keydown', 'touchstart']) document.addEventListener(ev, ilkDokunus, { passive: true });
+    // Parmağın kalktığı an: dokunmatikte `pointerdown` / `touchstart` tarayıcıya kullanıcı izni saymaz.
+    for (const ev of ['pointerup', 'touchend', 'click', 'keydown']) document.addEventListener(ev, ilkDokunus, { passive: true });
     document.addEventListener('visibilitychange', () => {
       gizli = document.hidden;
-      if (gizli) { if (aktif) aktif.pause(); return; }
+      if (gizli) { if (aktif) aktif.el.pause(); return; }
+      uyandir();
       uygula(0.4);
     });
   }
@@ -190,6 +280,8 @@ export function createMuzik(root) {
     ac(v) {
       acik = v === undefined ? !acik : Boolean(v);
       sakla('yg.muzik', acik ? 'on' : 'off');
+      // Düğmeye basmak da bir kullanıcı girdisidir: müzik burada açıldıysa kilitler burada açılır (bkz. kilitleriAc).
+      if (acik && dokunuldu) kilitleriAc();
       uygula(0.6, true); // kapatınca parça kaldığı yerde bekler: yeniden açılınca oradan sürer
       return acik;
     },
@@ -197,12 +289,23 @@ export function createMuzik(root) {
     sesAyarla(v) {
       ses = kis(Number(v) || 0);
       sakla('yg.muzik.ses', String(ses));
-      if (aktif && !suzulme.has(aktif)) aktif.volume = hedefSes();
+      if (aktif && !suzulme.has(aktif)) { aktif.seviye = hedefSes(); cikisaYaz(aktif); }
       return ses;
     },
-    /** Testler ve hata ayıklama için: hangi parça, hangi sahne, çalıyor mu. */
+    /**
+     * Testler ve hata ayıklama için: hangi parça, hangi sahne, çalıyor mu. `parcalar` her öğenin okunan durumudur;
+     * **ses düzeyi `seviye` alanından okunur**, `audio.volume`dan değil: Web Audio kullanılırken öğenin kendi sesi
+     * 1'de kalır, duyulan düzeyi kazanç düğümü taşır.
+     */
     durum() {
-      return { kapali, acik, ses, sahne: sahneAdi, parca: aktif?.dataset.parca || null, caliyor: Boolean(aktif && !aktif.paused), ogeler: parcalar.size };
+      return {
+        kapali, acik, ses, sahne: sahneAdi, webAudio: Boolean(ctx),
+        parca: aktif?.ad || null, caliyor: Boolean(aktif && !aktif.el.paused), ogeler: parcalar.size,
+        parcalar: [...parcalar.values()].map(p => ({
+          ad: p.ad, seviye: +p.seviye.toFixed(3), paused: p.el.paused, currentTime: p.el.currentTime,
+          loop: p.el.loop, yuklendi: p.yuklendi,
+        })),
+      };
     },
   };
 }

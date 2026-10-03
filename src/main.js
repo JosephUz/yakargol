@@ -147,6 +147,11 @@ export async function start(root) {
     helpReturn = screen; show('help');
   }
   function closeHelp() { show(helpReturn); if (active()) input.lock(); }
+  /**
+   * Müziğin baktığı ekran: Kontroller perdesi saydamdır, altındaki ekran neyse müzik onundur (bkz. muzik.js sahneSec).
+   * Yoksa molanın üstünde Kontroller açılıp kapanınca müzik sakin ↔ maç arasında gidip gelirdi.
+   */
+  const altEkran = () => (screen === 'help' ? helpReturn : screen);
   /** Esc: kilitliyken tarayıcı Esc'yi kilidi bırakmaya harcar (o da molaya sokar); kısa süre içindeki ikinci Esc yok sayılır. */
   function pause() {
     if (gosteri) return; // gösteride mola yok: kip girdisiz döner (bkz. gosteri.js)
@@ -418,7 +423,7 @@ export async function start(root) {
     // Müzik sahnesi (bkz. muzik.js): maçta ana tema, son dakikada / altın golde heyecan, geri kalan her yerde (giriş,
     // lobi, mola, karne) sakin parça. Aynı sahne yeniden verilince hiçbir şey olmaz, bu yüzden her kareden sorulur:
     // ekran geçişlerini tek tek kancalamaya gerek kalmaz. Gösteride `muzik.kapali` olduğu için çağrı boşa düşer.
-    muzik.sahne(sahneSec(started, screen, w));
+    muzik.sahne(sahneSec(started, altEkran(), w));
     if (started && !gosteri) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
     if (online && started) {
       // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).

@@ -30,8 +30,10 @@ Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi,
 `node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar pas nişanı, mola; uygulama kipinde "Yakında").
 Gösteri kipi için `node tests/gosteri-smoke.mjs`, rüzgar şutu gösteri sahnesi için `node tests/gosteri-ruzgar-smoke.mjs`.
 Üst çubuktaki tam ekran düğmesinin dar yatay telefonda yerini ölçen test kendi sunucusunu açar: `npm run test:tamekran`
-(aynı test standart araç çubuğunun sırasını ve yatay / dikey telefonda taşmadığını da ölçer).
-Oyun içi müzik için `node tests/muzik-smoke.mjs` (`?muzik=1` ile; `audio.currentTime` / `paused` ölçülür, tarayıcı sesi kısık).
+(aynı test standart araç çubuğunun sırasını, duraklatma menüsünün dar yatay telefonda kaydırmasız sığdığını ve her
+satırına dokunulabildiğini de ölçer). Oyun içi müzik için `node tests/muzik-smoke.mjs` (fare ve dokunmatik, `?muzik=1`
+ile; `audio.currentTime` / `paused` ölçülür, tarayıcı sesi kısık). Bu iki test ortam değişkeni olmadan da koşar:
+Playwright'ı ve oyun sunucusunu `tests/ortam.mjs` kendisi bulur / açar.
 
 **Telefonda adres çubuğu**: oyun **ana ekrana eklenebilir** (`manifest.webmanifest`, Android'de "Uygulama olarak
 yükle", iOS'ta Paylaş → Ana Ekrana Ekle) — o kısayoldan açılınca tam ekran ve yatay başlar, adres çubuğu hiç çıkmaz.
@@ -138,10 +140,16 @@ parça), yollar görelidir (Capacitor'da da çalışır, sonraki APK'ya kendili�
 | mac | `yakar-1-spor-marsi` · *Spor Marşı* | Maç |
 | doruk | `yakar-3-son-dakika` · *Son Dakika Golü* ↔ *Spor Marşı* | Son dakika (saatte ≤ 60 sn) ve altın gol; parça bitince sırayla |
 
-Müzik ses düzeyi efektlerin altındadır (varsayılan %35). Açık / kapalı ve düzey tarayıcıda saklanır (`yg.muzik`,
-`yg.muzik.ses`); efekt sesinden (`yg.sound`) **bağımsızdır**. Müzik ilk kullanıcı dokunuşundan sonra başlar, sekme
-gizlenince durur. Gösteri kiplerinde (`?gosteri=...`) ve otomatik tarayıcılarda hiç `<audio>` kurulmaz — video betiği
-müziğini kendi ekler; `?muzik=1` müziği elle açar (testler bunu kullanır), `?muzik=0` kapatır.
+Müzik ses düzeyi efektlerin altındadır (varsayılan %35) ve **Web Audio kazanç düğümünden** geçer: iOS Safari'de
+`audio.volume` salt okunurdur, orada sürgü ve çapraz geçiş başka türlü çalışmaz. Açık / kapalı ve düzey tarayıcıda
+saklanır (`yg.muzik`, `yg.muzik.ses`); efekt sesinden (`yg.sound`) **bağımsızdır**.
+
+Müzik ilk kullanıcı girdisinden sonra başlar ve sekme gizlenince durur. Dinlenen olay **parmağın kalktığı andır**
+(`pointerup` / `touchend` / `click` / `keydown`): dokunmatikte `pointerdown` ve `touchstart` tarayıcıya kullanıcı izni
+saymaz, onlarla beklemek müziği ikinci dokunuşa bırakırdı. O ilk girdide üç parçanın da kilidi bir anlık sessiz sesle
+açılır (dosyaları inmeden), çünkü maç parçası çizim döngüsünden — yani dokunuşun dışından — başlar ve kilidi
+açılmamış öğeyi iOS engellerdi. Gösteri kiplerinde (`?gosteri=...`) ve otomatik tarayıcılarda hiç `<audio>` kurulmaz —
+video betiği müziğini kendi ekler; `?muzik=1` müziği elle açar (testler bunu kullanır), `?muzik=0` kapatır.
 
 **Standart üst araç çubuğu** (bütün JosephUz oyunlarında aynı sıra ve aynı yazılar):
 `← josephuz.com` · `Ses: açık/kapalı` · `Müzik: açık/kapalı` · `Kontroller F1`. Oyuna özgü düğmeler (`Duraklat Esc`,
@@ -149,7 +157,10 @@ müziğini kendi ekler; `?muzik=1` müziği elle açar (testler bunu kullanır),
 çubuktan çekilir (skor tabelasına yer açılsın diye) ve ☰ duraklatma menüsünden açılıp kapatılır.
 
 **Standart duraklatma (Esc) menüsü**: `DEVAM ET →` · `Kontroller F1` · `Ses: …` · `Müzik: …` (altında müzik ses
-sürgüsü) · `Yeniden başlat` (çevrimdışı) · `Ana menü` / çevrim içinde `Odadan çık` · `josephuz.com'a dön`.
+sürgüsü) · `Yeniden başlat` (çevrimdışı) · `Ana menü` / çevrim içinde `Odadan çık` · `josephuz.com'a dön`. Menü kısa
+ekranlarda (`max-height:560px`) süslerini bırakıp sıkışır: en dar telefonda bile (iPhone 13 yatay, 750×342 CSS px)
+**kaydırmasız** sığmalı — kart `overflow:auto` olduğu için görünen alanının dışında kalan düğmeye dokunulamaz.
+Kontroller perdesi menünün üstünde açılır ve müziği değiştirmez: perde saydamdır, altındaki ekran neyse müzik onundur.
 
 ## Kurallar
 
@@ -242,6 +253,7 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/gosteri-smoke.mjs` | Gösteri kipi dumanı testi (arayüz gizli, ağ ve ölçüm yok, kamera aksiyonda, maç yenilenir) |
 | `tests/gosteri-ruzgar-smoke.mjs` | Rüzgar sahnesi dumanı testi (diziliş, kimse saldırmaz, yükleme / çarpma / gol, döngü, yazının yeri) |
 | `src/muzik.js`, `muzik/` | Oyun içi müzik: üç parça, sahne seçimi, çapraz geçiş; parçalar ve lisans notu |
-| `tests/muzik.test.mjs`, `tests/muzik-smoke.mjs` | Müzik ve standart araç çubuğu testleri (tarayıcısız kural testi; tarayıcıda ölçüm) |
+| `tests/muzik.test.mjs`, `tests/muzik-smoke.mjs` | Müzik ve standart araç çubuğu testleri (sahne seçimi, sunucu ve dist/ yolları; tarayıcıda fare + dokunmatik ölçüm) |
+| `tests/ortam.mjs` | Tarayıcı testlerinin ortak kurulumu: Playwright'ı bul, oyun sunucusunu boş portta aç |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |
 | `scripts/build-web.mjs`, `scripts/apk.mjs`, `scripts/icons.mjs` | Uygulama dosyalarını toplama, APK derleme, simge / açılış / mağaza görselleri |
