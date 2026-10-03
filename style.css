@@ -133,6 +133,12 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .card .primary{width:100%;margin-top:23px;justify-content:center}
 #yakar-gol .card.small{max-width:370px}
 #yakar-gol .card.small button,#yakar-gol .card.small a.btn{display:block;width:100%;margin-top:12px}
+/* Müzik ses düzeyi: mola menüsünde Müzik düğmesinin hemen altında bir sürgü; müzik kapalıyken soluk (bkz. src/muzik.js). */
+#yakar-gol .card.small .slider{display:flex;align-items:center;gap:10px;margin-top:10px;padding:0 4px;font-size:12px;color:#bed0b9}
+#yakar-gol .card.small .slider.off{opacity:.45}
+/* Sürgü parmakla da tutulabilsin: 24 px dokunma hedefi (WCAG 2.5.8), dar yatay telefonda da küçülmez. */
+#yakar-gol .card.small .slider input[type=range]{flex:1;min-width:0;height:24px;accent-color:#f4d7a5}
+#yakar-gol .card.small .slider b{min-width:38px;text-align:right;color:#f4ead7}
 #yakar-gol .result-card{width:min(740px,95vw)}
 #yakar-gol #yg-final-score{font-size:40px;font-weight:900;margin-bottom:20px}
 #yakar-gol .table-wrap{overflow:auto}
@@ -240,6 +246,16 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .card dl{gap:8px 12px;font-size:11px;line-height:1.45}
 #yakar-gol .card .primary{margin-top:12px;min-height:42px}
 #yakar-gol .card.small button,#yakar-gol .card.small a.btn{margin-top:8px;padding:10px}
+/* Standart duraklatma menüsü iki satır uzadı (Kontroller + Müzik + ses sürgüsü): yatay telefonda süsler gider,
+   düğmeler sıkışır ki "Ana menü" ve "josephuz.com'a dön" kaydırmadan görünsün. Ölçü iPhone 13 yataydır (750x342 CSS
+   px): orada kart kaydırmasız sığmazsa son düğme kartın görünen alanının dışında kalır ve dokunuş kartın kendisine
+   gider (JOS-844 kalite kapısı, "ortulu"). Düğmeler yine de 33 px yüksek: WCAG 2.5.8'in 24 px'inin üstünde. */
+#yakar-gol #yg-pause .eyebrow,#yakar-gol #yg-pause h2{display:none}
+#yakar-gol #yg-pause .card{padding:8px 18px}
+#yakar-gol #yg-pause button,#yakar-gol #yg-pause a.btn{margin-top:4px;padding:7px}
+#yakar-gol #yg-pause .primary{min-height:36px}
+#yakar-gol #yg-pause .slider{margin-top:4px;font-size:11px}
+#yakar-gol #yg-pause .pause-note{margin-top:8px;font-size:10px;line-height:1.5}
 #yakar-gol #yg-final-score{font-size:28px;margin-bottom:8px}
 #yakar-gol td,#yakar-gol th{padding:5px 6px}
 #yakar-gol #yg-charge{width:74px;height:74px}
@@ -268,6 +284,20 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol.touch #yg-pause-open::before{content:"☰"}
 #yakar-gol.touch #yg-sound::before{content:"🔊"}
 #yakar-gol.touch #yg-sound.muted::before{content:"🔇"}
+/* Müzik düğmesi: telefonda da nota simgesi, kapalıyken üstü çizili (bkz. src/muzik.js). */
+#yakar-gol.touch #yg-muzik::before{content:"♫"}
+#yakar-gol.touch #yg-muzik.muted::before{text-decoration:line-through;opacity:.65}
+/* Dar ekran (telefon dikey, küçük yatay): standart araç çubuğu tek satırda kalsın — simgeler ve josephuz bağlantısı
+   küçülür, sıra ve düğmeler aynı kalır, çubuk ekranın dışına taşmaz. Bu kurallar yukarıdaki `.touch` simge
+   ölçülerinden **sonra** gelmeli: aynı ağırlıktaki seçicilerde sonraki kazanır. */
+@media(max-width:650px){
+#yakar-gol header{left:12px;right:12px}
+#yakar-gol .logo small{display:none}
+#yakar-gol .header-actions{gap:5px}
+#yakar-gol.touch .header-actions button{width:34px;height:34px}
+#yakar-gol.touch .header-actions button::before{font-size:16px}
+#yakar-gol .header-actions a.btn{padding:6px;font-size:8px}
+}
 
 /* Top ekran dışındayken kenardaki işaret: beyaz top ve topa doğru ok; yakar topta kırmızı. */
 #yakar-gol #yg-ballmark{--a:0rad;position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff,#d9dccf);border:2px solid #173a39;box-shadow:0 3px 12px #0b1f1c88;z-index:6;pointer-events:none}
