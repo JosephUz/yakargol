@@ -2,7 +2,7 @@ import { MATCH } from './config.js';
 import { gosteriAcik } from './gosteri.js';
 
 /**
- * Oyun içi müzik: üç parça, üç sahne, çapraz geçiş.
+ * Oyun içi müzik: üç sahne, çapraz geçiş. **Şu an parça yok** (4 Ekim 2026, bkz. SAHNELER); aşağıdaki düzen eski parçalarla yazıldı.
  *  - **sakin** (`Maçtan Sonra`): giriş ekranı, lobi, mola (devre arası) ve maç sonu karnesi — tek parça, kendi kendine döner.
  *  - **mac** (`Soyunma Odası`): maç sürerken ana tema.
  *  - **doruk** (`Mahalle Sabahı` ↔ `Soyunma Odası`): son dakika (saatte ≤ `DORUK` saniye kaldı) ve altın gol; parça
@@ -29,11 +29,21 @@ import { gosteriAcik } from './gosteri.js';
  * Dosya yolları **görelidir** (`muzik/...`): aynı dosyalar Capacitor'ın `https://localhost/` kökünde de çalışır,
  * bir sonraki APK'ya kendiliğinden girer (bkz. scripts/build-web.mjs). Bu görevde APK üretilmez.
  */
+/*
+ * Şimdilik oyunda müzik YOK (Yusuf 4 Ekim 2026: "diğer oyunlardaki müzikleri şimdilik kaldıralım"). Sakin sürümler
+ * birbirine fazla benzer ve temasız bulundu; dosyalar silinmedi, muzik/archive/ altında duruyor (bkz. NOT.txt). Müzik
+ * ileride yeniden yapılacak. Listeler boşken hiçbir dosya inmez, hiçbir şey çalmaz, `MUZIK_VAR` / `parcaVar` false olur
+ * ve Müzik düğmeleri gizlenir (main.js). Parça adları buraya geri yazılınca düğmeler ve çalma kendiliğinden döner.
+ * Eski düzen: sakin ['yakar-6-mactan-sonra'] · mac ['yakar-5-soyunma-odasi'] ·
+ * doruk ['yakar-4-mahalle-sabahi', 'yakar-5-soyunma-odasi'].
+ */
 const SAHNELER = {
-  sakin: ['yakar-6-mactan-sonra'],
-  mac: ['yakar-5-soyunma-odasi'],
-  doruk: ['yakar-4-mahalle-sabahi', 'yakar-5-soyunma-odasi'],
+  sakin: [],
+  mac: [],
+  doruk: [],
 };
+/** Çalınacak en az bir parça var mı? Yoksa Müzik düğmeleri gizlenir, testler parça ölçümlerini atlar. */
+export const MUZIK_VAR = Object.values(SAHNELER).some(liste => liste.length > 0);
 /** Maçın "son dakikası": saatte bu kadar saniye kalınca heyecan parçasına geçilir. */
 export const DORUK = 60;
 /** Çapraz geçiş süresi (sn): sahne değişiminde ve parça bitmeden önce. */
@@ -269,6 +279,8 @@ export function createMuzik(root) {
 
   return {
     kapali,
+    /** Çalınacak parça var mı (bkz. MUZIK_VAR): yoksa Müzik düğmeleri gizlenir. */
+    parcaVar: MUZIK_VAR,
     /** Sahneyi değiştirir ('sakin' | 'mac' | 'doruk' | null). Aynı sahne yeniden verilirse hiçbir şey olmaz. */
     sahne(ad) {
       if (kapali || ad === sahneAdi) return;

@@ -1,10 +1,7 @@
 © 2026 JosephUz. Tüm hakları saklıdır. Beste JosephUz; enstrüman örnekleri VSCO 2 Community Edition (CC0).
 
-Yakar Gol oyun içi müzikleri (sakin / dinlendirici / odaklandırıcı; 128 kbps mp3, -16 LUFS):
-
-  yakar-6-mactan-sonra.mp3   "Maçtan Sonra"    · menü, lobi, devre arası, sonuç
-  yakar-5-soyunma-odasi.mp3  "Soyunma Odası"   · maç
-  yakar-4-mahalle-sabahi.mp3 "Mahalle Sabahı"  · son dakika ve altın gol (Soyunma Odası ile sırayla)
+Yakar Gol: şu an oyunda müzik yok (4 Ekim 2026). Eski parçalar muzik/archive/ altında saklanıyor
+(bkz. muzik/archive/NOT.txt); yayına ve uygulamaya girmez. Müzik ileride yeniden yapılacak.
 
 Besteler JosephUz'a aittir ve yalnızca JosephUz oyunlarında / içeriklerinde kullanılır.
 Seslendirmede kullanılan enstrüman örnekleri: VSCO 2 Community Edition (Versilian Studios, CC0-1.0).

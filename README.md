@@ -130,7 +130,14 @@ Telefonda dolum halkası ve enerji / sersemlik göstergesi karakterin üstünde 
 
 ## Müzik ve standart araç çubuğu
 
-Oyun içi müzik `muzik/` altındaki üç parçadır (kendi bestemiz; 128 kbps, ~2 MB, lisans notu `muzik/LISANS.txt`).
+**Şu an oyunda müzik yok (4 Ekim 2026).** Sakin sürümler birbirine fazla benzer ve temasız bulundu; müzik ileride
+yeniden yapılacak. `src/muzik.js` içindeki `SAHNELER` listeleri boştur: hiçbir dosya inmez, hiçbir şey çalmaz,
+`MUZIK_VAR` / `muzik.parcaVar` false olur ve **Müzik düğmeleri (üst çubuk ve mola menüsü) gizlenir**. Eski parçalar
+silinmedi, `muzik/archive/` altında durur (bkz. `muzik/archive/NOT.txt`; yayına ve uygulamaya girmez). Parça adları
+`SAHNELER`e ve `tests/muzik.test.mjs` `PARCALAR`a geri yazılınca düğmeler, çalma ve parça testleri kendiliğinden döner;
+o zamana kadar parçaya bakan test adımları "müzik yok: atlandı" yazıp geçer. Aşağıdaki düzen eski parçalarla yazıldı.
+
+Oyun içi müzik `muzik/` altındaki parçalardır (kendi bestemiz; 128 kbps, ~2 MB, lisans notu `muzik/LISANS.txt`).
 Sahneyi `src/muzik.js` seçer, geçişler 1,8 saniye çapraz süzülmedir; dosyalar gerektiğinde iner (menüde yalnız sakin
 parça), yollar görelidir (Capacitor'da da çalışır, sonraki APK'ya kendiliğinden girer).
 
@@ -252,7 +259,7 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/rooms.test.mjs`, `tests/online-smoke.mjs` | Oda testleri (sahte soket) ve iki sekmeli çevrim içi dumanı testi |
 | `tests/gosteri-smoke.mjs` | Gösteri kipi dumanı testi (arayüz gizli, ağ ve ölçüm yok, kamera aksiyonda, maç yenilenir) |
 | `tests/gosteri-ruzgar-smoke.mjs` | Rüzgar sahnesi dumanı testi (diziliş, kimse saldırmaz, yükleme / çarpma / gol, döngü, yazının yeri) |
-| `src/muzik.js`, `muzik/` | Oyun içi müzik: üç parça, sahne seçimi, çapraz geçiş; parçalar ve lisans notu |
+| `src/muzik.js`, `muzik/` | Oyun içi müzik: sahne seçimi, çapraz geçiş; lisans notu (şu an parça yok, eskiler `muzik/archive/`) |
 | `tests/muzik.test.mjs`, `tests/muzik-smoke.mjs` | Müzik ve standart araç çubuğu testleri (sahne seçimi, sunucu ve dist/ yolları; tarayıcıda fare + dokunmatik ölçüm) |
 | `tests/ortam.mjs` | Tarayıcı testlerinin ortak kurulumu: Playwright'ı bul, oyun sunucusunu boş portta aç |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |

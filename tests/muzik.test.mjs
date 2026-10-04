@@ -6,24 +6,38 @@
 //    dahil — tarayıcı akışı sürdürürken onu yollar), dist/ derlemesi koşturulup içine bakılır. Biri listeden düşerse
 //    oyun sessiz kalır ya da 404 alır.
 //
+// 4 Ekim 2026'dan beri oyunda müzik yok (src/muzik.js `MUZIK_VAR` false, parçalar muzik/archive/ altında): parça
+// dosyasına bakan ölçümler o zaman "müzik yok: atlandı" yazıp geçer, silinmez — parçalar gelince yeniden koşar.
+//
 // Ayrıca STANDART üst araç çubuğu ve duraklatma menüsünün sırası: bütün JosephUz oyunlarında aynı olmalı
 // (← josephuz.com · Ses · Müzik · Kontroller F1). Tarayıcı ölçümleri tests/muzik-smoke.mjs dosyasındadır.
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFile, stat } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { MATCH } from '../src/config.js';
-import { DORUK, sahneSec } from '../src/muzik.js';
+import { DORUK, MUZIK_VAR, sahneSec } from '../src/muzik.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const oku = ad => readFile(path.join(root, ad), 'utf8');
-/** Parça adı → sahnesi; LISANS.txt ve src/muzik.js bu üçünü de tanımalı. */
-const PARCALAR = ['yakar-5-soyunma-odasi', 'yakar-6-mactan-sonra', 'yakar-4-mahalle-sabahi'];
+/**
+ * Oyundaki parçalar; LISANS.txt ve src/muzik.js bunları tanımalı. 4 Ekim 2026'dan beri oyunda müzik yok (src/muzik.js
+ * SAHNELER boş, `MUZIK_VAR` false): eski üç parça muzik/archive/ altında. Liste boşken parça ölçümleri atlanır
+ * ("müzik yok: atlandı"); yeni parçalar gelince adları buraya yazılır ve ölçümler kendiliğinden geri döner.
+ */
+const PARCALAR = [];
+/** Arşivlenen parçalar: silinmedi, yayına girmez. */
+const ARSIV = ['yakar-1-spor-marsi', 'yakar-2-devre-arasi', 'yakar-3-son-dakika', 'yakar-4-mahalle-sabahi', 'yakar-5-soyunma-odasi', 'yakar-6-mactan-sonra'];
+const atla = ne => console.log(`müzik yok: atlandı (${ne})`);
+
+test('parça listesi ile src/muzik.js uyumlu: parça yoksa MUZIK_VAR false', () => {
+  assert.equal(MUZIK_VAR, PARCALAR.length > 0, 'tests/muzik.test.mjs PARCALAR ile src/muzik.js SAHNELER birlikte güncellenmeli');
+});
 /** Dünya taslağı: saatte `kalan` saniye var. */
 const dunya = (kalan, ek = {}) => ({ time: MATCH.duration - kalan, overtime: false, winner: null, ...ek });
 
@@ -69,7 +83,15 @@ test('müzik hangi adreste hiç kurulmaz: gösteri kipleri ve otomatik tarayıc�
   kur('?muzik=0'); assert.equal(muzikKapali(), true, '`?muzik=0` elle kapatır');
 });
 
-test('parçalar yerinde: üçü ayrı beste, dosya başı 3 MB altı, lisans notu yanında', async () => {
+test('parçalar yerinde: her biri ayrı beste, dosya başı 3 MB altı, lisans notu yanında; arşiv silinmedi', async () => {
+  for (const ad of ARSIV) {
+    const bilgi = await stat(path.join(root, 'muzik', 'archive', ad + '.mp3'));
+    assert.ok(bilgi.size > 500_000, `muzik/archive/${ad}.mp3 eksik ya da bozuk`);
+  }
+  if (!MUZIK_VAR) {
+    assert.match(await oku('muzik/LISANS.txt'), /şu an oyunda müzik yok/, 'LISANS.txt oyunda müzik olmadığını söylemeli');
+    atla('parça dosyaları');
+  }
   const izler = new Map();
   for (const ad of PARCALAR) {
     const bayt = await readFile(path.join(root, 'muzik', ad + '.mp3'));
@@ -77,7 +99,7 @@ test('parçalar yerinde: üçü ayrı beste, dosya başı 3 MB altı, lisans not
     assert.ok(bayt.length <= 3 * 1024 * 1024, `${ad}.mp3 3 MB'tan büyük (${bayt.length} bayt)`);
     // Üçü aynı süre ve bit hızında olduğu için **boyutları da aynı**: ayrı beste olduklarını yalnız içerik söyler.
     const iz = createHash('sha256').update(bayt).digest('hex');
-    assert.ok(!izler.has(iz), `${ad}.mp3 ile ${izler.get(iz)}.mp3 aynı dosya: üç ayrı parça olmalı`);
+    assert.ok(!izler.has(iz), `${ad}.mp3 ile ${izler.get(iz)}.mp3 aynı dosya: her parça ayrı olmalı`);
     izler.set(iz, ad);
   }
   const lisans = await oku('muzik/LISANS.txt');
@@ -104,6 +126,10 @@ test('sunucu müziği gerçekten veriyor: mp3, Range isteği ve lisans notu', as
   }
   assert.ok(ayakta, `oyun sunucusu ${adres} adresinde açılmadı`);
 
+  assert.equal((await fetch(adres + '/muzik/LISANS.txt')).status, 200, 'lisans notu da yayımlanmalı');
+  assert.equal((await fetch(adres + '/muzik/../package.json')).status, 404, 'muzik/ dışına çıkılamamalı');
+  if (!MUZIK_VAR) { atla('sunucudan mp3 ve Range'); return; }
+
   for (const ad of PARCALAR) {
     const y = await fetch(`${adres}/muzik/${ad}.mp3`);
     assert.equal(y.status, 200, `${ad}.mp3 verilmiyor`);
@@ -118,13 +144,16 @@ test('sunucu müziği gerçekten veriyor: mp3, Range isteği ve lisans notu', as
   assert.equal(dilim.status, 206, 'Range isteğine 206 dönmeli');
   assert.equal(dilim.headers.get('content-range'), `bytes 100-199/${tam.length}`);
   assert.deepEqual(Buffer.from(await dilim.arrayBuffer()), tam.subarray(100, 200), 'verilen aralık dosyanınkiyle aynı değil');
-
-  assert.equal((await fetch(adres + '/muzik/LISANS.txt')).status, 200, 'lisans notu da yayımlanmalı');
-  assert.equal((await fetch(adres + '/muzik/../package.json')).status, 404, 'muzik/ dışına çıkılamamalı');
 });
 
 test('dist/ derlemesi (Cloudflare + Play Store paketi) müziği içine alıyor', async () => {
   await promisify(execFile)(process.execPath, ['scripts/build-web.mjs'], { cwd: root });
+  // Arşiv yayına girmez; parça yokken dist/muzik/ içinde yalnız lisans notu kalır.
+  await assert.rejects(stat(path.join(root, 'dist', 'muzik', 'archive')), 'muzik/archive/ dist/ içine girmemeli');
+  if (!MUZIK_VAR) {
+    assert.deepEqual(await readdir(path.join(root, 'dist', 'muzik')), ['LISANS.txt'], 'parça yokken dist/muzik/ yalnız LISANS.txt içermeli');
+    atla('dist/ içindeki mp3');
+  }
   for (const ad of [...PARCALAR.map(a => a + '.mp3'), 'LISANS.txt']) {
     const bilgi = await stat(path.join(root, 'dist', 'muzik', ad));
     assert.ok(bilgi.size > 0, `dist/muzik/${ad} eksik`);

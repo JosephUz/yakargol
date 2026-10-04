@@ -5,3 +5,7 @@ odaklandırıcı sürümler geldi (bir üst klasör). Bunlar silinmedi: yanlış
 burada duruyor. Oyunda çalmaz, web yayınına ve uygulamaya girmez (bkz. scripts/build-web.mjs).
 
 © 2026 JosephUz. Tüm hakları saklıdır.
+
+İkinci arşiv (4 Ekim 2026): sakin sürümler (yakar-4-mahalle-sabahi, yakar-5-soyunma-odasi, yakar-6-mactan-sonra)
+birbirine fazla benzer ve oyunun temasına uymuyor bulundu; onlar da buraya taşındı. Müzik ileride yeniden
+yapılacak; şimdilik oyunda müzik yok (src/muzik.js SAHNELER boş, Müzik düğmeleri gizli).

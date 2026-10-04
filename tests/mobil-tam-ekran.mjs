@@ -12,6 +12,14 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { glArgs, oyunSunucusu, playwright } from './ortam.mjs';
+import { MUZIK_VAR } from '../src/muzik.js';
+
+/**
+ * Standart sıra; hiç müzik parçası yokken (src/muzik.js MUZIK_VAR, 4 Ekim 2026'dan beri) Müzik düğmeleri gizlidir,
+ * o zaman sıra Müzik'siz beklenir — parçalar geri gelince düğme yine standart yerinde aranır.
+ */
+const muzikle = ids => (MUZIK_VAR ? ids : ids.filter(id => id !== 'yg-muzik' && id !== 'yg-pause-muzik'));
+if (!MUZIK_VAR) console.log('müzik yok: Müzik düğmelerinin gizli olması bekleniyor');
 
 // Dar yatay telefon (iPhone SE / 8, yatay): üst çubuğun en sıkıştığı ölçü. Düğme burada yer bulursa her yerde bulur.
 const EKRAN = { width: 667, height: 375 };
@@ -85,7 +93,8 @@ try {
   assert.ok(cubuk.left >= 0 && cubuk.right <= EKRAN.width, `üst çubuk ekrandan taşıyor (${cubuk.left}..${cubuk.right})`);
   const girisDugmeler = await page.evaluate(() => [...document.querySelectorAll('.header-actions > *')]
     .filter(n => getComputedStyle(n).display !== 'none' && n.getBoundingClientRect().width > 0).map(n => n.id));
-  assert.deepEqual(girisDugmeler.slice(0, 4), ['yg-site', 'yg-sound', 'yg-muzik', 'yg-help-open'],
+  const standart = muzikle(['yg-site', 'yg-sound', 'yg-muzik', 'yg-help-open']);
+  assert.deepEqual(girisDugmeler.slice(0, standart.length), standart,
     'giriş ekranında standart dörtlü bu sırayla başta olmalı: ' + girisDugmeler.join(', '));
   const satir = await page.evaluate(() => {
     const ust = [...document.querySelectorAll('.header-actions > *')].filter(n => n.getBoundingClientRect().width > 0)
@@ -130,7 +139,7 @@ try {
     .filter(n => getComputedStyle(n).display !== 'none').map(n => n.id || n.textContent.trim()));
   await page.screenshot({ path: 'artifacts/mobil-duraklatma.png' });
   console.log(JSON.stringify({ molaKart, molaSon, molaDugmeler, mola: await molaOlc(page) }));
-  assert.deepEqual(molaDugmeler, ['yg-resume', 'yg-pause-help', 'yg-pause-sound', 'yg-pause-muzik', 'yg-restart', 'yg-menu', "josephuz.com'a dön"],
+  assert.deepEqual(molaDugmeler, muzikle(['yg-resume', 'yg-pause-help', 'yg-pause-sound', 'yg-pause-muzik', 'yg-restart', 'yg-menu', "josephuz.com'a dön"]),
     'duraklatma menüsünün sırası standart olmalı');
   assert.ok(molaSon.bottom <= EKRAN.height, `duraklatma menüsünün son düğmesi ekrandan taşıyor (${molaSon.bottom} > ${EKRAN.height})`);
   assert.ok(molaKart.bottom <= EKRAN.height, 'duraklatma kartı ekrandan taşıyor');

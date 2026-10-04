@@ -19,6 +19,7 @@
 //   node tests/muzik-smoke.mjs
 import assert from 'node:assert/strict';
 import { glArgs, oyunSunucusu, playwright } from './ortam.mjs';
+import { MUZIK_VAR } from '../src/muzik.js';
 
 const { chromium } = await playwright();
 const { url, kapat } = await oyunSunucusu();
@@ -42,6 +43,48 @@ const bekleSussun = (page, ad) => page.waitForFunction(ad => {
   const p = window.__yakarGol.muzik().parcalar.find(x => x.ad === ad);
   return !p || p.paused || p.seviye === 0;
 }, ad, { timeout: 15000 });
+
+/**
+ * Hiç parça yokken (4 Ekim 2026'dan beri, bkz. src/muzik.js SAHNELER): çalma ölçümleri atlanır. Yalnız şu bakılır:
+ * `?muzik=1` ile açılıp tıklanınca bile tek bir `<audio>` kurulmuyor, hiçbir şey çalmıyor, Müzik düğmeleri (üst çubuk
+ * ve mola menüsü) gizli ve sayfa hatasız. Parçalar geri gelince aşağıdaki tam ölçüm kendiliğinden yeniden koşar.
+ */
+async function muzikYokDenetle() {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const page = await ctx.newPage(), errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
+  await page.goto(url + '/?test=1&muzik=1');
+  await hazir(page);
+  await page.locator('#yg-home h1').click();
+  await page.waitForTimeout(1000);
+  const d = await durumu(page);
+  assert.equal(d.parca, null, 'parça yokken hiçbir şey çalmamalı');
+  assert.deepEqual(d.parcalar, [], 'parça yokken ses öğesi kurulmamalı');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('audio').length), 0, 'sayfada <audio> olmamalı');
+  assert.equal(await page.locator('#yg-muzik').isVisible(), false, 'üst çubuktaki Müzik düğmesi gizli olmalı');
+  await page.locator('#yg-start').click();
+  await page.waitForFunction(() => window.__yakarGol.state().started, null, { timeout: 20000 });
+  await page.waitForTimeout(600);
+  assert.equal(await page.locator('#yg-muzik').isVisible(), false, 'maçta da üst çubuktaki Müzik düğmesi gizli olmalı');
+  await page.keyboard.press('Escape');
+  assert.ok(await page.locator('#yg-pause').isVisible(), 'Esc duraklatma menüsünü açar');
+  assert.equal(await page.locator('#yg-pause-muzik').isVisible(), false, 'mola menüsündeki Müzik düğmesi gizli olmalı');
+  assert.equal((await durumu(page)).parcalar.length, 0, 'maçta da ses öğesi kurulmamalı');
+  assert.deepEqual(errors, [], 'sayfa hatasız');
+  await ctx.close();
+}
+
+if (!MUZIK_VAR) {
+  try {
+    await muzikYokDenetle();
+    console.log('müzik yok: atlandı (çalma ölçümleri); düğmeler gizli, ses öğesi yok, sayfa hatasız.');
+  } finally {
+    await browser.close();
+    kapat();
+  }
+  process.exit(0);
+}
 
 try {
   // ---------------------------------------------------------------- 1) Masaüstü, fare

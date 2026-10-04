@@ -77,8 +77,8 @@ export function createUI(root) {
       const yazi = on ? 'Müzik: açık' : 'Müzik: kapalı';
       for (const b of [el.muzik, el.pauseMuzik]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
     },
-    /** Müzik ayarı var mı (gösteri kiplerinde yok): düğmeler büsbütün gizlenir. */
-    setMuzikVar(gorunur) { muzikVar = gorunur; el.pauseMuzik.hidden = !gorunur; },
+    /** Müzik ayarı var mı (gösteri kiplerinde ve hiç parça yokken yok): düğmeler büsbütün gizlenir. */
+    setMuzikVar(gorunur) { muzikVar = gorunur; el.pauseMuzik.hidden = !gorunur; if (!gorunur) el.muzik.hidden = true; },
 
     message(text, time = 2) { el.message.textContent = text; el.message.hidden = false; messageTime = time; },
 
