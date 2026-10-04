@@ -3,9 +3,9 @@ import { gosteriAcik } from './gosteri.js';
 
 /**
  * Oyun içi müzik: üç parça, üç sahne, çapraz geçiş.
- *  - **sakin** (`Devre Arası`): giriş ekranı, lobi, mola (devre arası) ve maç sonu karnesi — tek parça, kendi kendine döner.
- *  - **mac** (`Spor Marşı`): maç sürerken ana tema.
- *  - **doruk** (`Son Dakika Golü` ↔ `Spor Marşı`): son dakika (saatte ≤ `DORUK` saniye kaldı) ve altın gol; parça
+ *  - **sakin** (`Maçtan Sonra`): giriş ekranı, lobi, mola (devre arası) ve maç sonu karnesi — tek parça, kendi kendine döner.
+ *  - **mac** (`Soyunma Odası`): maç sürerken ana tema.
+ *  - **doruk** (`Mahalle Sabahı` ↔ `Soyunma Odası`): son dakika (saatte ≤ `DORUK` saniye kaldı) ve altın gol; parça
  *    bitince ana temaya, o da bitince yeniden heyecana döner, araya sessizlik girmez.
  *
  * Çalma `<audio>` öğeleriyledir (dosya akarak iner). **Ses düzeyi Web Audio kazanç düğümünden (`GainNode`) geçer:**
@@ -30,9 +30,9 @@ import { gosteriAcik } from './gosteri.js';
  * bir sonraki APK'ya kendiliğinden girer (bkz. scripts/build-web.mjs). Bu görevde APK üretilmez.
  */
 const SAHNELER = {
-  sakin: ['yakar-2-devre-arasi'],
-  mac: ['yakar-1-spor-marsi'],
-  doruk: ['yakar-3-son-dakika', 'yakar-1-spor-marsi'],
+  sakin: ['yakar-6-mactan-sonra'],
+  mac: ['yakar-5-soyunma-odasi'],
+  doruk: ['yakar-4-mahalle-sabahi', 'yakar-5-soyunma-odasi'],
 };
 /** Maçın "son dakikası": saatte bu kadar saniye kalınca heyecan parçasına geçilir. */
 export const DORUK = 60;

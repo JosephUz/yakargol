@@ -23,7 +23,7 @@ import { DORUK, sahneSec } from '../src/muzik.js';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const oku = ad => readFile(path.join(root, ad), 'utf8');
 /** Parça adı → sahnesi; LISANS.txt ve src/muzik.js bu üçünü de tanımalı. */
-const PARCALAR = ['yakar-1-spor-marsi', 'yakar-2-devre-arasi', 'yakar-3-son-dakika'];
+const PARCALAR = ['yakar-5-soyunma-odasi', 'yakar-6-mactan-sonra', 'yakar-4-mahalle-sabahi'];
 /** Dünya taslağı: saatte `kalan` saniye var. */
 const dunya = (kalan, ek = {}) => ({ time: MATCH.duration - kalan, overtime: false, winner: null, ...ek });
 

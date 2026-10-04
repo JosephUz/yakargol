@@ -1,7 +1,7 @@
 // Oyun içi müzik dumanı testi (bkz. src/muzik.js). İki tarayıcı birden koşar:
 //  - **Fare** (masaüstü, 1280x720): ilk tıklamadan önce hiç çalmaz; tıklayınca menüde sakin parça
-//    (`yakar-2-devre-arasi`) çalar ve ilerler; maç başlayınca ana temaya (`yakar-1-spor-marsi`), son dakikada heyecan
-//    parçasına (`yakar-3-son-dakika`) geçer ve parça bitince ana temaya devreder; molada sakin parçaya döner ve
+//    (`yakar-6-mactan-sonra`) çalar ve ilerler; maç başlayınca ana temaya (`yakar-5-soyunma-odasi`), son dakikada heyecan
+//    parçasına (`yakar-4-mahalle-sabahi`) geçer ve parça bitince ana temaya devreder; molada sakin parçaya döner ve
 //    molanın üstünde Kontroller açılıp kapanınca müzik yerinden oynamaz; "Müzik: kapalı" sayfa yenilenince korunur,
 //    yeniden açılınca parça kaldığı yerden sürer; efekt sesi düğmesi müziği etkilemez; `?gosteri=1`'de hiç ses
 //    öğesi kurulmaz.
@@ -65,14 +65,14 @@ try {
   // 2) İlk tıklamadan sonra giriş ekranında sakin parça çalar ve gerçekten ilerler. Üç öğenin de kilidi açılır ama
   //    **yalnız sakin parçanın dosyası iner**: maç parçası maç başlarken yüklenir.
   await page.locator('#yg-home h1').click();
-  await bekleCalsin(page, 'yakar-2-devre-arasi');
+  await bekleCalsin(page, 'yakar-6-mactan-sonra');
   const acilis = await durumu(page);
   assert.equal(acilis.webAudio, true, 'ses düzeyi Web Audio kazanç düğümünden geçmeli (iOS\'ta audio.volume salt okunur)');
   assert.equal(acilis.parcalar.length, 3, 'ilk dokunuşta üç parçanın da kilidi açılır (iOS için)');
-  assert.deepEqual(acilis.parcalar.filter(p => p.yuklendi).map(p => p.ad), ['yakar-2-devre-arasi'],
+  assert.deepEqual(acilis.parcalar.filter(p => p.yuklendi).map(p => p.ad), ['yakar-6-mactan-sonra'],
     'menüde yalnız sakin parçanın dosyası inmeli');
   const menu = await calan(page);
-  assert.equal(menu.ad, 'yakar-2-devre-arasi', 'menüde sakin parça çalar');
+  assert.equal(menu.ad, 'yakar-6-mactan-sonra', 'menüde sakin parça çalar');
   assert.equal(menu.loop, true, 'tek parçalı sahne kendi kendine döner');
   const t0 = menu.currentTime;
   await page.waitForTimeout(1200);
@@ -84,33 +84,33 @@ try {
   // 3) Maç başlayınca ana temaya geçilir; sakin parça susar. Geçiş 1,8 sn çapraz süzülmedir.
   await page.locator('#yg-start').click();
   await page.waitForFunction(() => window.__yakarGol.state().started, null, { timeout: 20000 });
-  await bekleCalsin(page, 'yakar-1-spor-marsi');
+  await bekleCalsin(page, 'yakar-5-soyunma-odasi');
   const mac = await calan(page);
-  assert.equal(mac.ad, 'yakar-1-spor-marsi', 'maç başlayınca ana temaya geçilir');
+  assert.equal(mac.ad, 'yakar-5-soyunma-odasi', 'maç başlayınca ana temaya geçilir');
   assert.equal((await durumu(page)).sahne, 'mac', 'müzik sahnesi: maç');
-  await bekleSussun(page, 'yakar-2-devre-arasi');
-  const sakin = (await durumu(page)).parcalar.find(p => p.ad === 'yakar-2-devre-arasi');
+  await bekleSussun(page, 'yakar-6-mactan-sonra');
+  const sakin = (await durumu(page)).parcalar.find(p => p.ad === 'yakar-6-mactan-sonra');
   assert.ok(sakin.paused, 'sakin parça maçta susar');
   olcum.mac = { parca: mac.ad, currentTime: +mac.currentTime.toFixed(2), seviye: mac.seviye, sakinDurdu: sakin.paused };
 
   // 4) Son dakika (saatte 60 sn kaldı): heyecan parçası devralır.
   await page.evaluate(() => { window.__yakarGol.world().time = 300 - 30; });
-  await bekleCalsin(page, 'yakar-3-son-dakika');
+  await bekleCalsin(page, 'yakar-4-mahalle-sabahi');
   const doruk = await calan(page);
-  assert.equal(doruk.ad, 'yakar-3-son-dakika', 'son dakikada heyecan parçasına geçilir');
+  assert.equal(doruk.ad, 'yakar-4-mahalle-sabahi', 'son dakikada heyecan parçasına geçilir');
   assert.equal((await durumu(page)).sahne, 'doruk', 'müzik sahnesi: doruk');
   assert.equal(doruk.loop, false, 'iki parçalı sahnede döngü yok: sırayla çalınır');
   olcum.doruk = { parca: doruk.ad, currentTime: +doruk.currentTime.toFixed(2), seviye: doruk.seviye };
 
   // 4b) Parça bitmeden öbürü üstüne açılır: heyecan ↔ ana tema sırayla gider, araya sessizlik girmez.
   await page.evaluate(() => {
-    const a = [...document.querySelectorAll('audio')].find(x => x.dataset.parca === 'yakar-3-son-dakika');
+    const a = [...document.querySelectorAll('audio')].find(x => x.dataset.parca === 'yakar-4-mahalle-sabahi');
     a.currentTime = Math.max(0, a.duration - 2.4);
   });
-  await bekleCalsin(page, 'yakar-1-spor-marsi', 0.1);
-  await bekleSussun(page, 'yakar-3-son-dakika');
+  await bekleCalsin(page, 'yakar-5-soyunma-odasi', 0.1);
+  await bekleSussun(page, 'yakar-4-mahalle-sabahi');
   const devir = await calan(page);
-  assert.equal(devir.ad, 'yakar-1-spor-marsi', 'heyecan parçası bitince ana tema devralır');
+  assert.equal(devir.ad, 'yakar-5-soyunma-odasi', 'heyecan parçası bitince ana tema devralır');
   olcum.devir = { parca: devir.ad, currentTime: +devir.currentTime.toFixed(2) };
 
   // 5) Mola = devre arası: Esc sakin parçaya döner. Molanın üstünde açılan Kontroller perdesi müziği oynatmamalı
@@ -118,7 +118,7 @@ try {
   await page.keyboard.press('Escape');
   assert.ok(await page.locator('#yg-pause').isVisible(), 'Esc duraklatma menüsünü açar');
   assert.equal(await page.locator('#yg-resume').textContent(), 'DEVAM ET →', 'standart ilk düğme');
-  await bekleCalsin(page, 'yakar-2-devre-arasi');
+  await bekleCalsin(page, 'yakar-6-mactan-sonra');
   assert.equal((await durumu(page)).sahne, 'sakin', 'molada devre arası parçası çalar');
   await page.locator('#yg-pause-help').click();
   await page.waitForTimeout(900);
@@ -128,7 +128,7 @@ try {
   await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => window.__yakarGol.state().screen), 'pause', 'Kontroller kapanınca molaya dönülür');
   const molaSonrasi = await calan(page);
-  assert.equal(molaSonrasi.ad, 'yakar-2-devre-arasi', 'Kontroller kapanınca hâlâ devre arası parçası');
+  assert.equal(molaSonrasi.ad, 'yakar-6-mactan-sonra', 'Kontroller kapanınca hâlâ devre arası parçası');
   olcum.mola = { parca: molaSonrasi.ad, sahne: 'sakin', kontrollerEtkisi: 'yok' };
 
   // 5b) Efekt sesi düğmesi müziği etkilemez: ikisi bağımsızdır.
@@ -149,14 +149,14 @@ try {
   const kapaliyken = (await durumu(page)).parcalar;
   assert.ok(kapaliyken.every(p => p.paused || p.seviye === 0), 'müzik kapanınca hiçbir parça duyulmaz');
   assert.equal(await page.evaluate(() => localStorage.getItem('yg.muzik')), 'off', 'ayar tarayıcıda saklanır');
-  const durdugunuYer = kapaliyken.find(p => p.ad === 'yakar-2-devre-arasi').currentTime;
+  const durdugunuYer = kapaliyken.find(p => p.ad === 'yakar-6-mactan-sonra').currentTime;
   assert.ok(durdugunuYer > 0.5, 'kapanan parça başa sarmamalı');
   olcum.kapali = kapaliyken.map(p => ({ parca: p.ad, paused: p.paused, seviye: p.seviye }));
 
   await page.locator('#yg-pause-muzik').click(); // yeniden aç: aynı sahnenin parçası kaldığı yerden sürer
-  await bekleCalsin(page, 'yakar-2-devre-arasi', durdugunuYer);
+  await bekleCalsin(page, 'yakar-6-mactan-sonra', durdugunuYer);
   const sureni = await calan(page);
-  assert.equal(sureni.ad, 'yakar-2-devre-arasi', 'yeniden açınca aynı sahnenin parçası döner');
+  assert.equal(sureni.ad, 'yakar-6-mactan-sonra', 'yeniden açınca aynı sahnenin parçası döner');
   assert.ok(sureni.currentTime >= durdugunuYer, `kaldığı yerden sürmeli (${durdugunuYer.toFixed(2)} → ${sureni.currentTime.toFixed(2)})`);
   olcum.yenidenAcma = { parca: sureni.ad, durdugu: +durdugunuYer.toFixed(2), devam: +sureni.currentTime.toFixed(2) };
 
@@ -176,7 +176,7 @@ try {
   // kullanıcı girdisidir: kilitler orada açılır ve müzik hemen başlar.
   await page.locator('#yg-muzik').click();
   assert.equal(await page.evaluate(() => localStorage.getItem('yg.muzik')), 'on', 'ayar geri açılabilir');
-  await bekleCalsin(page, 'yakar-2-devre-arasi');
+  await bekleCalsin(page, 'yakar-6-mactan-sonra');
 
   // 7) Gösteri kipi: video betiği müziğini kendi ekler, oyun hiç ses öğesi kurmaz.
   await page.goto(url + '/?gosteri=1');
@@ -202,7 +202,7 @@ try {
   assert.equal(await calan(telPage), null, 'dokunmadan önce telefonda da hiçbir şey çalmaz');
 
   await telPage.tap('#yg-home h1'); // **tek** dokunuş
-  await bekleCalsin(telPage, 'yakar-2-devre-arasi');
+  await bekleCalsin(telPage, 'yakar-6-mactan-sonra');
   const tel = await calan(telPage);
   const telDurum = await durumu(telPage);
   assert.equal(telDurum.parcalar.length, 3, 'ilk dokunuşta üç parçanın da kilidi açılmalı');
@@ -212,9 +212,9 @@ try {
   // Maç parçası çizim döngüsünden başlar (dokunuşun dışından): kilidi açıldığı için burada da çalar.
   await telPage.tap('#yg-start');
   await telPage.waitForFunction(() => window.__yakarGol.state().started, null, { timeout: 20000 });
-  await bekleCalsin(telPage, 'yakar-1-spor-marsi');
+  await bekleCalsin(telPage, 'yakar-5-soyunma-odasi');
   const telMac = await calan(telPage);
-  assert.equal(telMac.ad, 'yakar-1-spor-marsi', 'telefonda maç parçası da çalmalı');
+  assert.equal(telMac.ad, 'yakar-5-soyunma-odasi', 'telefonda maç parçası da çalmalı');
   olcum.dokunmatikMac = { parca: telMac.ad, currentTime: +telMac.currentTime.toFixed(2), seviye: telMac.seviye };
   assert.deepEqual(telHata, [], 'telefon sayfası hatasız');
   await telCtx.close();

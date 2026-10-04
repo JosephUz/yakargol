@@ -136,9 +136,9 @@ parça), yollar görelidir (Capacitor'da da çalışır, sonraki APK'ya kendili�
 
 | Sahne | Parça | Nerede |
 | --- | --- | --- |
-| sakin | `yakar-2-devre-arasi` · *Devre Arası* | Giriş ekranı, lobi, mola (devre arası), maç sonu karnesi |
-| mac | `yakar-1-spor-marsi` · *Spor Marşı* | Maç |
-| doruk | `yakar-3-son-dakika` · *Son Dakika Golü* ↔ *Spor Marşı* | Son dakika (saatte ≤ 60 sn) ve altın gol; parça bitince sırayla |
+| sakin | `yakar-6-mactan-sonra` · *Devre Arası* | Giriş ekranı, lobi, mola (devre arası), maç sonu karnesi |
+| mac | `yakar-5-soyunma-odasi` · *Spor Marşı* | Maç |
+| doruk | `yakar-4-mahalle-sabahi` · *Son Dakika Golü* ↔ *Spor Marşı* | Son dakika (saatte ≤ 60 sn) ve altın gol; parça bitince sırayla |
 
 Müzik ses düzeyi efektlerin altındadır (varsayılan %35) ve **Web Audio kazanç düğümünden** geçer: iOS Safari'de
 `audio.volume` salt okunurdur, orada sürgü ve çapraz geçiş başka türlü çalışmaz. Açık / kapalı ve düzey tarayıcıda
