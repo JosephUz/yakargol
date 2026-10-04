@@ -171,6 +171,21 @@ export const OLCUM = 'https://www.josephuz.com/api/olay';
  * kalabalığı yumuşakça izler; ölçüm olayı gitmez ve sunucuya bağlanılmaz. Uygulamada (isApp) açılmaz, normal oyun
  * bu ayarlardan hiç etkilenmez.
  */
+/**
+ * **Otopilot** (yalnız web, `?otopilot=1`; bkz. src/otopilot.js): içerik videoları için gerçek bir maç, ama senin
+ * oyuncunu da bot oynar. Gösteriden farkı maçın **normal** kurallarla ve normal bot ayarlarıyla koşmasıdır
+ * (`w.gosteri` kurulmaz): burada yalnız kamera bakışının topa dönme hızı ve maç sonrası bekleme ayarlanır.
+ */
+export const OTOPILOT = {
+  /** Maç bitince yeni maç kurulana kadar beklenen saniye (karne ekranı hiç açılmaz). */
+  yenidenBasla: 2,
+  /**
+   * Omuz kamerasında bakışın topa dönme hızı (1/sn): otopilotun "faresi". Büyük değer kadrajı sert çevirir, küçük
+   * değer topun gerisinde kalır; oyuncunun fareyle yaptığı takibe en yakın aralık 2-3'tür.
+   */
+  bakis: 2.6,
+};
+
 export const GOSTERI = {
   /** İlk düdük ve golden sonraki başlama beklemesi (normalde MATCH.kickoff / MATCH.restart): ilk saniyede aksiyon olsun. */
   kickoff: 0.25, restart: 0.5,

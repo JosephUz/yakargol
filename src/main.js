@@ -3,6 +3,7 @@ import { createCinema } from './cinema.js';
 import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
 import { createRuzgarGosteri } from './gosteri-ruzgar.js';
 import { createGosteri, gosteriKip } from './gosteri.js';
+import { createOtopilot, otopilotAcik } from './otopilot.js';
 import { createInput } from './input.js';
 import { createLobby } from './lobby.js';
 import { createMuzik, sahneSec } from './muzik.js';
@@ -46,6 +47,11 @@ export async function start(root) {
   /** Gösteri sahnesi (yalnız web): `?gosteri=1` kendi kendine oynanan maç (gosteri.js), `?gosteri=ruzgar` rüzgar şutu sahnesi (gosteri-ruzgar.js). */
   const kip = gosteriKip();
   const gosteri = kip === 'ruzgar' ? createRuzgarGosteri(root) : kip ? createGosteri() : null;
+  /**
+   * Otopilot (`?otopilot=1`, bkz. otopilot.js): gösteri değil **gerçek maç**; senin oyuncunu da bot oynar, kamera ve
+   * arayüz normal oyundaki gibi kalır. Gösteriyle birlikte açılmaz (gösteri önceliklidir).
+   */
+  const otopilot = gosteri || !otopilotAcik() ? null : createOtopilot();
   const touch = touchDevice();
   root.classList.toggle('touch', touch);
   const view = createView(root.querySelector('#yg-view'), { mobile: touch, iso: gosteri ? GOSTERI.iso : null, omuz: gosteri?.omuz || null });
@@ -104,15 +110,15 @@ export async function start(root) {
     testMode,
     touch: touch && root,
     // Gösteride girdi hiç okunmaz: tuş, fare ve dokunma yok sayılır, fare kilitlenmez, mola açılmaz.
-    playing: () => !gosteri && active(),
+    playing: () => !gosteri && !otopilot && active(),
     onHelp: help,
     onCamera: () => toggleCamera(),
     onPause: pause,
     onLook: (dx, dy) => { if (!cine || cine.phase === 'aim') view.look(dx, dy); },
     onPoint: (x, y) => view.point(x, y),
     canLock: () => view.cameraMode !== 'iso',
-    onUnlock: () => { if (unlockQuiet) { unlockQuiet = false; return; } if (!gosteri && active() && view.cameraMode !== 'iso') show('pause'); },
-    onBlur: () => { if (gosteri) return; if (active()) show('pause'); else input.clear(); },
+    onUnlock: () => { if (unlockQuiet) { unlockQuiet = false; return; } if (!gosteri && !otopilot && active() && view.cameraMode !== 'iso') show('pause'); },
+    onBlur: () => { if (gosteri || otopilot) return; if (active()) show('pause'); else input.clear(); },
   });
 
   function show(next) {
@@ -136,13 +142,15 @@ export async function start(root) {
     started = true; acc = 0;
     // Gösteri: on koltuk da bot, ölçüm yok, tam ekran ve fare kilidi yok (bkz. gosteri.js).
     if (gosteri) { gosteri.kur(w); show(null); return; }
+    // Otopilot: senin koltuğun da bota verilir; ölçüm, tam ekran ve fare kilidi yok (bkz. otopilot.js).
+    if (otopilot) { otopilot.kur(w); show(null); return; }
     macBasladi(); // ölçüm: çevrimdışı maç başladı
     if (touch) enterFullscreen();
     show(null); input.lock();
   }
   function resume() { show(null); input.lock(); if (touch) enterFullscreen(); }
   function help() {
-    if (gosteri) return; // gösteride perde açılmaz: kip girdisiz döner (bkz. gosteri.js)
+    if (gosteri || otopilot) return; // gösteride / otopilotta perde açılmaz: kip girdisiz döner
     if (screen === 'help') { closeHelp(); return; }
     helpReturn = screen; show('help');
   }
@@ -154,7 +162,7 @@ export async function start(root) {
   const altEkran = () => (screen === 'help' ? helpReturn : screen);
   /** Esc: kilitliyken tarayıcı Esc'yi kilidi bırakmaya harcar (o da molaya sokar); kısa süre içindeki ikinci Esc yok sayılır. */
   function pause() {
-    if (gosteri) return; // gösteride mola yok: kip girdisiz döner (bkz. gosteri.js)
+    if (gosteri || otopilot) return; // gösteride / otopilotta mola yok: kip girdisiz döner
     if (!started || screen === 'home' || screen === 'results' || screen === 'lobby') return;
     if (screen === 'help') { closeHelp(); return; }
     if (screen === 'pause') { if (performance.now() - pausedAt > 250) resume(); return; }
@@ -189,7 +197,7 @@ export async function start(root) {
 
   // ---------- Çevrim içi ----------
   // Gösteride sunucuya hiç bağlanılmaz: WebSocket açılmaz, oda / davet linki okunmaz.
-  const net = onlineEnabled() && !gosteri ? createNetClient({
+  const net = onlineEnabled() && !gosteri && !otopilot ? createNetClient({
     onWelcome() {
       lobby.setServer(true);
       if (pending) { const go = pending; pending = null; go(); return; }
@@ -403,8 +411,9 @@ export async function start(root) {
       if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
     }
     w.events.length = 0;
-    // Gösteride karne açılmaz ve ölçüm gitmez: birkaç saniye sonra yeni maç kurulur (bkz. gosteri.guncelle).
-    if (gosteri) return;
+    // Gösteride ve otopilotta karne açılmaz, ölçüm gitmez: birkaç saniye sonra yeni maç kurulur
+    // (bkz. gosteri.guncelle, otopilot.guncelle).
+    if (gosteri || otopilot) return;
     if (!online && w.winner !== null && screen !== 'results') { show('results'); ui.results(w); macBitti(); }
   }
 
@@ -423,7 +432,7 @@ export async function start(root) {
     // lobi, mola, karne) sakin parça. Aynı sahne yeniden verilince hiçbir şey olmaz, bu yüzden her kareden sorulur:
     // ekran geçişlerini tek tek kancalamaya gerek kalmaz. Gösteride `muzik.kapali` olduğu için çağrı boşa düşer.
     muzik.sahne(sahneSec(started, altEkran(), w));
-    if (started && !gosteri) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
+    if (started && !gosteri && !otopilot) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
     if (online && started) {
       // Maçı sunucu koşturur: girdi gider, gelen durum ara değerle çizilir. Molada da maç sürer (girdi boş).
       const move = active() ? input.move(view) : null;
@@ -447,6 +456,8 @@ export async function start(root) {
       cinema.tick(w, dt);
       // Maç bittiyse birkaç saniye sonra yenisi kurulur: gösteri girdisiz döner durur.
       if (gosteri) gosteri.guncelle(dt, w, begin);
+      // Otopilot: kameranın bakışını fare yerine otopilot topa çevirir, maç bitince yenisi kurulur (bkz. otopilot.js).
+      if (otopilot) { if (!cine) otopilot.bakis(dt, w, view); otopilot.guncelle(dt, w, begin); }
     } else acc = 0;
     if (started) syncCine(dt);
     // Gösteride arayüz yoktur (bkz. style.css `.gosteri`): panel, gösterge ve işaret güncellemeleri hiç koşmaz.
@@ -482,9 +493,9 @@ export async function start(root) {
    * denetleyebilsin. Yayına sızan bir yetki değil — dünya ve görünüm yalnız okunur, `step` zaten her karede koşan
    * simülasyon adımıdır; kip sunucuya bağlanmadığı için buradan başkasının maçına dokunulamaz.
    */
-  if (testMode || gosteri) {
+  if (testMode || gosteri || otopilot) {
     window.__yakarGol = {
-      world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, gosteri: !!gosteri, cine: cine && cine.phase }),
+      world: () => w, view: () => view, net: () => net, state: () => ({ screen, started, online, gosteri: !!gosteri, otopilot: !!otopilot, cine: cine && cine.phase }),
       odak: () => (gosteri ? gosteri.nokta() : null),
       muzik: () => muzik.durum(),
       gosteriDurum: () => gosteri?.durum?.() ?? null,
@@ -507,9 +518,12 @@ export async function start(root) {
     root.querySelector('#yg-gosteri').hidden = false;
     begin();
   }
+  // Otopilot: menü ve lobi atlanır, maç hemen başlar. Arayüz **gizlenmez** (bu bir gösteri değil, oynanan maç);
+  // yalnız tuşlara basan sen değilsin (bkz. otopilot.js).
+  if (otopilot) begin();
   requestAnimationFrame(frame);
   // Çok oyunculusu açık sekme WebSocket bağlantısıyla sayılır; kapalıysa (uygulama) sinyalle. Gösteride sinyal de yok.
-  if (!testMode && !net && !gosteri) heartbeat();
+  if (!testMode && !net && !gosteri && !otopilot) heartbeat();
 }
 
 /** Dokunmatikte kısa titreşim: şut / pas, top kapma, yanma, gol. */
