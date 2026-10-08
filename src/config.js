@@ -280,17 +280,18 @@ export const GOSTERI_RUZGAR = {
  */
 export const GOSTERI_ATES = {
   /**
-   * Müziğin işaretleri (saniye). `ilkTemas` / `ikinciTemas` topun yere ilk ve ikinci değdiği anlar (128 BPM'de 4. ve
-   * 6. vuruş): top lensten **hızlı** düşer, yere çarpar ve iki kez sekerek `inis`te (8. vuruş) durur — düz ve yavaş
-   * bir iniş açılışı sıkıcı buluyordu (Yusuf, 8 Ekim).
-   * `inis` top yere oturur ve iki oyuncu yanlardan kayar; `ruzgar` / `ates` / `ikisi`
-   * yüklemelerin sırayla ve sonunda üst üste bindiği anlar; `hucum` topun kameraya doğru fırladığı an; `yapisma`
-   * topun lense çarptığı an; `dusus` topun lensten aşağı düşmeye başlaması; `takimlar` 5'e 5 diziliş ve büyük
-   * "YAKAR GOL" başlığı; `bitis` oyun görüntüsünün son saniyesi (sonrası ffmpeg'in josephuz.com kapanışı).
+   * Müziğin işaretleri (saniye). `ilkTemas` topun yere **ilk** değdiği an — 128 BPM'de 3. vuruş. Müziğe hizalanan
+   * tek temas budur: topun atılış hızı bunu tutturacak biçimde hesaplanır, kalan sekmeleri fizik belirler
+   * (bkz. gosteri-ates.js dususYolu — sabit yerçekimi, her sekmede enerji kaybı). Sekmeleri tek tek vuruşlara
+   * oturtmak yapay duruyordu (Yusuf, 8 Ekim).
+   * `inis` top durur ve iki oyuncu yanlardan kayarak gelir; aynı karede **iki yükleme birden** başlar ve
+   * `yapisma`ya kadar birlikte büyür. `hucum` topun kameraya doğru fırladığı an; `yapisma` topun lense çarptığı an;
+   * `dusus` topun lensten aşağı düşmeye başlaması; `takimlar` 5'e 5 diziliş ve büyük "YAKAR GOL" başlığı;
+   * `bitis` oyun görüntüsünün son saniyesi (sonrası ffmpeg'in josephuz.com kapanışı).
    * `tekrar` sahnenin baştan kurulduğu saniye: çekim `bitis`te kesildiği için yalnız tarayıcıda açık bırakıldığında
    * (ve duman testinde) işe yarar.
    */
-  isaret: { inis: 3.75, ilkTemas: 1.88, ikinciTemas: 2.81, ruzgar: 3.95, ates: 6.4, ikisi: 8.8, hucum: 11.05, yapisma: 11.25, dusus: 11.55, takimlar: 12.19, bitis: 16.2, tekrar: 18.7 },
+  isaret: { inis: 3.75, ilkTemas: 1.40625, hucum: 11.05, yapisma: 11.25, dusus: 11.55, takimlar: 12.19, bitis: 16.2, tekrar: 18.7 },
   /**
    * Kadrajlar: `x,y,z` kameranın yeri, `tx,ty,tz` baktığı nokta (bkz. view/camera.js setPose — bu sahnede kamera
    * omuz kuralına değil doğrudan bu değerlere oturur).
@@ -311,19 +312,30 @@ export const GOSTERI_ATES = {
   },
   /**
    * Top: `ileri` / `alt` açılışta topun lensin kaç birim önünde ve altında doğduğu (lensin tam önünde doğsa ekranı
-   * kaplar, kaleye bakan kadraj hiç görünmezdi), `yer` indiği nokta, `zipla` birinci ve ikinci sekmenin tepe
-   * yüksekliği, `havada` yükleme boyunca yerden kalktığı
+   * kaplar, kaleye bakan kadraj hiç görünmezdi), `yer` durduğu nokta, `havada` yükleme boyunca yerden kalktığı
    * yükseklik (yüklenen top iki oyuncunun arasında havalanır), `lens` yapışma anında kameraya uzaklığı. 0,95'te
    * 0,38 yarıçaplı top kadrajı enine tamamen, boyuna üçte ikisinden fazla kaplar: ekranı doldurur ama topluluğu
    * da gösterir — daha yakında (0,6) kadraj soyut renk lekelerine dönüyor, top olduğu anlaşılmıyordu.
+   *
+   * Açılıştaki düşüşün fiziği (bkz. gosteri-ates.js dususYolu):
+   *  - `yercekimi` sabit yerçekimi (birim/sn²). Oyunun kendi değeri: parçacıklar `vy -= dt * 12` ile düşer
+   *    (bkz. view/effects.js). Simülasyonun topu hep yerde yuvarlandığı için ball.js'te dikey eksen yoktur.
+   *  - `sekme` dikey geri sıçrama katsayısı: her temasta dikey hızın kalan oranı, yani her sekme bir öncekinden
+   *    daha alçak ve daha kısa olur.
+   *  - `yatay` her temasta yatay hızın kalan oranı (sürtünme): top sekerken yavaşlar.
+   *  - `durak` bu dikey hızın altında artık sekmez, son parçayı yuvarlanarak alır ve `inis`te tam `yer`de durur.
    */
-  top: { ileri: 1.5, alt: 0.55, yer: { x: 0, z: 0 }, zipla: [1.9, 0.7], havada: 0.55, lens: 0.95, son: { x: 0, z: -5.5 } },
+  top: { ileri: 1.5, alt: 0.55, yer: { x: 0, z: 0 }, yercekimi: 12, sekme: 0.52, yatay: 0.6, durak: 1.2,
+    havada: 0.55, lens: 0.95, son: { x: 0, z: -5.5 } },
   /**
    * Karşılıklı iki oyuncu: topun `x` birim solunda ve sağında, `giris` birim uzaktan `kayma` saniyede kayarak gelir
-   * (kayma pozu için bkz. view/actors.js `p.dash`). `dolum` yüklemenin en büyük değeri: 1'den büyük olduğu için
-   * çevredeki alev ve rüzgar sahne sonunda oyunun normal doluşundan taşar — "giderek büyür" istenen budur.
+   * (kayma pozu için bkz. view/actors.js `p.dash`). `dolum` yüklemenin `yapisma` anındaki değeri: iki yükleme de
+   * `inis`te **aynı karede** başlar, birlikte büyür ve burada birlikte dolar (Yusuf, 8 Ekim: sırayla gelen
+   * sahneleme kaldırıldı). `taban` yüklemenin ilk karedeki değeri: sıfırdan başlasaydı iki çevre de ilk saniyelerde
+   * görünürlük eşiğinin (view/actors.js, 0,12) altında kalır ve "aynı anda başladı" hiç görülmezdi. `egri`
+   * büyümenin üssü: 1'den büyük olduğu için dolum sona doğru hızlanır — tırmanış duygusu buradan gelir.
    */
-  ikili: { x: 1.15, giris: 4.2, kayma: 0.55, dolum: 0.9 },
+  ikili: { x: 1.15, giris: 4.2, kayma: 0.55, dolum: 1, taban: 0.22, egri: 1.3 },
   /**
    * Kapanış dizilişi: her takımın beş oyuncusu kameradan uzaklaşan bir sıra hâlinde, soldakiler -x'te sağdakiler
    * +x'te. İlk oyuncu (`ilkX`, `ilkZ`) kameraya en yakın; her sıradaki bir sonraki `adimX` kadar daha kenara,

@@ -44,15 +44,78 @@ function onunde(k, uzak) {
   return { x: k.x + f.x * uzak, y: k.y + f.y * uzak, z: k.z + f.z * uzak };
 }
 
+/**
+ * **Açılıştaki düşüşün fiziği.** Anahtar kare yoktur: top lensin önünden atılır, sabit yerçekiminde (`top.yercekimi`,
+ * oyunun parçacık yerçekimi — bkz. view/effects.js) serbest uçar, her temasta dikey hızının `top.sekme`, yatay
+ * hızının `top.yatay` kadarını korur. Böylece her sekme bir öncekinden **daha alçak ve daha kısa** olur; aralar
+ * kendiliğinden kısalır. Dikey hızı `top.durak`ın altına düşünce artık sekmez, kalan yolu yuvarlanarak alır.
+ *
+ * Müziğe hizalanan **tek** nokta ilk yere çarpıştır (`isaret.ilkTemas`): atılış yüksekliği kadrajdan geldiği için
+ * sabittir, bu yüzden **dikey atılış hızı** o temasa denk gelecek biçimde çözülür
+ * (y(T) = 0 → vy0 = (g·T²/2 − h0)/T). Yatay hız da sahnenin kendi denkleminden gelir: bütün evrelerin yatay yolu
+ * toplandığında top tam `isaret.inis` anında tam `top.yer` noktasında durmalıdır (oyuncular tam orada kayarak gelir).
+ *
+ * Dönen `evreler`: her biri bir uçuş (ya da son yuvarlanma) parçası — `t0` başlangıç saniyesi, `sure` uzunluğu,
+ * `y0`/`v` dikey başlangıç yüksekliği ve hızı, `s0`/`vx` yatay yol ve hız, `yuvarlanma` son parça mı.
+ * `temaslar` topun yere değdiği saniyeler (toz patlaması için).
+ */
+function dususYolu(A) {
+  const I = A.isaret, T = A.top, g = T.yercekimi;
+  const bas = onunde(A.kamera.dusus, T.ileri);
+  bas.y -= T.alt;
+  const h0 = bas.y - 0.43;
+  // İlk temas tam `ilkTemas`ta olsun: dikey atılış hızını çöz (artı değer hafif yukarı, eksi aşağı atılış demek).
+  const vy0 = (g * I.ilkTemas * I.ilkTemas / 2 - h0) / I.ilkTemas;
+  const evreler = [{ t0: 0, sure: I.ilkTemas, y0: h0, v: vy0, yatayOran: 1, yuvarlanma: false }];
+  const temaslar = [I.ilkTemas];
+  let t0 = I.ilkTemas, hiz = (g * I.ilkTemas - vy0) * T.sekme, oran = T.yatay;
+  while (hiz >= T.durak && t0 < I.inis) {
+    const sure = 2 * hiz / g;
+    evreler.push({ t0, sure, y0: 0, v: hiz, yatayOran: oran, yuvarlanma: false });
+    t0 += sure; temaslar.push(t0);
+    hiz *= T.sekme; oran *= T.yatay;
+  }
+  // Son parça: top yerde, kalan süreyi yuvarlanarak alır ve hızı `inis`te sıfıra iner.
+  evreler.push({ t0, sure: Math.max(0.001, I.inis - t0), y0: 0, v: 0, yatayOran: oran, yuvarlanma: true });
+
+  // Yatay hız: bütün evrelerin yolu toplamı, atılış noktasından `top.yer`e olan uzaklığa eşit olmalı.
+  const uzaklik = Math.hypot(T.yer.x - bas.x, T.yer.z - bas.z);
+  const katsayi = evreler.reduce((top, e) => top + e.yatayOran * e.sure * (e.yuvarlanma ? 0.5 : 1), 0);
+  const vh = uzaklik / katsayi;
+  let s = 0;
+  for (const e of evreler) {
+    e.vx = vh * e.yatayOran; e.s0 = s;
+    s += e.vx * e.sure * (e.yuvarlanma ? 0.5 : 1);
+  }
+  const u = uzaklik || 1;
+  return { bas, g, evreler, temaslar, yon: { x: (T.yer.x - bas.x) / u, z: (T.yer.z - bas.z) / u } };
+}
+
+/** Düşüş yolunun `t` anındaki durumu: yerden yükseklik ve atılış noktasından alınan yatay yol. */
+function dususAn(yol, t) {
+  const e = yol.evreler.find(p => t < p.t0 + p.sure) || yol.evreler[yol.evreler.length - 1];
+  const τ = Math.max(0, Math.min(e.sure, t - e.t0));
+  // Yuvarlanmada hız doğrusal olarak sıfıra iner (s = v·τ·(1 − τ/2L)); uçuşta sabittir.
+  const s = e.s0 + (e.yuvarlanma ? e.vx * τ * (1 - τ / (2 * e.sure)) : e.vx * τ);
+  return { yuk: Math.max(0, e.y0 + e.v * τ - yol.g * τ * τ / 2), s, hiz: e.yuvarlanma ? e.vx * (1 - τ / e.sure) : e.vx };
+}
+
 export function createAtesGosteri(root) {
   const baslikEl = root.querySelector('#yg-gosteri-baslik');
   // Kameraya verilen sahte "oyuncu": bu sahnede kamera setPose ile kurulduğu için yalnız view.render'ın istediği
   // durgun alanlar lazım (hızlı koşu açısı genişlemesin diye sprint 0).
   const odakNokta = { x: 0, z: 0, angle: 0, team: 0, role: 0, burn: 0, stun: 0, air: 0, jump: 0, sprint: 0, vx: 0, vz: 0 };
   let t = 0, sol = null, sag = null, dizi = { sol: [], sag: [] }, kadraj = A.kamera.dusus, dolum = { ruzgar: 0, ates: 0 }, kivilcim = 0, toz = 0;
+  // Açılış düşüşünün fiziği bir kez çözülür (kadrajlar ve sabitler değişmiyor): her kare bu yoldan okunur.
+  const yol = dususYolu(A);
   /** Çekim betiğinin okuduğu sahne durumu (window.__gosteri): kabul ölçütü bunun üstünde işler. */
   const olcum = { saniye: 0, evre: 'dusus', inisAt: 0, yapismaAt: 0, takimlarAt: 0, enDolum: 0,
-    enYukseklik: 0, lensUzak: 99, yapismaKare: 0, dizilis: { sol: 0, sag: 0 }, tur: 0 };
+    enYukseklik: 0, lensUzak: 99, yapismaKare: 0, dizilis: { sol: 0, sag: 0 }, tur: 0,
+    // Düşüşün fiziği ve iki yüklemenin başladığı an: kabul ölçütü bunlara bakar (bkz. ajanlar/icerik/short-uret.mjs).
+    ruzgarBas: 0, atesBas: 0,
+    temaslar: yol.temaslar.map(s => +s.toFixed(3)),
+    // Her sekmenin tepe yüksekliği (v²/2g): bir öncekinden alçak olmalı — düşüşün doğallığının ölçüsü.
+    sekmeYuksek: yol.evreler.filter(e => e.t0 > 0 && !e.yuvarlanma).map(e => +(e.v * e.v / (2 * yol.g)).toFixed(3)) };
 
   /** Sahne sabit tohumla kurulur: aynı video kare kare yeniden üretilebilsin (rastgele tur yok). */
   const tohum = () => MATCH.seed;
@@ -83,7 +146,7 @@ export function createAtesGosteri(root) {
     // Ölçümler tur başına sıfırlanır (`tur` ve `dizilis` kalır): çekim ilk turu keser, duman testi turun kendi
     // dönüm noktalarına bakar.
     Object.assign(olcum, { saniye: 0, evre: 'dusus', inisAt: 0, yapismaAt: 0, takimlarAt: 0, enDolum: 0,
-      enYukseklik: 0, lensUzak: 99, yapismaKare: 0, tur: olcum.tur + 1 });
+      enYukseklik: 0, lensUzak: 99, yapismaKare: 0, ruzgarBas: 0, atesBas: 0, tur: olcum.tur + 1 });
     Object.assign(w, { winner: null, blast: null, kickoff: 0, restart: 0, time: 0, overtime: false, nextKickoff: 0, score: [0, 0], aim: null });
     w.events.length = 0;
     for (const p of w.players) {
@@ -106,6 +169,7 @@ export function createAtesGosteri(root) {
    */
   function sahnele(w) {
     const I = A.isaret, b = w.ball;
+    let dususHiz = 0;
     const yanKadraj = kadrajAra(A.kamera.yan, A.kamera.yanSon, yumusak(birim(t, I.inis, I.hucum)));
     kadraj = t >= I.yapisma
       ? kadrajAra(A.kamera.takim, A.kamera.takimSon, yumusak(birim(t, I.takimlar, I.bitis)))
@@ -113,29 +177,18 @@ export function createAtesGosteri(root) {
 
     // ---- top ----
     if (t < I.inis) {
-      /**
-       * Açılış: top lensin biraz önünde ve altında doğar ve **baştan hızlı** düşer — yolun yarısını ilk çeyrekte
-       * alır (üsler bunun için: 2,5 ve 1,6; düz ya da hızlanan bir iniş açılışı sıkıcı yapıyordu). `ilkTemas`ta
-       * yere çarpar, sonra iki kez sekerek `inis`te durur; üç temas da müziğin 4., 6. ve 8. vuruşuna denk gelir.
-       */
-      const bas = onunde(A.kamera.dusus, A.top.ileri);
-      bas.y -= A.top.alt;
-      if (t < I.ilkTemas) {
-        const u = birim(t, 0, I.ilkTemas), yol = 1 - (1 - u) ** 2.5;
-        b.x = ara(bas.x, A.top.yer.x, yol); b.z = ara(bas.z, A.top.yer.z, yol);
-        b.yuk = (bas.y - 0.43) * (1 - u) ** 1.6;
-      } else {
-        const ikinci = t >= I.ikinciTemas;
-        const [bas_, son_] = ikinci ? [I.ikinciTemas, I.inis] : [I.ilkTemas, I.ikinciTemas];
-        b.x = A.top.yer.x; b.z = A.top.yer.z;
-        b.yuk = A.top.zipla[ikinci ? 1 : 0] * Math.sin(Math.PI * birim(t, bas_, son_));
-      }
+      // Açılış: top lensin önünden atılır ve gerçek fizikle (sabit yerçekimi, her temasta enerji kaybı) sekerek
+      // `inis`te tam ortada durur — bkz. dususYolu. Hiçbir sekme anı müziğe zorlanmaz, yalnız ilk temas hizalıdır.
+      const an = dususAn(yol, t);
+      b.x = yol.bas.x + yol.yon.x * an.s; b.z = yol.bas.z + yol.yon.z * an.s;
+      b.yuk = an.yuk;
       b.owner = null;
+      dususHiz = an.hiz;
       olcum.evre = 'dusus';
     } else if (t < I.hucum) {
       // Yükleme: top iki oyuncunun tam ortasında, yerden yavaşça kalkar.
       b.x = A.top.yer.x; b.z = A.top.yer.z;
-      b.yuk = A.top.havada * yumusak(birim(t, I.inis, I.ikisi));
+      b.yuk = A.top.havada * yumusak(birim(t, I.inis, I.yapisma));
       b.owner = sol.id;
       olcum.evre = 'yukleme';
       if (olcum.inisAt === 0) { olcum.inisAt = t; }
@@ -160,6 +213,9 @@ export function createAtesGosteri(root) {
       if (t >= I.takimlar && olcum.takimlarAt === 0) olcum.takimlarAt = t;
     }
     Object.assign(b, { vx: 0, vz: 0, kind: 'normal', power: 0, lock: 0, stealLock: 0, to: null, last: sol.id });
+    // Düşerken topun yatay hızı görünür olsun: ballview topu hızına göre döndürür, yani top uçarken ve sekerken
+    // kendi etrafında yuvarlanır (hızı her karede sahne yazdığı için simülasyonu sürüklemez).
+    if (dususHiz) { b.vx = yol.yon.x * dususHiz; b.vz = yol.yon.z * dususHiz; }
     if (t >= I.inis) b.owner = sol.id;
     olcum.enYukseklik = Math.max(olcum.enYukseklik, b.yuk);
     if (t >= I.yapisma && t < I.dusus) {
@@ -168,21 +224,25 @@ export function createAtesGosteri(root) {
     }
 
     // ---- yüklemeler ----
-    // Önce rüzgar, sonra ateş; `ikisi`den sonra ikisi birden `dolum` tepesine tırmanır (oyunun normal doluşunu aşar:
-    // "giderek büyür" istenen budur). Yapışmadan sonra ikisi de sönük bir düzeyde kalır: dizilişin ortasındaki top
-    // hâlâ hem rüzgarlı hem alevlidir ama başlığı bastırmaz.
+    // **İki yükleme aynı karede** (`inis`) başlar, birlikte büyür ve `yapisma`da birlikte dolar. Oyunda yakar pas
+    // dolumu (CINEMA.hold) rüzgar dolumundan (KICK.windCharge) farklı sürer; bu kipte ikisinin de görsel ilerlemesi
+    // müziğin süresine ölçeklenir, oyunun kuralları değişmez. (Yusuf, 8 Ekim: sırayla gelen sahneleme kaldırıldı.)
+    // Yapışmadan sonra ikisi de sönük bir düzeyde kalır: dizilişin ortasındaki top hâlâ hem rüzgarlı hem alevlidir
+    // ama başlığı bastırmaz.
     const tepe = A.ikili.dolum;
     if (t < I.inis) dolum = { ruzgar: 0, ates: 0 };
-    else if (t < I.hucum) dolum = {
-      ruzgar: ara(yumusak(birim(t, I.ruzgar, I.ates)), tepe, yumusak(birim(t, I.ikisi, I.hucum))),
-      ates: ara(yumusak(birim(t, I.ates, I.ikisi)), tepe, yumusak(birim(t, I.ikisi, I.hucum))),
-    };
-    else if (t < I.yapisma) dolum = { ruzgar: tepe, ates: tepe };
+    else if (t < I.yapisma) {
+      const u = birim(t, I.inis, I.yapisma);
+      const k = tepe * (A.ikili.taban + (1 - A.ikili.taban) * u ** A.ikili.egri);
+      dolum = { ruzgar: k, ates: k };
+    }
     // Lense yapışmış ve lensten düşen topta dolum kısılır: tam dolumda alevler ve rüzgar halkaları kameranın
     // 0,95 birim önündeki topu sarıp kadrajı soyut renk lekesine çeviriyordu. Top hâlâ hem rüzgarlı hem alevli,
     // ama bu kez top olduğu görülüyor.
     else dolum = { ruzgar: 0.4, ates: 0.4 };
     olcum.enDolum = Math.max(olcum.enDolum, Math.min(dolum.ruzgar, dolum.ates));
+    if (olcum.ruzgarBas === 0 && dolum.ruzgar > 0) olcum.ruzgarBas = t;
+    if (olcum.atesBas === 0 && dolum.ates > 0) olcum.atesBas = t;
     for (const p of w.players) p.sahneDolum = null;
     if (t >= I.inis && t < I.yapisma) {
       sol.sahneDolum = { wind: dolum.ruzgar, fire: 0 };
@@ -236,8 +296,8 @@ export function createAtesGosteri(root) {
   function guncelle(dt, w) {
     const onceki = t;
     t += dt;
-    // Topun yere değdiği üç an: her birinde bir toz patlaması borçlanılır (çizimde boşaltılır, bkz. cizim).
-    for (const an of [A.isaret.ilkTemas, A.isaret.ikinciTemas, A.isaret.inis]) if (onceki < an && t >= an) toz++;
+    // Topun yere değdiği her an (fizik nereye koyduysa) bir toz patlaması borçlanılır; çizimde boşaltılır (bkz. cizim).
+    for (const an of yol.temaslar) if (onceki < an && t >= an) toz++;
     if (t >= A.isaret.tekrar) { basla(w); return; }
     sahnele(w);
     olcum.saniye = t;

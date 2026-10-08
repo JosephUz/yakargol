@@ -60,16 +60,29 @@ try {
   assert.ok(dusus.top.yuk > 2, `top havada (yükseklik ${dusus.top.yuk.toFixed(2)})`);
   assert.equal(dusus.top.owner, null, 'inen top kimsenin ayağında değil');
   assert.equal(dusus.kayan, 0, 'top inmeden kimse kaymaz');
-  // İniş baştan hızlı olmalı (Yusuf'un 8 Ekim notu: yavaş iniş açılışı sıkıcı yapıyordu): 0,8. saniyede yolun
-  // yarısından çoğu alınmış olur.
-  assert.ok(dusus.top.yuk < dusus.enYukseklik * 0.5, `iniş baştan hızlı (0,8 sn'de ${dusus.top.yuk.toFixed(1)}/${dusus.enYukseklik.toFixed(1)} birim kaldı)`);
+  assert.ok(dusus.top.vx !== 0 || dusus.top.vz !== 0, 'düşen top yatay hızıyla yuvarlanır (görsel dönüş)');
   await page.screenshot({ path: 'artifacts/gosteri-ates-1-dusus.png' });
 
-  // Sekme: top yere çarpıp zıplar, ikinci sekmenin tepesinde hâlâ havadadır.
-  await saniyeyeKadar(2.3);
+  /**
+   * Düşüşün fiziği (Yusuf'un 8 Ekim notu: sekmeleri vuruşlara zorlamak yapay duruyordu). Müziğe hizalanan tek
+   * nokta ilk temastır; kalan sekmeleri sabit yerçekimi ve enerji kaybı belirler, yani her sekme bir öncekinden
+   * **daha alçak** olmalı ve aradaki süreler **kısalmalı**. Son temastan sonra top `inis`e kadar yuvarlanır.
+   */
+  const fizik = await sahne();
+  assert.ok(Math.abs(fizik.temaslar[0] - 1.40625) <= 0.01, `ilk temas müziğin vuruşunda (${fizik.temaslar[0]} sn)`);
+  assert.ok(fizik.temaslar.length >= 3, `top birkaç kez sekiyor (${fizik.temaslar.length} temas)`);
+  assert.ok(fizik.temaslar[fizik.temaslar.length - 1] <= 3.75, 'son temas inişten önce');
+  const aralar = fizik.temaslar.slice(1).map((s, i) => s - fizik.temaslar[i]);
+  for (let i = 1; i < aralar.length; i++) assert.ok(aralar[i] < aralar[i - 1], `sekme araları kısalıyor (${aralar.map(a => a.toFixed(2)).join(' > ')})`);
+  for (let i = 1; i < fizik.sekmeYuksek.length; i++) {
+    assert.ok(fizik.sekmeYuksek[i] < fizik.sekmeYuksek[i - 1], `her sekme bir öncekinden alçak (${fizik.sekmeYuksek.join(' > ')})`);
+  }
+
+  // Sekme kadrajda da görünür: ilk iki temas arasında top gerçekten havalanır.
+  await saniyeyeKadar((fizik.temaslar[0] + fizik.temaslar[1]) / 2);
   const sekme = await game(() => ({ yuk: window.__yakarGol.world().ball.yuk, evre: window.__gosteri.evre }));
   assert.equal(sekme.evre, 'dusus', 'sekmeler iniş evresinde');
-  assert.ok(sekme.yuk > 1, `top yere çarpıp sekiyor (2,3 sn'de ${sekme.yuk.toFixed(2)} birim havada)`);
+  assert.ok(sekme.yuk > 1, `top yere çarpıp sekiyor (${sekme.yuk.toFixed(2)} birim havada)`);
 
   // 3) İniş ve kayma: 3,75'te iki oyuncu biri soldan biri sağdan topun yanına gelir.
   await saniyeyeKadar(4.6);
@@ -80,12 +93,17 @@ try {
     return { g, sol: sol && { x: sol.x, aura: window.__yakarGol.view().aura(sol.id) },
       sag: sag && { x: sag.x, aura: window.__yakarGol.view().aura(sag.id) }, top: { ...w.ball } };
   });
-  assert.ok(Math.abs(inis.g.inisAt - ISARET.inis) <= PAY, `top müziğin vuruşunda iner (${inis.g.inisAt.toFixed(2)} sn)`);
+  assert.ok(Math.abs(inis.g.inisAt - ISARET.inis) <= PAY, `top müziğin vuruşunda durur (${inis.g.inisAt.toFixed(2)} sn)`);
   assert.ok(inis.sol && inis.sol.x < 0, 'bir oyuncu topun solunda');
   assert.ok(inis.sag && inis.sag.x > 0, 'öbür oyuncu topun sağında');
   assert.ok(Math.abs(inis.top.x) < 0.01 && inis.top.yuk < 1, 'top tam ikisinin ortasında, yerde');
   assert.ok(inis.sol.aura.wind, 'soldaki rüzgar şutu yüklüyor');
   assert.ok(!inis.sol.aura.fire, 'soldaki yakar pas yüklemiyor');
+  assert.ok(inis.sag.aura.fire, 'sağdaki yakar pas yüklüyor');
+  assert.ok(!inis.sag.aura.wind, 'sağdaki rüzgar yüklemiyor');
+  // İki yükleme **aynı karede** başlar (Yusuf, 8 Ekim: sırayla gelen sahneleme kaldırıldı).
+  assert.equal(inis.g.ruzgarBas, inis.g.atesBas, `iki yükleme aynı anda başlar (${inis.g.ruzgarBas.toFixed(2)} sn)`);
+  assert.ok(Math.abs(inis.g.ruzgarBas - ISARET.inis) <= PAY, 'yüklemeler topun durduğu karede başlar');
 
   // 4) Yandan yükleme: son barlarda iki yükleme aynı topta, ikisi de tam dolu.
   await saniyeyeKadar(10.2);
@@ -94,11 +112,13 @@ try {
     const sol = w.players.find(p => p.team === 0 && Math.abs(p.z) < 0.01 && Math.abs(p.x) < 3);
     const sag = w.players.find(p => p.team === 1 && Math.abs(p.z) < 0.01 && Math.abs(p.x) < 3);
     return { g: window.__gosteri, sol: v.aura(sol.id), sag: v.aura(sag.id),
-      alev: v.flames.visible, ruzgar: v.gusts.visible };
+      alev: v.flames.visible, ruzgar: v.gusts.visible,
+      ruzgarDolum: sol.sahneDolum.wind, atesDolum: sag.sahneDolum.fire };
   });
   assert.ok(yukleme.sol.wind && !yukleme.sol.fire, 'soldaki yalnız rüzgar yüklüyor');
   assert.ok(yukleme.sag.fire && !yukleme.sag.wind, 'sağdaki yalnız yakar pas yüklüyor');
   assert.ok(yukleme.alev && yukleme.ruzgar, 'iki efekt aynı topta: alevler ve rüzgar halkaları birlikte görünür');
+  assert.equal(yukleme.ruzgarDolum.toFixed(3), yukleme.atesDolum.toFixed(3), 'iki yükleme birlikte büyür (dolumları eşit)');
   assert.ok(yukleme.g.enDolum >= 0.85, `iki yükleme de tam dolar (en az ${yukleme.g.enDolum.toFixed(2)})`);
   await page.screenshot({ path: 'artifacts/gosteri-ates-2-yukleme.png' });
 
