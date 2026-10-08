@@ -49,7 +49,7 @@ export function createAtesGosteri(root) {
   // Kameraya verilen sahte "oyuncu": bu sahnede kamera setPose ile kurulduğu için yalnız view.render'ın istediği
   // durgun alanlar lazım (hızlı koşu açısı genişlemesin diye sprint 0).
   const odakNokta = { x: 0, z: 0, angle: 0, team: 0, role: 0, burn: 0, stun: 0, air: 0, jump: 0, sprint: 0, vx: 0, vz: 0 };
-  let t = 0, sol = null, sag = null, dizi = { sol: [], sag: [] }, kadraj = A.kamera.dusus, dolum = { ruzgar: 0, ates: 0 }, kivilcim = 0;
+  let t = 0, sol = null, sag = null, dizi = { sol: [], sag: [] }, kadraj = A.kamera.dusus, dolum = { ruzgar: 0, ates: 0 }, kivilcim = 0, toz = 0;
   /** Çekim betiğinin okuduğu sahne durumu (window.__gosteri): kabul ölçütü bunun üstünde işler. */
   const olcum = { saniye: 0, evre: 'dusus', inisAt: 0, yapismaAt: 0, takimlarAt: 0, enDolum: 0,
     enYukseklik: 0, lensUzak: 99, yapismaKare: 0, dizilis: { sol: 0, sag: 0 }, tur: 0 };
@@ -79,7 +79,7 @@ export function createAtesGosteri(root) {
 
   /** Turu başa sarar (yalnız tarayıcıda açık bırakıldığında ve duman testinde; çekim `bitis`te keser). */
   function basla(w) {
-    t = 0; kivilcim = 0;
+    t = 0; kivilcim = 0; toz = 0;
     // Ölçümler tur başına sıfırlanır (`tur` ve `dizilis` kalır): çekim ilk turu keser, duman testi turun kendi
     // dönüm noktalarına bakar.
     Object.assign(olcum, { saniye: 0, evre: 'dusus', inisAt: 0, yapismaAt: 0, takimlarAt: 0, enDolum: 0,
@@ -113,11 +113,23 @@ export function createAtesGosteri(root) {
 
     // ---- top ----
     if (t < I.inis) {
-      // Açılış: top lensin biraz önünde ve altında doğar, hızlanarak (serbest düşüş gibi) sahanın ortasına iner.
-      const bas = onunde(A.kamera.dusus, A.top.ileri), u = birim(t, 0, I.inis);
+      /**
+       * Açılış: top lensin biraz önünde ve altında doğar ve **baştan hızlı** düşer — yolun yarısını ilk çeyrekte
+       * alır (üsler bunun için: 2,5 ve 1,6; düz ya da hızlanan bir iniş açılışı sıkıcı yapıyordu). `ilkTemas`ta
+       * yere çarpar, sonra iki kez sekerek `inis`te durur; üç temas da müziğin 4., 6. ve 8. vuruşuna denk gelir.
+       */
+      const bas = onunde(A.kamera.dusus, A.top.ileri);
       bas.y -= A.top.alt;
-      b.x = ara(bas.x, A.top.yer.x, u); b.z = ara(bas.z, A.top.yer.z, u);
-      b.yuk = Math.max(0, (bas.y - 0.43) * (1 - u * u));
+      if (t < I.ilkTemas) {
+        const u = birim(t, 0, I.ilkTemas), yol = 1 - (1 - u) ** 2.5;
+        b.x = ara(bas.x, A.top.yer.x, yol); b.z = ara(bas.z, A.top.yer.z, yol);
+        b.yuk = (bas.y - 0.43) * (1 - u) ** 1.6;
+      } else {
+        const ikinci = t >= I.ikinciTemas;
+        const [bas_, son_] = ikinci ? [I.ikinciTemas, I.inis] : [I.ilkTemas, I.ikinciTemas];
+        b.x = A.top.yer.x; b.z = A.top.yer.z;
+        b.yuk = A.top.zipla[ikinci ? 1 : 0] * Math.sin(Math.PI * birim(t, bas_, son_));
+      }
       b.owner = null;
       olcum.evre = 'dusus';
     } else if (t < I.hucum) {
@@ -222,7 +234,10 @@ export function createAtesGosteri(root) {
 
   /** Her kare (simülasyondan sonra, gerçek dt): sahne saati ilerler ve bütün sahne yeniden yazılır. */
   function guncelle(dt, w) {
+    const onceki = t;
     t += dt;
+    // Topun yere değdiği üç an: her birinde bir toz patlaması borçlanılır (çizimde boşaltılır, bkz. cizim).
+    for (const an of [A.isaret.ilkTemas, A.isaret.ikinciTemas, A.isaret.inis]) if (onceki < an && t >= an) toz++;
     if (t >= A.isaret.tekrar) { basla(w); return; }
     sahnele(w);
     olcum.saniye = t;
@@ -231,6 +246,8 @@ export function createAtesGosteri(root) {
   /** Çizimden hemen önce: kadrajı kur ve yükleme sırasında iki oyuncunun çevresine oyunun kendi kıvılcımlarını saç. */
   function cizim(dt, w, view) {
     view.setPose(kadraj);
+    // Top yere her değdiğinde oyunun kendi vuruş kıvılcımı: sekmeler sessiz kalmasın.
+    while (toz > 0) { toz--; view.event({ type: 'kick', x: w.ball.x, z: w.ball.z }); }
     if (dt <= 0 || t < A.isaret.inis || t >= A.isaret.hucum) return;
     kivilcim -= dt;
     if (kivilcim > 0) return;

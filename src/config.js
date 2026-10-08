@@ -280,14 +280,17 @@ export const GOSTERI_RUZGAR = {
  */
 export const GOSTERI_ATES = {
   /**
-   * Müziğin işaretleri (saniye). `inis` top yere iner ve iki oyuncu yanlardan kayar; `ruzgar` / `ates` / `ikisi`
+   * Müziğin işaretleri (saniye). `ilkTemas` / `ikinciTemas` topun yere ilk ve ikinci değdiği anlar (128 BPM'de 4. ve
+   * 6. vuruş): top lensten **hızlı** düşer, yere çarpar ve iki kez sekerek `inis`te (8. vuruş) durur — düz ve yavaş
+   * bir iniş açılışı sıkıcı buluyordu (Yusuf, 8 Ekim).
+   * `inis` top yere oturur ve iki oyuncu yanlardan kayar; `ruzgar` / `ates` / `ikisi`
    * yüklemelerin sırayla ve sonunda üst üste bindiği anlar; `hucum` topun kameraya doğru fırladığı an; `yapisma`
    * topun lense çarptığı an; `dusus` topun lensten aşağı düşmeye başlaması; `takimlar` 5'e 5 diziliş ve büyük
    * "YAKAR GOL" başlığı; `bitis` oyun görüntüsünün son saniyesi (sonrası ffmpeg'in josephuz.com kapanışı).
    * `tekrar` sahnenin baştan kurulduğu saniye: çekim `bitis`te kesildiği için yalnız tarayıcıda açık bırakıldığında
    * (ve duman testinde) işe yarar.
    */
-  isaret: { inis: 3.75, ruzgar: 3.95, ates: 6.4, ikisi: 8.8, hucum: 11.05, yapisma: 11.25, dusus: 11.55, takimlar: 12.19, bitis: 16.2, tekrar: 18.7 },
+  isaret: { inis: 3.75, ilkTemas: 1.88, ikinciTemas: 2.81, ruzgar: 3.95, ates: 6.4, ikisi: 8.8, hucum: 11.05, yapisma: 11.25, dusus: 11.55, takimlar: 12.19, bitis: 16.2, tekrar: 18.7 },
   /**
    * Kadrajlar: `x,y,z` kameranın yeri, `tx,ty,tz` baktığı nokta (bkz. view/camera.js setPose — bu sahnede kamera
    * omuz kuralına değil doğrudan bu değerlere oturur).
@@ -304,16 +307,17 @@ export const GOSTERI_ATES = {
     // (bkz. view/pitch.js badge, z 5,9-8,1) kameranın arkasında kalsın — yoksa kadrajın altında yarım kesilirdi.
     takim: { x: 0, y: 6.2, z: 6, tx: 0, ty: 1.2, tz: -8.4 },
     takimSon: { x: 0, y: 6.8, z: 7.4, tx: 0, ty: 1.3, tz: -8.8 },
-    gecis: [3.05, 4.05],
+    gecis: [2.5, 3.6],
   },
   /**
    * Top: `ileri` / `alt` açılışta topun lensin kaç birim önünde ve altında doğduğu (lensin tam önünde doğsa ekranı
-   * kaplar, kaleye bakan kadraj hiç görünmezdi), `yer` indiği nokta, `havada` yükleme boyunca yerden kalktığı
+   * kaplar, kaleye bakan kadraj hiç görünmezdi), `yer` indiği nokta, `zipla` birinci ve ikinci sekmenin tepe
+   * yüksekliği, `havada` yükleme boyunca yerden kalktığı
    * yükseklik (yüklenen top iki oyuncunun arasında havalanır), `lens` yapışma anında kameraya uzaklığı. 0,95'te
    * 0,38 yarıçaplı top kadrajı enine tamamen, boyuna üçte ikisinden fazla kaplar: ekranı doldurur ama topluluğu
    * da gösterir — daha yakında (0,6) kadraj soyut renk lekelerine dönüyor, top olduğu anlaşılmıyordu.
    */
-  top: { ileri: 1.5, alt: 0.55, yer: { x: 0, z: 0 }, havada: 0.55, lens: 0.95, son: { x: 0, z: -5.5 } },
+  top: { ileri: 1.5, alt: 0.55, yer: { x: 0, z: 0 }, zipla: [1.9, 0.7], havada: 0.55, lens: 0.95, son: { x: 0, z: -5.5 } },
   /**
    * Karşılıklı iki oyuncu: topun `x` birim solunda ve sağında, `giris` birim uzaktan `kayma` saniyede kayarak gelir
    * (kayma pozu için bkz. view/actors.js `p.dash`). `dolum` yüklemenin en büyük değeri: 1'den büyük olduğu için

@@ -53,14 +53,23 @@ try {
   assert.equal(await game(() => window.__gosteri.dizilis.sol + '-' + window.__gosteri.dizilis.sag), '5-5', 'iki takım beşer oyuncu');
 
   // 2) Düşüş: top kameranın olduğu yükseklikten iner, sahipsizdir ve kimse kaymaz.
-  await saniyeyeKadar(1.2);
+  await saniyeyeKadar(0.8);
   const dusus = await game(() => ({ ...window.__gosteri, top: { ...window.__yakarGol.world().ball },
     kayan: window.__yakarGol.world().players.filter(p => p.dash > 0).length }));
-  assert.equal(dusus.evre, 'dusus', '1,2. saniyede top hâlâ iniyor');
+  assert.equal(dusus.evre, 'dusus', '0,8. saniyede top hâlâ iniyor');
   assert.ok(dusus.top.yuk > 2, `top havada (yükseklik ${dusus.top.yuk.toFixed(2)})`);
   assert.equal(dusus.top.owner, null, 'inen top kimsenin ayağında değil');
   assert.equal(dusus.kayan, 0, 'top inmeden kimse kaymaz');
+  // İniş baştan hızlı olmalı (Yusuf'un 8 Ekim notu: yavaş iniş açılışı sıkıcı yapıyordu): 0,8. saniyede yolun
+  // yarısından çoğu alınmış olur.
+  assert.ok(dusus.top.yuk < dusus.enYukseklik * 0.5, `iniş baştan hızlı (0,8 sn'de ${dusus.top.yuk.toFixed(1)}/${dusus.enYukseklik.toFixed(1)} birim kaldı)`);
   await page.screenshot({ path: 'artifacts/gosteri-ates-1-dusus.png' });
+
+  // Sekme: top yere çarpıp zıplar, ikinci sekmenin tepesinde hâlâ havadadır.
+  await saniyeyeKadar(2.3);
+  const sekme = await game(() => ({ yuk: window.__yakarGol.world().ball.yuk, evre: window.__gosteri.evre }));
+  assert.equal(sekme.evre, 'dusus', 'sekmeler iniş evresinde');
+  assert.ok(sekme.yuk > 1, `top yere çarpıp sekiyor (2,3 sn'de ${sekme.yuk.toFixed(2)} birim havada)`);
 
   // 3) İniş ve kayma: 3,75'te iki oyuncu biri soldan biri sağdan topun yanına gelir.
   await saniyeyeKadar(4.6);
