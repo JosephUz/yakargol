@@ -379,6 +379,16 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
   background:#0b221fd9;border:2px solid #ffffff2b;box-shadow:0 12px 38px #04140f8c;
   font:900 clamp(18px,2.4vw,38px)/1.2 Segoe UI,Arial,sans-serif;color:#fff6dc;text-shadow:0 3px 14px #05211bcc}
 
+/* "Rüzgar ile Ateş" gösteri sahnesinin (?gosteri=ruzgar-ates; bkz. src/gosteri-ates.js) kapanış başlığı: iki takım
+   yanlara dizilince ortada duran büyük "YAKAR GOL". Kadraj dikeydir (1080x1920), bu yüzden boy ekran genişliğinden
+   ölçeklenir ve yazı tek satırda kalır. Saydamlığını ve ölçeğini sahne her karede kendi yazar — bilerek CSS geçişi
+   yoktur: çekim sahte saatle kare kare ilerler (bkz. ajanlar/icerik/short-uret.mjs SAAT_YAMASI), gerçek zamanlı bir
+   geçiş karelere oturmazdı. Yalnız bu sahnede açılır; öbür kiplerde öğe `hidden` kalır. */
+#yakar-gol #yg-gosteri-baslik{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);z-index:7;
+  text-align:center;pointer-events:none;white-space:nowrap;
+  font:900 clamp(30px,8.6vw,150px)/1 Segoe UI,Arial,sans-serif;letter-spacing:.05em;
+  color:#fff6dc;text-shadow:0 8px 30px #04140ff2,0 0 46px #ffb35c73}
+
 /* Rüzgar şutu hakkı: skor tabelasında yakar top damlalarının yanında camgöbeği damlalar; sinemada camgöbeği başlık. */
 #yakar-gol .pips{display:inline-flex;flex-direction:column;gap:3px;align-items:center}
 #yakar-gol .winds{display:inline-flex;gap:4px}

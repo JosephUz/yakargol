@@ -1,6 +1,7 @@
 import { createAudio } from './audio.js';
 import { createCinema } from './cinema.js';
 import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
+import { createAtesGosteri } from './gosteri-ates.js';
 import { createRuzgarGosteri } from './gosteri-ruzgar.js';
 import { createGosteri, gosteriKip } from './gosteri.js';
 import { createOtopilot, otopilotAcik } from './otopilot.js';
@@ -44,9 +45,14 @@ const STEP = 1 / 60, MAX_STEPS = 5;
 
 export async function start(root) {
   const testMode = new URLSearchParams(location.search).has('test');
-  /** Gösteri sahnesi (yalnız web): `?gosteri=1` kendi kendine oynanan maç (gosteri.js), `?gosteri=ruzgar` rüzgar şutu sahnesi (gosteri-ruzgar.js). */
+  /**
+   * Gösteri sahnesi (yalnız web): `?gosteri=1` kendi kendine oynanan maç (gosteri.js), `?gosteri=ruzgar` rüzgar şutu
+   * sahnesi (gosteri-ruzgar.js), `?gosteri=ruzgar-ates` short için baştan sona sahnelenmiş anlatım (gosteri-ates.js).
+   */
   const kip = gosteriKip();
-  const gosteri = kip === 'ruzgar' ? createRuzgarGosteri(root) : kip ? createGosteri() : null;
+  const gosteri = kip === 'ruzgar' ? createRuzgarGosteri(root)
+    : kip === 'ruzgar-ates' ? createAtesGosteri(root)
+      : kip ? createGosteri() : null;
   /**
    * Otopilot (`?otopilot=1`, bkz. otopilot.js): gösteri değil **gerçek maç**; senin oyuncunu da bot oynar, kamera ve
    * arayüz normal oyundaki gibi kalır. Gösteriyle birlikte açılmaz (gösteri önceliklidir).

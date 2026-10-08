@@ -23,7 +23,7 @@ export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
   const OMUZ = { back: CAMERA.back, side: CAMERA.side, height: CAMERA.height, ...(omuzOverride || {}) };
   const camera = new T.PerspectiveCamera(CAMERA.fov, 1, 0.1, CAMERA.far);
   const iso = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, CAMERA.far);
-  let mode = 'shoulder', hero = null, pointer = null;
+  let mode = 'shoulder', hero = null, pointer = null, poz = null;
   const ray = new T.Raycaster(), ground = new T.Plane(new T.Vector3(0, 1, 0), 0), point = new T.Vector3();
   let yaw = Math.PI, pitch = CAMERA.pitch, shake = 0;
   const spot = p => ({ x: p.burn > 0 ? benchX(p.team) : p.x, z: p.burn > 0 ? benchZ(p) : p.z });
@@ -64,6 +64,13 @@ export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
       yaw = nextYaw;
       if (nextPitch !== undefined) pitch = nextPitch;
     },
+    /**
+     * Kamerayı doğrudan bir yere koyar ve bir noktaya baktırır: `{ x, y, z, tx, ty, tz }` (null: omuz kuralına döner).
+     * Yalnız baştan sona sahnelenmiş gösteri sahnesi kullanır (bkz. src/gosteri-ates.js): orada kadraj oyuncunun
+     * omzuna değil anlatıma bağlıdır — top lense yapışır, kamera yandan bakar, kapanışta diziliş çerçevelenir.
+     * Kurulduğunda `follow` ve `zoom` devre dışı kalır: oyuncunun yeri ve hızı kadrajı artık değiştirmez.
+     */
+    setPose(next) { poz = next || null; },
     look(dx, dy) {
       if (mode === 'iso') return;
       yaw -= dx * CAMERA.yawSpeed;
@@ -76,12 +83,19 @@ export function createShoulderCamera(isoOverride = null, omuzOverride = null) {
     },
     /** Görüş açısını hedefe yumuşakça götürür (hızlı koşuda genişler). */
     zoom(fov, dt) {
+      if (poz) return; // sahnelenmiş kadrajda görüş açısı sabit (bkz. setPose)
       if (Math.abs(camera.fov - fov) < 0.05) return;
       camera.fov += (fov - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
     },
     follow(p, dt = 0) {
       hero = p;
+      if (poz) {
+        camera.position.set(poz.x, poz.y, poz.z);
+        camera.lookAt(poz.tx, poz.ty, poz.tz);
+        camera.updateMatrixWorld();
+        return;
+      }
       const x = p.burn > 0 ? benchX(p.team) : p.x, z = p.burn > 0 ? benchZ(p) : p.z, fx = Math.sin(yaw), fz = Math.cos(yaw);
       if (mode === 'iso') {
         const c = ISO, back = c.dist * Math.cos(c.elevation), y = p.air > 0 ? lift(p) * 0.5 : 0;

@@ -17,20 +17,22 @@ import { isApp } from './platform.js';
  * Uygulamada (isApp) açılmaz: Play Store sürümüne yeni bir kip girmez.
  *
  * `?gosteri` adresinin ikinci sahnesi `?gosteri=ruzgar`dır (gosteri-ruzgar.js): maç değil, rüzgar şutunu anlatan
- * sahnelenmiş bir vuruş. Arayüzün gizlenmesi, girdinin okunmaması, ölçümün ve ağın kesilmesi iki sahnede de ortaktır;
- * hangisinin açık olduğunu aşağıdaki `gosteriKip` söyler.
+ * sahnelenmiş bir vuruş. Üçüncüsü `?gosteri=ruzgar-ates`tir (gosteri-ates.js): dikey short için baştan sona
+ * sahnelenmiş, saniyesi müziğe çivilenmiş bir anlatım. Arayüzün gizlenmesi, girdinin okunmaması, ölçümün ve ağın
+ * kesilmesi üç sahnede de ortaktır; hangisinin açık olduğunu aşağıdaki `gosteriKip` söyler.
  */
 
 /**
  * Hangi gösteri sahnesi açık: `'mac'` (`?gosteri=1`, bu dosyadaki kendi kendine oynayan maç), `'ruzgar'`
- * (`?gosteri=ruzgar`, rüzgar şutunu anlatan sahnelenmiş vuruş — bkz. gosteri-ruzgar.js) ya da `null` (kapalı).
- * Uygulamada (isApp) her ikisi de kapalıdır.
+ * (`?gosteri=ruzgar`, rüzgar şutunu anlatan sahnelenmiş vuruş — bkz. gosteri-ruzgar.js), `'ruzgar-ates'`
+ * (`?gosteri=ruzgar-ates`, short için sahnelenmiş anlatım — bkz. gosteri-ates.js) ya da `null` (kapalı).
+ * Uygulamada (isApp) hepsi kapalıdır.
  */
 export function gosteriKip() {
   if (isApp()) return null;
   const v = new URLSearchParams(location.search).get('gosteri');
   if (v === null || v === '0') return null;
-  return v === 'ruzgar' ? 'ruzgar' : 'mac';
+  return v === 'ruzgar' ? 'ruzgar' : v === 'ruzgar-ates' ? 'ruzgar-ates' : 'mac';
 }
 
 /** Herhangi bir gösteri sahnesi açık mı (arayüzü gizleyen, girdiyi ve ölçümü kesen ortak kurallar için). */
