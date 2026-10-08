@@ -140,8 +140,15 @@ export function syncActors(actors, w, time, playing, project, real = time) {
  */
 function aura(v, w, p, alive, t) {
   const aim = w.aim && w.aim.id === p.id ? w.aim.kind : null, owns = w.ball.owner === p.id;
-  const fireK = alive * (aim === 'fire' ? 1 : owns ? Math.min(1, (p.fireCharge || 0) / CINEMA.hold) : 0);
-  const windK = alive * (aim === 'wind' ? 1 : owns ? Math.min(1, (p.charge || 0) / KICK.windCharge) : 0);
+  /**
+   * `p.sahneDolum` ({ fire, wind }) yalnız baştan sona sahnelenmiş gösteri sahnesinde doludur (bkz. gosteri-ates.js):
+   * orada iki oyuncu **aynı topun başında** biri rüzgar biri yakar pas yüklediği için dolum simülasyondan değil
+   * sahneden gelir, ve 1'i aşabilir (çevre oyunun normal doluşundan büyür). Normal oyunda ve öbür kiplerde alan yok,
+   * aşağıdaki olağan hesap koşar.
+   */
+  const sahne = p.sahneDolum;
+  const fireK = alive * (sahne ? sahne.fire : aim === 'fire' ? 1 : owns ? Math.min(1, (p.fireCharge || 0) / CINEMA.hold) : 0);
+  const windK = alive * (sahne ? sahne.wind : aim === 'wind' ? 1 : owns ? Math.min(1, (p.charge || 0) / KICK.windCharge) : 0);
   v.fireAura.visible = fireK > 0.12;
   if (v.fireAura.visible) {
     const k = 0.35 + fireK * 0.65;

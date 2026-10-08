@@ -267,3 +267,64 @@ export const GOSTERI_RUZGAR = {
   /** Yükleme sırasında şutu atanın çevresine saçılan rüzgar kıvılcımlarının aralığı (saniye). */
   kivilcim: 0.18,
 };
+
+/**
+ * **"Rüzgar ile Ateş" gösteri sahnesi** (yalnız web, `?gosteri=ruzgar-ates`; bkz. src/gosteri-ates.js): dikey short
+ * için **baştan sona sahnelenmiş**, saniyesi müziğe çivilenmiş bir anlatım — maç değil, hatta rüzgar sahnesi gibi
+ * yarı sahnelenmiş bir vuruş da değil. Oyuncuların yeri, topun yeri ve kamera her karede sahne tarafından yazılır;
+ * simülasyon koşmayı sürdürür ama sahneyi sürüklemez. Böylece çekim (ajanlar/icerik/short-uret.mjs, sahte saat +
+ * kare kare ekran görüntüsü) kare kare yeniden üretilebilir ve müziğin vuruşlarından kaymaz.
+ *
+ * Saniyeler `calisma/icerik/muzik/short/liste.json` → `short-yakar-gol-ruzgar-ile-ates.isaretler` ile birebir aynıdır.
+ * Normal oyun, `?gosteri=1` ve `?gosteri=ruzgar` bu ayarlardan hiç etkilenmez.
+ */
+export const GOSTERI_ATES = {
+  /**
+   * Müziğin işaretleri (saniye). `inis` top yere iner ve iki oyuncu yanlardan kayar; `ruzgar` / `ates` / `ikisi`
+   * yüklemelerin sırayla ve sonunda üst üste bindiği anlar; `hucum` topun kameraya doğru fırladığı an; `yapisma`
+   * topun lense çarptığı an; `dusus` topun lensten aşağı düşmeye başlaması; `takimlar` 5'e 5 diziliş ve büyük
+   * "YAKAR GOL" başlığı; `bitis` oyun görüntüsünün son saniyesi (sonrası ffmpeg'in josephuz.com kapanışı).
+   * `tekrar` sahnenin baştan kurulduğu saniye: çekim `bitis`te kesildiği için yalnız tarayıcıda açık bırakıldığında
+   * (ve duman testinde) işe yarar.
+   */
+  isaret: { inis: 3.75, ruzgar: 3.95, ates: 6.4, ikisi: 8.8, hucum: 11.05, yapisma: 11.25, dusus: 11.55, takimlar: 12.19, bitis: 16.2, tekrar: 18.7 },
+  /**
+   * Kadrajlar: `x,y,z` kameranın yeri, `tx,ty,tz` baktığı nokta (bkz. view/camera.js setPose — bu sahnede kamera
+   * omuz kuralına değil doğrudan bu değerlere oturur).
+   *  - `dusus` açılış: sahanın sağ üst köşesinden kaleye bakar; top tam buradan, lensin önünden ortaya iner.
+   *  - `yan` → `yanSon` yükleme boyunca yandan: iki oyuncu yan profilde, top ortalarında; kamera yavaşça yaklaşır.
+   *  - `takim` → `takimSon` kapanış: iki takım yanlarda, ortada başlık; kamera hafifçe geri ve yukarı kayar.
+   * `gecis` düşüş kadrajından yan kadraja yumuşak geçişin başı ve sonu (saniye).
+   */
+  kamera: {
+    dusus: { x: 5.5, y: 10.5, z: 15, tx: 0, ty: 1.2, tz: -5 },
+    yan: { x: 0, y: 3.6, z: 8.4, tx: 0, ty: 1.1, tz: 0 },
+    yanSon: { x: 0, y: 2.9, z: 6.2, tx: 0, ty: 1, tz: 0 },
+    // Kapanış kadrajı sahanın ortasından 6 birim ileride durur: saha ortasındaki "YAKAR GOL" zemin tabelası
+    // (bkz. view/pitch.js badge, z 5,9-8,1) kameranın arkasında kalsın — yoksa kadrajın altında yarım kesilirdi.
+    takim: { x: 0, y: 6.2, z: 6, tx: 0, ty: 1.2, tz: -8.4 },
+    takimSon: { x: 0, y: 6.8, z: 7.4, tx: 0, ty: 1.3, tz: -8.8 },
+    gecis: [3.05, 4.05],
+  },
+  /**
+   * Top: `ileri` / `alt` açılışta topun lensin kaç birim önünde ve altında doğduğu (lensin tam önünde doğsa ekranı
+   * kaplar, kaleye bakan kadraj hiç görünmezdi), `yer` indiği nokta, `havada` yükleme boyunca yerden kalktığı
+   * yükseklik (yüklenen top iki oyuncunun arasında havalanır), `lens` yapışma anında kameraya uzaklığı. 0,95'te
+   * 0,38 yarıçaplı top kadrajı enine tamamen, boyuna üçte ikisinden fazla kaplar: ekranı doldurur ama topluluğu
+   * da gösterir — daha yakında (0,6) kadraj soyut renk lekelerine dönüyor, top olduğu anlaşılmıyordu.
+   */
+  top: { ileri: 1.5, alt: 0.55, yer: { x: 0, z: 0 }, havada: 0.55, lens: 0.95, son: { x: 0, z: -5.5 } },
+  /**
+   * Karşılıklı iki oyuncu: topun `x` birim solunda ve sağında, `giris` birim uzaktan `kayma` saniyede kayarak gelir
+   * (kayma pozu için bkz. view/actors.js `p.dash`). `dolum` yüklemenin en büyük değeri: 1'den büyük olduğu için
+   * çevredeki alev ve rüzgar sahne sonunda oyunun normal doluşundan taşar — "giderek büyür" istenen budur.
+   */
+  ikili: { x: 1.15, giris: 4.2, kayma: 0.55, dolum: 0.9 },
+  /**
+   * Kapanış dizilişi: her takımın beş oyuncusu kameradan uzaklaşan bir sıra hâlinde, soldakiler -x'te sağdakiler
+   * +x'te. İlk oyuncu (`ilkX`, `ilkZ`) kameraya en yakın; her sıradaki bir sonraki `adimX` kadar daha kenara,
+   * `adimZ` kadar daha uzağa durur — dikey kadrajda ortada başlığa yer kalır. `uzak` düşüş ve yükleme evrelerinde
+   * sahnede olmayan sekiz oyuncunun kalenin önünde beklediği z.
+   */
+  dizilis: { ilkX: 1.5, adimX: 0.75, ilkZ: -5.5, adimZ: -1.5, uzak: -19 },
+};

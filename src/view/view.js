@@ -63,6 +63,8 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
     look: (dx, dy) => shoulder.look(dx, dy),
     /** Bakışı doğrudan kurar (gösteri sahneleri; bkz. src/gosteri-ruzgar.js). */
     setLook: (yaw, pitch) => shoulder.setLook(yaw, pitch),
+    /** Kamerayı doğrudan yerleştirir (baştan sona sahnelenmiş gösteri; bkz. src/gosteri-ates.js). */
+    setPose: pose => shoulder.setPose(pose),
     /** Oyuncunun dolum çevresi görünüyor mu (testler için): { fire, wind }. */
     aura: id => ({ fire: actors[id].fireAura.visible, wind: actors[id].windAura.visible }),
     /** Omuz kamerasının yatay bakışı (rad). */
