@@ -10,7 +10,7 @@ import { applySnapshot } from './snapshot.js';
  * Kendi oyuncun beklemesin diye yerel girdiden üretilen yumuşak bir öne kayma eklenir (paketle konuşmaz, zonklamaz).
  * Girdi saniyede 30 kez, basışlar anında gider.
  *
- * hooks: onWelcome, onLobby, onError, onStart(msg, first), onEvents(list), onEnd(msg), onOnline(n), onDisconnect.
+ * hooks: onWelcome, onLobby, onRooms(list), onError, onStart(msg, first), onEvents(list), onEnd(msg), onOnline(n), onDisconnect.
  */
 export function createNetClient(hooks) {
   let ws = null, connected = false, wantReconnect = false, curNick = '';
@@ -43,6 +43,7 @@ export function createNetClient(hooks) {
     switch (msg.t) {
       case S2C.WELCOME: store('yg.token', msg.token); client.id = msg.id; client.nick = msg.nick; hooks.onWelcome?.(msg); break;
       case S2C.LOBBY: client.lobby = msg; store('yg.room', msg.code); hooks.onLobby?.(msg); break;
+      case S2C.ROOMS: hooks.onRooms?.(Array.isArray(msg.list) ? msg.list : []); break;
       case S2C.ERROR: hooks.onError?.(msg.msg); break;
       case S2C.START: {
         const first = !world;
@@ -138,8 +139,10 @@ export function createNetClient(hooks) {
     connect, get connected() { return connected; },
     get world() { return world; },
     hello(nick) { curNick = nick; send({ t: C2S.HELLO, nick, token: store('yg.token') }); },
-    create() { send({ t: C2S.CREATE }); },
+    create(priv) { send({ t: C2S.CREATE, priv: Boolean(priv) }); },
     join(code) { send({ t: C2S.JOIN, code }); },
+    quick() { send({ t: C2S.QUICK }); },
+    rooms() { send({ t: C2S.ROOMS }); },
     seat(slot) { send({ t: C2S.SEAT, slot }); },
     move(id, slot) { send({ t: C2S.MOVE, id, slot }); },
     start() { send({ t: C2S.START }); },

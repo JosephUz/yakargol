@@ -60,9 +60,16 @@
             <button id="yg-create">ODA KUR</button>
             <button id="yg-join">ODAYA KATIL</button>
           </div>
+          <label class="priv" title="Özel oda açık odalar listesinde görünmez; yalnız kodla ya da linkle girilir"><input id="yg-priv" type="checkbox"> Özel oda <small>listede görünmez, kodla girilir</small></label>
           <div id="yg-joinrow" class="join-row" hidden><input id="yg-code" placeholder="ODA KODU" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Oda kodu"><button id="yg-join-go">Katıl</button></div>
           <div class="home-status"><span id="yg-online"></span><span id="yg-home-status" role="status"></span></div>
         </div>
+        <aside id="yg-rooms" class="rooms" hidden aria-labelledby="yg-rooms-title">
+          <div class="rooms-head"><b id="yg-rooms-title">AÇIK ODALAR</b><span id="yg-rooms-count"></span></div>
+          <div id="yg-rooms-list" class="rooms-list"></div>
+          <button id="yg-quick" class="primary">HIZLI KATIL <span>→</span></button>
+          <p class="rooms-note">Seni en kalabalık açık odaya oturtur; açık oda yoksa yeni bir oda kurar.</p>
+        </aside>
         <div class="rule-cards">
           <div><b>01 / GOL</b><span>Skoru goller belirler.</span></div>
           <div><b>02 / YAK</b><span>Rakibi 4 saniye kenara al.</span></div>
@@ -157,7 +164,7 @@
     <section id="yg-lobby" class="overlay" hidden>
       <div class="card lobby-card">
         <span class="eyebrow">ODA · 5v5</span>
-        <div class="lobby-head"><h2 id="yg-lobby-code">----</h2><button id="yg-lobby-copy">Linki kopyala</button></div>
+        <div class="lobby-head"><h2 id="yg-lobby-code">----</h2><span id="yg-lobby-vis" class="lobby-vis"></span><button id="yg-lobby-copy">Linki kopyala</button></div>
         <p id="yg-lobby-hint"></p>
         <div class="lobby-teams">
           <div class="lobby-team blue"><b>MAVİ</b><ol id="yg-seats-0"></ol></div>

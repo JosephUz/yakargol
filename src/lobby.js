@@ -1,17 +1,21 @@
+import { MATCH } from './config.js';
 import { NET } from './net/protocol.js';
 import { paylasti } from './olcum.js';
 
 /**
- * Çok oyunculu ekranlar: giriş ekranındaki oda düğmeleri (ad, Oda kur, Odaya katıl + kod, çevrim içi sayısı) ve lobi
+ * Çok oyunculu ekranlar: giriş ekranındaki oda düğmeleri (ad, Oda kur + Özel oda, Odaya katıl + kod, çevrim içi sayısı),
+ * açık odalar listesi (her satırda Katıl; Hızlı katıl en uygun açık odaya oturtur, yoksa oda kurar) ve lobi
  * (oda kodu, link, iki takımın beşer koltuğu). Herkes boş (bot) koltuğa tıklayıp oturur. Yönetici oyuncuları taşır:
  * sürükleyip bir koltuğa bırakır ya da oyuncuya, sonra koltuğa tıklar; dolu koltukta ikisi yer değiştirir.
- * Sunucuya bağlanılamadıkça (kapalı ya da config.js → ONLINE ile kapatılmış) oda düğmeleri "Yakında" yazar ve basılmaz.
+ * Sunucuya bağlanılamadıkça (kapalı ya da config.js → ONLINE ile kapatılmış) oda düğmeleri "Yakında" yazar ve basılmaz,
+ * açık odalar listesi gizlenir. Liste sunucudan gelir: ana ekrandayken değiştikçe kendiliğinden yenilenir.
  */
 export function createLobby(root, app) {
   const $ = id => root.querySelector('#yg-' + id);
   const el = {
     nick: $('nick'), create: $('create'), join: $('join'), joinRow: $('joinrow'), code: $('code'), joinGo: $('join-go'),
-    online: $('online'), status: $('home-status'),
+    online: $('online'), status: $('home-status'), priv: $('priv'),
+    rooms: $('rooms'), roomsList: $('rooms-list'), roomsCount: $('rooms-count'), quick: $('quick'), lobbyVis: $('lobby-vis'),
     lobbyCode: $('lobby-code'), seats: [$('seats-0'), $('seats-1')], hint: $('lobby-hint'), lobbyStatus: $('lobby-status'), start: $('lobby-start'),
   };
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; } return v; };
@@ -28,10 +32,12 @@ export function createLobby(root, app) {
       if (!up && !tag) b.insertAdjacentHTML('beforeend', '<em class="soon-tag">YAKINDA</em>'); else if (up) tag?.remove();
     }
     if (!up) { el.joinRow.hidden = true; el.online.textContent = ''; }
+    el.rooms.hidden = !up; el.quick.disabled = !up; el.priv.closest('label').hidden = !up;
   }
   setServer(false);
 
-  el.create.onclick = () => { el.status.textContent = 'Oda kuruluyor…'; app.create(nick()); };
+  el.create.onclick = () => { el.status.textContent = el.priv.checked ? 'Özel oda kuruluyor…' : 'Oda kuruluyor…'; app.create(nick(), el.priv.checked); };
+  el.quick.onclick = () => { el.status.textContent = 'Uygun oda aranıyor…'; app.quick(nick()); };
   el.join.onclick = () => { el.joinRow.hidden = !el.joinRow.hidden; if (!el.joinRow.hidden) el.code.focus(); };
   const joinGo = () => {
     const code = el.code.value.trim().toUpperCase();
@@ -60,6 +66,9 @@ export function createLobby(root, app) {
     lobby = next; if (!lobby) return;
     const me = app.id(), host = lobby.hostId === me, mine = lobby.seats.findIndex(s => s && s.id === me);
     el.lobbyCode.textContent = lobby.code;
+    el.lobbyVis.textContent = lobby.priv ? 'ÖZEL ODA' : 'AÇIK ODA';
+    el.lobbyVis.classList.toggle('priv', Boolean(lobby.priv));
+    el.lobbyVis.title = lobby.priv ? 'Listede görünmez: yalnız kodla ya da linkle girilir' : 'Ana ekrandaki açık odalar listesinde görünür';
     if (picked != null && !lobby.seats.some(s => s && s.id === picked)) picked = null;
     for (const team of [0, 1]) {
       el.seats[team].innerHTML = Array.from({ length: NET.seats / 2 }, (_, k) => {
@@ -92,8 +101,25 @@ export function createLobby(root, app) {
     li.ondrop = e => { e.preventDefault(); li.classList.remove('drop'); const from = Number(e.dataTransfer.getData('text/plain')); if (from && from !== id) app.move(from, slot); };
   }
 
+  /** Açık odalar: oda sahibi, durum, n/10 oyuncu, Katıl. Maç süren odaya girilince boş bot koltuğuna oturulur. */
+  const ROOM_META = `${MATCH.teamSize}v${MATCH.teamSize} · ${Math.round(MATCH.duration / 60)} dk`;
+  function setRooms(list) {
+    el.roomsCount.textContent = list.length ? `${list.length} oda` : '';
+    if (!list.length) { el.roomsList.innerHTML = '<p class="rooms-empty">Şu an açık oda yok. Hızlı katıl yeni bir oda kurar.</p>'; return; }
+    el.roomsList.innerHTML = list.map(r => {
+      const playing = r.state === 'playing', full = r.n >= NET.seats;
+      return `<div class="room${playing ? ' playing' : ''}"><div class="room-info"><b>${esc(r.host || 'Oda')}</b>`
+        + `<small><em>${playing ? 'MAÇTA' : 'LOBİDE'}</em> · ${r.n}/${NET.seats} oyuncu<span class="room-extra"> · ${ROOM_META}</span></small></div>`
+        + `<button data-code="${esc(r.code)}"${full ? ' disabled' : ''} title="${playing ? 'Maç sürüyor: boş bir bot koltuğuna oturursun' : 'Lobiye gir'}">${full ? 'DOLU' : 'KATIL →'}</button></div>`;
+    }).join('');
+    for (const b of el.roomsList.querySelectorAll('button[data-code]')) {
+      b.onclick = () => { el.status.textContent = 'Bağlanıyor…'; app.join(nick(), b.dataset.code); };
+    }
+  }
+  setRooms([]);
+
   return {
-    nick, setServer, render,
+    nick, setServer, render, setRooms,
     setOnline(n) { el.online.textContent = n > 0 ? `● ${n} çevrim içi` : ''; el.online.title = 'Oyunu şu an açık tutan sekme sayısı'; },
     status(text) { el.status.textContent = text; el.lobbyStatus.textContent = text; },
     /** Linkteki oda kodu (?oda=KOD): kod alanı dolu gelir. */

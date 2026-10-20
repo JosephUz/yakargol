@@ -240,6 +240,7 @@ export async function start(root) {
       started = false;
       show('results');
     },
+    onRooms: list => lobby.setRooms(list),
     onOnline: n => lobby.setOnline(n),
     onDisconnect(was) {
       lobby.setServer(false);
@@ -249,8 +250,9 @@ export async function start(root) {
   let pending = null, inviteCode = null;
   const lobby = createLobby(root, {
     id: () => net?.id,
-    create(nick) { withHello(nick, () => net.create()); },
+    create(nick, priv) { withHello(nick, () => net.create(priv)); },
     join(nick, code) { withHello(nick, () => net.join(code)); },
+    quick(nick) { withHello(nick, () => net.quick()); },
     seat: slot => net.seat(slot),
     move: (id, slot) => net.move(id, slot),
     start: () => net.start(),

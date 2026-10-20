@@ -4,8 +4,10 @@
  */
 export const C2S = {
   HELLO: 'hello',   // { nick, token } — bağlantı kimliği; token varsa eski koltuğa geri bağlanır
-  CREATE: 'create', // oda kur (kuran odanın yöneticisidir)
+  CREATE: 'create', // { priv } — oda kur (kuran odanın yöneticisidir); priv: özel oda, listede görünmez, yalnız kodla / linkle girilir
   JOIN: 'join',     // { code }
+  ROOMS: 'rooms',   // açık oda listesini iste (odada değilken liste değişince kendiliğinden de gelir)
+  QUICK: 'quick',   // hızlı katıl: boş koltuğu olan en uygun açık odaya otur; uygun oda yoksa yeni (açık) oda kur
   SEAT: 'seat',     // { slot } — boş koltuğa otur (0-4 mavi, 5-9 turuncu; 4 ve 9 kaleci)
   MOVE: 'move',     // { id, slot } — yalnızca yönetici: oyuncuyu koltuğa taşır, koltuk doluysa ikisi yer değiştirir
   START: 'start',   // yalnızca yönetici
@@ -16,7 +18,8 @@ export const C2S = {
 };
 export const S2C = {
   WELCOME: 'welcome', // { id, token, nick }
-  LOBBY: 'lobby',     // { code, hostId, state, seats: [{ id, nick, online } | null] x10 }
+  LOBBY: 'lobby',     // { code, hostId, state, priv, seats: [{ id, nick, online } | null] x10 }
+  ROOMS: 'rooms',     // { list: [{ code, host, n, state }] } — açık odalar (özel değil, boş koltuklu); n: oturan oyuncu
   ERROR: 'error',     // { msg }
   START: 'start',     // { you, names: [..10], humans: [..10] } — maç başladı (ya da ortasına katıldın)
   SNAP: 's',          // durum paketi + o ana kadar biriken olaylar (bkz. snapshot.js)
