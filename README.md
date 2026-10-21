@@ -27,7 +27,7 @@ tünel → **Published application routes** içindeki rota `yakargol-sunucu.jose
 sunucuya bağlanır: `node tests/browser-smoke.mjs` (Playwright gerekir; yolu `PLAYWRIGHT_MODULE` ile verilebilir), ekran
 görüntüleri `artifacts/`.
 Dokunmatik kontroller için `node tests/touch-smoke.mjs` (yatay telefon taklidi, çoklu parmak). Çevrim içi için
-`node tests/online-smoke.mjs` (iki sekme: oda, koltuk, taşıma, maç, yakar pas nişanı, mola; uygulama kipinde "Yakında").
+`node tests/online-smoke.mjs` (iki sekme: oda, kodla katılma, koltuk, taşıma, özel oda ayarı, maç, yakar pas nişanı, mola; uygulama kipinde "Yakında"; `SAHTE_KILIT=<betik>` fare kilidini sahteler).
 Gösteri kipi için `node tests/gosteri-smoke.mjs`, rüzgar şutu gösteri sahnesi için `node tests/gosteri-ruzgar-smoke.mjs`.
 Üst çubuktaki tam ekran düğmesinin dar yatay telefonda yerini ölçen test kendi sunucusunu açar: `npm run test:tamekran`
 (aynı test standart araç çubuğunun sırasını, duraklatma menüsünün dar yatay telefonda kaydırmasız sığdığını ve her
@@ -76,10 +76,18 @@ Arayüzün gizli olması, girdinin okunmaması, ölçümün gitmemesi ve sunucuy
 
 ## Çok oyunculu
 
-Giriş ekranında ad yazılır, **Oda kur** ya da **Odaya katıl** (kod ya da `?oda=KOD` linki). Lobide iki takımın beşer
-koltuğu vardır (her takımın beşincisi kaleci): herkes boş (bot) koltuğa tıklayıp oturur, **yönetici** (kuran) oyuncuları
-sürükleyip bırakır ya da oyuncuya sonra koltuğa tıklar; dolu koltukta ikisi yer değiştirir. Maçı yönetici başlatır; maç
-sürerken de odaya girilir (boş koltuğa). Maçı sunucu koşturur (`server/rooms.mjs`, tarayıcıdakiyle aynı `world.js`),
+Akış josephuz.com oda standardına uyar (`josephuz/docs/oda-standardi.md`). Giriş ekranı sırası: **ADIN** ·
+**TEK BAŞINA ↗** · **ÇEVRİM İÇİ** bölümü (`● N çevrim içi`; **HIZLI KATIL →**, **ODA KUR**, **ODAYA KATIL** → `ODA KODU`
++ **KATIL**) · **AÇIK ODALAR** listesi (her satır tek düğme: kuranın adı, `5v5 · 5 dk · n/10 oyuncu`, LOBİDE / MAÇTA,
+KATIL → ya da DOLU; liste sunucudan kendiliğinden gelir). Oda kur odayı hemen herkese açık kurar; hızlı katıl en uygun
+açık odaya oturtur, yoksa yeni oda kurar. Kod `KPRT-4` biçimindedir; küçük harf ve tiresiz (`kprt4`) de yazılır. Davet
+linki `?oda=KOD` açılınca odaya kendiliğinden girilir; odadayken adres çubuğu `?oda=KOD` gösterir, çıkınca silinir.
+Bekleme odasında iki takımın beşer koltuğu vardır (her takımın beşincisi kaleci): herkes boş koltuğa (`Bot · boş
+koltuk`, üstüne gelince `Buraya otur`) tıklayıp oturur, **kuran** oyuncuları sürükleyip bırakır ya da oyuncuya sonra
+koltuğa tıklar; dolu koltukta ikisi yer değiştirir. Oda ayarı **ODA: Herkese açık / Özel** yalnız kuranda açıktır (özel
+oda listede görünmez, yalnız kodla girilir). Maçı kuran başlatır (**MAÇI BAŞLAT ↗**; ötekilerde `Kuranın başlatması
+bekleniyor`); kuran çıkarsa kuranlık sıradaki insana geçer. Maç sürerken de odaya girilir (boş bot koltuğuna). Maç
+içinde mola menüsünde **Odadan çık**, maç sonunda **LOBİYE DÖN**. Maçı sunucu koşturur (`server/rooms.mjs`, tarayıcıdakiyle aynı `world.js`),
 sayfa girdiyi yollar, gelen durumu ara değerle çizer, kendi oyuncunu gecikmesiz göstermek için yerel girdiden kısa bir
 öne kayma ekler (`src/net/`). Yakar pas nişanı herkes için maçı dondurur, uçuş herkes için ağır çekimdir. Mola maçı
 durdurmaz; kopan oyuncunun koltuğunu o sürede bot oynar, aynı sekmeyle geri dönünce yerine oturur. Maç bitince oda
@@ -229,7 +237,7 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `index.html`, `style.css` | Tam ekran düzen: sahne, tabela, oyuncu kartı, karakterin sırtındaki gösterge, ekranlar (giriş, yardım, mola, maç sonu) |
 | `game.js` | Giriş; `src/main.js`'i yükler (import map: `three` → `/vendor/three.module.js`), hata olursa okunur mesaj |
 | `server.mjs` | Sunucu: oyun dosyaları, `src/`, `/vendor` (three paketi), `/health`, `/presence`, WebSocket |
-| `server/rooms.mjs` | Odalar: koltuklar, yönetici taşıması, otoriter maç döngüsü, yakar pas sineması, geri bağlanma |
+| `server/rooms.mjs` | Odalar: koltuklar, kuran taşıması, oda ayarı (özel / açık), otoriter maç döngüsü, yakar pas sineması, geri bağlanma |
 | `src/net/protocol.js`, `src/net/snapshot.js`, `src/net/client.js` | Ağ sözlüğü, durum paketi, çevrim içi istemci (ara değer, öne kayma) |
 | `src/lobby.js`, `src/platform.js` | Giriş ekranı oda düğmeleri ve lobi; platform (uygulama / web) ve sunucu adresi |
 | `src/config.js` | Tüm ayar sayıları (saha, maç, hareket, enerji, kayma, hızlı koşu, şutlar, rüzgar, top, yanma, botlar, kamera) |

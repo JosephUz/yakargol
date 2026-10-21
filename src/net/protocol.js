@@ -4,13 +4,14 @@
  */
 export const C2S = {
   HELLO: 'hello',   // { nick, token } — bağlantı kimliği; token varsa eski koltuğa geri bağlanır
-  CREATE: 'create', // { priv } — oda kur (kuran odanın yöneticisidir); priv: özel oda, listede görünmez, yalnız kodla / linkle girilir
-  JOIN: 'join',     // { code }
+  CREATE: 'create', // { priv } — oda kur (kuran olursun); istemci herkese açık kurar, özelliği bekleme odasında SETTINGS değiştirir
+  SETTINGS: 'settings', // { priv } — yalnızca kuran: oda ayarı (Yakar Gol'de yalnız ODA: Herkese açık / Özel); özel oda listede görünmez
+  JOIN: 'join',     // { code } — sunucu kodu normCode ile düzeltir (kprt4 → KPRT-4)
   ROOMS: 'rooms',   // açık oda listesini iste (odada değilken liste değişince kendiliğinden de gelir)
   QUICK: 'quick',   // hızlı katıl: boş koltuğu olan en uygun açık odaya otur; uygun oda yoksa yeni (açık) oda kur
   SEAT: 'seat',     // { slot } — boş koltuğa otur (0-4 mavi, 5-9 turuncu; 4 ve 9 kaleci)
-  MOVE: 'move',     // { id, slot } — yalnızca yönetici: oyuncuyu koltuğa taşır, koltuk doluysa ikisi yer değiştirir
-  START: 'start',   // yalnızca yönetici
+  MOVE: 'move',     // { id, slot } — yalnızca kuran: oyuncuyu koltuğa taşır, koltuk doluysa ikisi yer değiştirir
+  START: 'start',   // yalnızca kuran
   LEAVE: 'leave',
   INPUT: 'in',      // { mv: [x, z], aim: [x, z], hold (sol tık basılı), h2 (sağ tık basılı, top sende), e: 'basışlar' } — bkz. EDGES
   AIM: 'aim',       // yakar pas nişanını başlat (sağ tık basılı, top sende); bırakınca girdide 'f' basışı
@@ -50,4 +51,13 @@ export const roomCode = () => {
   let s = '';
   for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)];
   return `${s}-${D[Math.floor(Math.random() * D.length)]}`;
+};
+/**
+ * Yazılan oda kodunu standart biçime getirir (josephuz docs/oda-standardi.md §5): büyük harf, boşluksuz; tiresiz yazılan
+ * `KPRT4` → `KPRT-4`. Biçime uymayan kod olduğu gibi (büyük harfle) döner; sunucu "Böyle bir oda yok" der.
+ */
+export const normCode = raw => {
+  const s = String(raw || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 8);
+  const m = /^([A-Z]{4})-?([0-9])$/.exec(s);
+  return m ? `${m[1]}-${m[2]}` : s;
 };

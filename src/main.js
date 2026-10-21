@@ -210,18 +210,18 @@ export async function start(root) {
       if (pending) { const go = pending; pending = null; go(); return; }
       // Sayfa yenilendi (lobideydik) ya da davet linki: odaya gir.
       const code = inviteCode || (!net.world && net.rememberedRoom());
+      if (code && !net.lobby) { lobby.status(inviteCode ? 'Odaya bağlanıyor…' : 'Odaya geri bağlanıyor…'); net.join(code); }
       inviteCode = null;
-      if (code && !net.lobby) net.join(code);
     },
     // Maçta ya da maç sonu karnesindeyken lobi yalnız güncellenir (karneden "Lobiye dön" ile görünür).
     onLobby(msg) {
-      online = true;
+      online = true; odaUrl(msg.code);
       if (screen === 'lobby') lobby.render(msg);
       else if (!started && screen !== 'results') showLobby(msg);
     },
     onError(msg) {
       lobby.status(msg);
-      if (msg === 'Böyle bir oda yok' && screen !== 'lobby') net.leave();
+      if (msg === 'Böyle bir oda yok' && screen !== 'lobby') { net.leave(); odaUrl(null); }
     },
     onStart(msg, first) {
       if (!first) return;
@@ -250,7 +250,8 @@ export async function start(root) {
   let pending = null, inviteCode = null;
   const lobby = createLobby(root, {
     id: () => net?.id,
-    create(nick, priv) { withHello(nick, () => net.create(priv)); },
+    create(nick) { withHello(nick, () => net.create()); },
+    settings: priv => net.settings(priv),
     join(nick, code) { withHello(nick, () => net.join(code)); },
     quick(nick) { withHello(nick, () => net.quick()); },
     seat: slot => net.seat(slot),
@@ -266,8 +267,17 @@ export async function start(root) {
     lobby.render(msg);
     if (screen !== 'lobby') show('lobby');
   }
+  /** Odadayken adres çubuğu ?oda=KOD gösterir (davet linki olarak paylaşılabilir); odadan çıkınca ?oda silinir. */
+  function odaUrl(code) {
+    try {
+      const u = new URL(location.href);
+      if ((u.searchParams.get('oda') || null) === (code || null)) return;
+      if (code) u.searchParams.set('oda', code); else u.searchParams.delete('oda');
+      history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    } catch { /* adres değiştirilemedi: önemsiz */ }
+  }
   function leaveRoom() {
-    net?.leave();
+    net?.leave(); odaUrl(null);
     online = false; endCinema(); cinema.reset(); started = false; w = createWorld(); view.faceBall(w);
     lobby.status('');
     show('home');

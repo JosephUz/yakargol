@@ -3,11 +3,11 @@ import { createCinema } from '../src/cinema.js';
 import { createWorld, startAim, step } from '../src/world.js';
 import { PITCH } from '../src/config.js';
 import { encodeSnapshot } from '../src/net/snapshot.js';
-import { C2S, EDGES, NET, S2C, roomCode } from '../src/net/protocol.js';
+import { C2S, EDGES, NET, S2C, normCode, roomCode } from '../src/net/protocol.js';
 
 /**
- * Odalar: kur / katıl / lobi / başlat / maç / bitiş (bitince oda lobiye döner, yönetici yeniden başlatabilir). On
- * koltuk (0-4 mavi, 5-9 turuncu; 4 ve 9 kaleci): herkes istediği boş koltuğa oturur, yönetici (kuran) oyuncuları
+ * Odalar: kur / katıl / lobi / başlat / maç / bitiş (bitince oda lobiye döner, kuran yeniden başlatabilir). On
+ * koltuk (0-4 mavi, 5-9 turuncu; 4 ve 9 kaleci): herkes istediği boş koltuğa oturur, kuran oyuncuları
  * koltuktan koltuğa taşır (dolu koltuğa taşırsa ikisi yer değiştirir). Boş koltukları botlar doldurur. Maç sürerken de
  * odaya katılınabilir: boş (bot) koltuğa oturulur.
  *
@@ -111,7 +111,8 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
     if (i >= 0) room.seats[i] = null;
     conn.room = null; conn.input = blankInput();
     if (!members(room).length) { closeRoom(room, 'boşaldı'); return; }
-    if (room.hostId === conn.id) room.hostId = members(room)[0].id;
+    // Kuran çıktı: kuranlık sıradaki insana (önce bağlı olana) geçer.
+    if (room.hostId === conn.id) room.hostId = (members(room).find(c => c.ws) || members(room)[0]).id;
     if (room.world) roster(room);
     broadcastLobby(room);
   }
@@ -263,15 +264,14 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
       }
       case C2S.CREATE: { createRoom(conn, Boolean(msg.priv)); return; }
       case C2S.JOIN: {
-        const code = String(msg.code || '').toUpperCase().trim();
-        const r = rooms.get(code);
+        const r = rooms.get(normCode(msg.code));
         if (!r) return error(conn, 'Böyle bir oda yok');
         joinRoom(conn, r);
         return;
       }
       case C2S.ROOMS: { sendRooms(conn); return; }
       case C2S.QUICK: {
-        // Hızlı katıl: en uygun açık oda (bkz. byOffer), yoksa yeni açık oda — kuran yönetici olur.
+        // Hızlı katıl: en uygun açık oda (bkz. byOffer), yoksa yeni açık oda — oyuncu kuran olur.
         if (!conn.nick) return;
         const r = openRooms().find(x => x !== room);
         if (r) joinRoom(conn, r); else createRoom(conn, false);
@@ -281,20 +281,29 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
         // Boş koltuğa otur (lobide ya da maç sürerken).
         const slot = Math.round(+msg.slot);
         if (!room || !(slot >= 0 && slot < NET.seats)) return;
-        if (room.seats[slot]) return error(conn, 'Koltuk dolu: yönetici yerini değiştirebilir');
+        if (room.seats[slot]) return error(conn, 'Koltuk dolu: kuran yerini değiştirebilir');
         seat(room, conn, slot);
         broadcastLobby(room);
         if (room.world) roster(room);
         return;
       }
       case C2S.MOVE: {
-        // Yönetici oyuncuyu koltuğa taşır; koltuk doluysa ikisi yer değiştirir.
+        // Kuran oyuncuyu koltuğa taşır; koltuk doluysa ikisi yer değiştirir.
         const slot = Math.round(+msg.slot);
         if (!room || room.hostId !== conn.id || !(slot >= 0 && slot < NET.seats)) return;
         const from = room.seats.findIndex(c => c && c.id === msg.id);
         if (from < 0 || from === slot) return;
         [room.seats[from], room.seats[slot]] = [room.seats[slot], room.seats[from]];
         if (room.world) roster(room);
+        broadcastLobby(room);
+        return;
+      }
+      case C2S.SETTINGS: {
+        // Oda ayarı (yalnız kuran): Herkese açık / Özel. Özel oda listeden düşer, açık oda listeye girer.
+        if (!room || room.hostId !== conn.id || !('priv' in msg)) return;
+        const priv = Boolean(msg.priv);
+        if (room.priv === priv) return;
+        room.priv = priv;
         broadcastLobby(room);
         return;
       }

@@ -39,7 +39,7 @@ test('oda kurulur, katılan boş koltuğa oturur, istediği koltuğa geçer', ()
   rooms.close();
 });
 
-test('yönetici oyuncuları taşır, dolu koltukta yer değiştirir; yönetici olmayan taşıyamaz', () => {
+test('kuran oyuncuları taşır, dolu koltukta yer değiştirir; kuran olmayan taşıyamaz', () => {
   const { rooms, join } = setup();
   const a = join('Ali'), b = join('Ayşe');
   a.say({ t: 'create' });
@@ -51,7 +51,7 @@ test('yönetici oyuncuları taşır, dolu koltukta yer değiştirir; yönetici o
   const lobby = a.last(S2C.LOBBY);
   assert.equal(lobby.seats[0].nick, 'Ayşe'); assert.equal(lobby.seats[9].nick, 'Ali', 'yer değiştirdiler');
   b.say({ t: 'move', id: aId, slot: 2 });
-  assert.equal(b.last(S2C.LOBBY).seats[9].nick, 'Ali', 'yönetici olmayanın taşıması yok sayılır');
+  assert.equal(b.last(S2C.LOBBY).seats[9].nick, 'Ali', 'kuran olmayanın taşıması yok sayılır');
   rooms.close();
 });
 
@@ -61,7 +61,7 @@ test('maç başlar: herkes kendi koltuğunu öğrenir, girdisi kendi oyuncusunu 
   a.say({ t: 'create' });
   b.say({ t: 'join', code: a.last(S2C.LOBBY).code });
   b.say({ t: 'start' });
-  assert.equal(b.last(S2C.START), undefined, 'yalnız yönetici başlatır');
+  assert.equal(b.last(S2C.START), undefined, 'yalnız kuran başlatır');
   a.say({ t: 'start' });
   assert.equal(a.last(S2C.START).you, 0); assert.equal(b.last(S2C.START).you, 5);
   assert.deepEqual(a.last(S2C.START).humans.map(Number), [1, 0, 0, 0, 0, 1, 0, 0, 0, 0]);
@@ -154,7 +154,7 @@ test('hızlı katıl ikinci oyuncuyu ilkinin bekleyen odasına oturtur; uygun od
   const a = join('Ali'), b = join('Ayşe'), c = join('Can');
   a.say({ t: 'quick' });
   const mine = a.last(S2C.LOBBY);
-  assert.equal(mine.hostId, a.last(S2C.WELCOME).id, 'oda yoktu: kurdu, yönetici o');
+  assert.equal(mine.hostId, a.last(S2C.WELCOME).id, 'oda yoktu: kurdu, kuran o');
   assert.equal(mine.priv, false);
   b.say({ t: 'create', priv: true });
   c.say({ t: 'quick' });
@@ -205,5 +205,54 @@ test('boşalan oda listeden düşer', async () => {
   a.close();
   await wait(300);
   assert.deepEqual(list(c), []);
+  rooms.close();
+});
+
+// ---------- Oda standardı: ayar, kod biçimi, kuranlık ----------
+test('kuran odayı bekleme odasında özel / herkese açık yapar; kuran olmayan değiştiremez; liste buna uyar', async () => {
+  const { rooms, join } = setup();
+  const a = join('Ali'), b = join('Ayşe'), c = join('Can');
+  a.say({ t: 'create' });
+  const code = a.last(S2C.LOBBY).code;
+  assert.equal(a.last(S2C.LOBBY).priv, false, 'oda herkese açık kurulur');
+  b.say({ t: 'join', code });
+  b.say({ t: 'settings', priv: true });
+  assert.equal(a.last(S2C.LOBBY).priv, false, 'kuran olmayanın ayarı yok sayılır');
+  await wait(300);
+  assert.equal(list(c).length, 1);
+  a.say({ t: 'settings', priv: true });
+  assert.equal(b.last(S2C.LOBBY).priv, true, 'herkes yeni ayarı görür');
+  await wait(300);
+  assert.deepEqual(list(c), [], 'özel oda listeden düşer');
+  c.say({ t: 'quick' });
+  assert.notEqual(c.last(S2C.LOBBY).code, code, 'hızlı katıl özel odaya oturtmaz');
+  a.say({ t: 'settings', priv: false });
+  await wait(300);
+  const d = join('Deniz');
+  assert.ok(list(d).some(r => r.code === code), 'yeniden açılınca listede');
+  rooms.close();
+});
+
+test('oda kodu küçük harfle ve tiresiz de yazılır (kprt4 → KPRT-4); yanlış kod "Böyle bir oda yok"', () => {
+  const { rooms, join } = setup();
+  const a = join('Ali'), b = join('Ayşe'), c = join('Can');
+  a.say({ t: 'create' });
+  const code = a.last(S2C.LOBBY).code;
+  b.say({ t: 'join', code: ' ' + code.replace('-', '').toLowerCase() + ' ' });
+  assert.equal(b.last(S2C.LOBBY)?.code, code);
+  c.say({ t: 'join', code: 'ZZZZ-1' });
+  assert.equal(c.last(S2C.ERROR).msg, 'Böyle bir oda yok');
+  rooms.close();
+});
+
+test('kuran çıkınca kuranlık sıradaki insana geçer; insan kalmayınca oda kapanır', () => {
+  const { rooms, join } = setup();
+  const a = join('Ali'), b = join('Ayşe');
+  a.say({ t: 'create' });
+  b.say({ t: 'join', code: a.last(S2C.LOBBY).code });
+  a.say({ t: 'leave' });
+  assert.equal(b.last(S2C.LOBBY).hostId, b.last(S2C.WELCOME).id, 'Ayşe kuran oldu');
+  b.say({ t: 'leave' });
+  assert.equal(rooms.rooms.size, 0);
   rooms.close();
 });

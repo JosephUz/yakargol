@@ -317,28 +317,30 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .home-status{display:flex;gap:12px;min-height:14px;font-size:10px;letter-spacing:.5px;color:#b9cebc}
 #yakar-gol #yg-online{color:#8fe3a4;font-weight:700}
 #yakar-gol .home .rule-cards{margin-top:30px}
-#yakar-gol .home-online .priv{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:#d9e2cf;cursor:pointer;width:max-content}
-#yakar-gol .home-online .priv input{flex:none;width:14px;height:14px;margin:0;accent-color:#efbf77;cursor:pointer}
-#yakar-gol .home-online .priv small{font-weight:400;font-size:10px;color:#98ae9c}
+/* Oda standardı sırası: ADIN (tek başına düğmesinin üstünde) · TEK BAŞINA ↗ · ÇEVRİM İÇİ bölümü (başlık + sayı, HIZLI KATIL → birincil). */
+#yakar-gol .home-online.home-nick{margin:18px 0 10px}
+#yakar-gol .online-head{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:2px;color:#b9cebc}
+#yakar-gol .online-head b{font-weight:800;color:#f3ecd8}
+#yakar-gol .online-head #yg-online{letter-spacing:.5px}
+#yakar-gol .home .home-online .quick{position:relative;width:100%;min-height:44px;padding:11px 16px}
+#yakar-gol .home .home-online .quick.soon{opacity:.55;cursor:default;transform:none}
 
-/* Açık odalar: geniş ekranda sağda yüzen pano (her satır: oda sahibi, durum, n/10, Katıl), altında Hızlı katıl. */
+/* Açık odalar: geniş ekranda sağda yüzen pano. Her satır tek düğme: kuranın adı, "5v5 · 5 dk · n/10 oyuncu", LOBİDE / MAÇTA, KATIL → (dolu: DOLU). */
 #yakar-gol .rooms{position:absolute;right:48px;top:130px;width:340px;max-height:calc(100% - 290px);display:flex;flex-direction:column;gap:10px;background:#193b37e8;border:1px solid #e3dcc42a;border-radius:12px;padding:16px;box-shadow:0 18px 50px #091e2b44}
 #yakar-gol .rooms-head{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:2px;color:#b9cebc}
 #yakar-gol .rooms-head b{font-weight:800;color:#f3ecd8}
 #yakar-gol .rooms-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:56px;flex:0 1 auto;overscroll-behavior:contain}
-#yakar-gol .room{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px 9px 12px;border-radius:9px;background:#183f37;border:1px solid #e3dcc41c;border-left:3px solid #8fe3a4}
+#yakar-gol button.room{flex:none;width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:9px 10px 9px 12px;border-radius:9px;background:#183f37;border:1px solid #e3dcc41c;border-left:3px solid #8fe3a4}
+#yakar-gol button.room:hover:not(:disabled){background:#255346}
+#yakar-gol button.room:disabled{opacity:.55;cursor:default;transform:none}
 #yakar-gol .room.playing{border-left-color:#efbf77}
-#yakar-gol .room-info{min-width:0;display:grid;gap:3px}
+#yakar-gol .room-info{flex:1;min-width:0;display:grid;gap:3px}
 #yakar-gol .room-info b{font-size:13px;font-weight:800;color:#f6edda;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #yakar-gol .room-info small{font-size:10px;color:#a7b8a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#yakar-gol .room-info em{font-style:normal;font-weight:800;letter-spacing:1px;color:#8fe3a4}
-#yakar-gol .room.playing .room-info em{color:#efbf77}
-#yakar-gol .room button{flex:none;padding:8px 12px;font-weight:800;letter-spacing:1px;font-size:11px}
-#yakar-gol .room button:disabled{opacity:.5;cursor:default;transform:none}
+#yakar-gol .room-state{flex:none;font-style:normal;font-size:9px;font-weight:800;letter-spacing:1px;color:#8fe3a4}
+#yakar-gol .room.playing .room-state{color:#efbf77}
+#yakar-gol .room-go{flex:none;padding:7px 10px;border-radius:7px;background:#20473f;border:1px solid #e3dcc42a;font-weight:800;letter-spacing:1px;font-size:11px;color:#f4ead7}
 #yakar-gol .home .rooms-empty{margin:0;padding:12px;border:1px dashed #e3dcc42e;border-radius:9px;font-size:11px;line-height:1.5;color:#b9cebc}
-#yakar-gol .home .rooms .primary{width:100%;min-height:46px;padding:12px 18px;flex:none}
-#yakar-gol .rooms .primary:disabled{opacity:.55;cursor:default}
-#yakar-gol .home .rooms-note{margin:0;font-size:10px;line-height:1.45;color:#98ae9c}
 #yakar-gol .lobby-vis{margin-right:auto;padding:4px 8px;border-radius:10px;font-size:9px;font-weight:800;letter-spacing:1px;background:#8fe3a422;color:#8fe3a4}
 #yakar-gol .lobby-vis.priv{background:#efbf7722;color:#efbf77}
 /* Dar ama uzun pencerede pano akışa girer (giriş metninin üstüne binmesin). */
@@ -346,7 +348,7 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .rooms{position:static;width:280px;max-height:280px;margin-top:16px;padding:12px}
 }
 
-/* Lobi: oda kodu, iki takımın beşer koltuğu; boş koltuk "Bot · otur", yöneticinin seçtiği oyuncu vurgulu. */
+/* Bekleme odası: oda kodu, iki takımın beşer koltuğu; boş koltuk "Bot · boş koltuk" (üstüne gelince "Buraya otur"), kuranın seçtiği oyuncu vurgulu. */
 #yakar-gol .lobby-card{width:min(680px,94vw)}
 #yakar-gol .lobby-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #yakar-gol .lobby-head h2{margin:12px 0;letter-spacing:3px;font-size:34px}
@@ -364,10 +366,27 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .lobby-team.orange .seat.taken{border-left:3px solid #f5825b}
 #yakar-gol .seat.taken span{font-weight:800;color:#f6edda}
 #yakar-gol .seat.me{background:#2c5a44}
-#yakar-gol .seat.me span::after{content:" · sen";color:#f4cf3c;font-weight:700}
+#yakar-gol .seat small.tag{font-weight:700;letter-spacing:.5px}
+#yakar-gol .seat small.kuran{color:#efbf77}
+#yakar-gol .seat small.sen{color:#f4cf3c}
+#yakar-gol .seat small.koptu{color:#f08d7a}
+#yakar-gol .seat.free i{font-style:normal}
+#yakar-gol .seat.free .free-h,#yakar-gol .seat.free:hover .free-l{display:none}
+#yakar-gol .seat.free:hover .free-h{display:inline;color:#f5ce8c;font-weight:700}
 #yakar-gol .seat.off{opacity:.55}
 #yakar-gol .seat.picked,#yakar-gol .seat.drop{outline:2px solid #efbf77;outline-offset:1px}
 #yakar-gol .seat.dragging{opacity:.4}
+/* Oda ayarı (yalnız kuran): ODA Herkese açık / Özel; yanında "N insan · M bot". */
+#yakar-gol .lobby-settings{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:10px;letter-spacing:1.5px;color:#a9bdaa}
+#yakar-gol .lobby-settings>span:first-child{font-weight:800}
+#yakar-gol .lobby-settings .seg{display:flex;gap:0}
+#yakar-gol .lobby-settings .seg button{padding:7px 12px;font-size:11px;border-radius:0}
+#yakar-gol .lobby-settings .seg button:first-child{border-radius:8px 0 0 8px}
+#yakar-gol .lobby-settings .seg button:last-child{border-radius:0 8px 8px 0;border-left:0}
+#yakar-gol .lobby-settings .seg button.on{background:#efbf77;color:#1d1a10;font-weight:800}
+#yakar-gol .lobby-settings .seg button:disabled{cursor:default;transform:none;opacity:.7}
+#yakar-gol .lobby-info{margin-left:auto;letter-spacing:.5px;color:#b9cebc}
+#yakar-gol #yg-lobby-start:disabled{opacity:.6;cursor:default;transform:none;font-size:12px}
 #yakar-gol .lobby-status{min-height:18px;margin:12px 0 0;color:#f5ce8c!important}
 #yakar-gol .lobby-leave{display:block;width:100%;margin-top:10px}
 #yakar-gol .pause-note{font-size:11px;margin:14px 0 0}
@@ -381,20 +400,23 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .home .rule-cards{display:none}
 #yakar-gol .home-content{width:min(440px,62vw)}
 #yakar-gol .home-online{width:min(440px,62vw)}
-#yakar-gol .home-online .priv{grid-column:1/-1;font-size:10px}
+#yakar-gol .home-online.home-nick{margin:8px 0 6px;grid-template-columns:1fr}
+#yakar-gol .online-head{grid-column:1/-1}
+#yakar-gol .home .home-online .quick{min-height:0;padding:8px 10px;font-size:10px}
 #yakar-gol .rooms{top:calc(62px + env(safe-area-inset-top));max-height:calc(100% - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom));right:calc(14px + env(safe-area-inset-right));left:calc(5vw + env(safe-area-inset-left) + min(440px,62vw) + 14px);width:auto;max-width:360px;margin-left:auto;padding:10px;gap:7px}
 #yakar-gol .room{padding:6px 8px 6px 10px}
 #yakar-gol .room-info b{font-size:12px}
-#yakar-gol .room button{padding:7px 8px;font-size:10px;letter-spacing:.5px}
+#yakar-gol .room-go{padding:6px 8px;font-size:10px;letter-spacing:.5px}
 #yakar-gol .room-info small{font-size:9px}
 #yakar-gol .room-info em{letter-spacing:0}
-#yakar-gol .room-extra{display:none}
-#yakar-gol .home .rooms .primary{min-height:38px;padding:8px 14px;font-size:11px}
-#yakar-gol .rooms .primary span{font-size:16px}
-#yakar-gol .home .rooms-note{display:none}
 #yakar-gol .lobby-card{padding:16px}
 #yakar-gol .lobby-head h2{font-size:24px;margin:4px 0}
 #yakar-gol .seat{min-height:30px;padding:5px 9px}
+}
+/* Yatay telefon: ADIN tek başına düğmesinin üstüne geçince çevrim içi bölümü sığsın (kod satırı açılınca da). */
+@media(max-height:430px){
+#yakar-gol .home-content>p,#yakar-gol .home-meta{display:none}
+#yakar-gol .home h1{margin:6px 0}
 }
 
 /* Gösteri kipi (?gosteri=1, yalnız web; bkz. src/gosteri.js): yalnız oyun dünyası görünür — üst çubuk, skor tabelası,
