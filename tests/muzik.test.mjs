@@ -171,7 +171,11 @@ test('STANDART üst araç çubuğu: ← josephuz.com · Ses · Müzik · Kontrol
     'standart dörtlü bu sırayla başta olmalı; oyuna özgü düğmeler sonra gelir');
   assert.ok(cubuk.includes('>Ses: açık<'), 'ses düğmesinin yazısı "Ses: açık" olmalı ("Ses açık" değil)');
   assert.ok(cubuk.includes('>Müzik: açık<'), 'müzik düğmesinin yazısı "Müzik: açık" olmalı');
-  assert.ok(/>Kontroller <kbd>F1<\/kbd></.test(cubuk), 'yardım düğmesi "Kontroller F1" olmalı ("Nasıl oynanır" değil)');
+  // Yazı dil sözlüğünden gelir (josephuz docs/dil-standardi.md; data-i18n-html'li öğenin içi boş kalır).
+  assert.ok(/id="yg-help-open" data-i18n-html="arac.kontroller"/.test(cubuk), 'yardım düğmesi sözlükteki arac.kontroller yazısını almalı');
+  const tr = (await import('../src/diller/tr.js')).default;
+  assert.equal(tr['arac.kontroller'], 'Kontroller <kbd>F1</kbd>', 'yardım düğmesi "Kontroller F1" olmalı ("Nasıl oynanır" değil)');
+  assert.ok(sira.at(-1) !== 'dil' && cubuk.trimEnd().endsWith('<button id="dil"></button>'), 'dil düğmesi çubuğun sonunda olmalı');
 });
 
 test('STANDART duraklatma menüsü: DEVAM ET → · Kontroller F1 · Ses · Müzik · … · josephuz.com\'a dön', async () => {

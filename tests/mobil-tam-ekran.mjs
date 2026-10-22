@@ -75,7 +75,7 @@ try {
   const page = await context.newPage(), hatalar = [];
   page.on('pageerror', e => hatalar.push(e.message));
   page.on('console', e => { if (e.type() === 'error') hatalar.push(e.text()); });
-  await page.goto(url + '/?test=1');
+  await page.goto(url + '/?dil=tr&test=1');
   await page.waitForFunction(() => !!window.__yakarGol);
   await page.waitForTimeout(600);
   const olc = sec => page.evaluate(`(${OLC})(${JSON.stringify(sec)})`);
@@ -151,7 +151,7 @@ try {
   // 3) Uygulama kipi (Capacitor; `?app` ile taklit): kaldıracak tarayıcı çubuğu yok, düğme hiç çizilmez.
   const appCtx = await browser.newContext({ viewport: EKRAN, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   const appPage = await appCtx.newPage();
-  await appPage.goto(url + '/?test=1&app=1');
+  await appPage.goto(url + '/?dil=tr&test=1&app=1');
   await appPage.waitForFunction(() => !!window.__yakarGol);
   await appPage.waitForTimeout(400);
   const appFull = await appPage.evaluate(`(${OLC})('#yg-full')`);
@@ -166,7 +166,7 @@ try {
   const DIKEY = { width: 390, height: 844 };
   const dikeyCtx = await browser.newContext({ viewport: DIKEY, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   const dikeyPage = await dikeyCtx.newPage();
-  await dikeyPage.goto(url + '/?test=1');
+  await dikeyPage.goto(url + '/?dil=tr&test=1');
   await dikeyPage.waitForFunction(() => !!window.__yakarGol);
   await dikeyPage.waitForTimeout(400);
   const dikeyCubuk = await dikeyPage.evaluate(`(${OLC})('.header-actions')`), dikeyLogo = await dikeyPage.evaluate(`(${OLC})('.logo')`);
@@ -181,7 +181,7 @@ try {
   for (const cevrimici of [false, true]) {
     const darCtx = await browser.newContext({ viewport: DAR, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
     const darPage = await darCtx.newPage();
-    await darPage.goto(url + '/?test=1');
+    await darPage.goto(url + '/?dil=tr&test=1');
     await darPage.waitForFunction(() => !!window.__yakarGol);
     await darPage.tap('#yg-start');
     await darPage.waitForTimeout(700);

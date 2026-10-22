@@ -15,7 +15,7 @@ try {
   const hero = () => game(() => window.__yakarGol.world().players[0]);
   const ready = () => game(() => { const w = window.__yakarGol.world(); w.kickoff = 0; w.ball.owner = 0; Object.assign(w.players[0], { kickCd: 0, energyCd: 0, guard: 6, dash: 0, jump: 0, stun: 0, x: -10, z: 10 }); for (const t of w.players.slice(1)) t.energyCd = 99; });
 
-  await page.goto(url + '/?test=1');
+  await page.goto(url + '/?dil=tr&test=1');
   await page.waitForFunction(() => !!window.__yakarGol);
   await page.screenshot({ path: 'artifacts/01-home.png' });
 

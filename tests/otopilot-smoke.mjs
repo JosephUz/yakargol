@@ -27,7 +27,7 @@ try {
   page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
   const game = fn => page.evaluate(fn);
 
-  await page.goto(url + '/?otopilot=1&muzik=0');
+  await page.goto(url + '/?dil=tr&otopilot=1&muzik=0');
   await page.waitForFunction(() => window.__yakarGol && window.__yakarGol.state().started, null, { timeout: 20000 });
 
   // 1) Menü atlanır; kip otopilottur, gösteri değildir.

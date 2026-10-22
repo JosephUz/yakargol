@@ -27,7 +27,8 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
   const byToken = new Map(); // token -> conn (kopmuş olsa da)
 
   const send = (conn, obj) => { if (conn.ws && conn.ws.readyState === 1) conn.ws.send(JSON.stringify(obj)); };
-  const error = (conn, msg) => send(conn, { t: S2C.ERROR, msg });
+  /** Hata: `kod` dil bağımsızdır (istemci t('sunucu.' + kod) gösterir, josephuz docs/dil-standardi.md); `msg` eski istemciler için Türkçe yazı. */
+  const error = (conn, kod, msg) => send(conn, { t: S2C.ERROR, kod, msg });
 
   /** Çevrim içi: açık sekme (WebSocket) + yalnız sinyal yollayan sekme (uygulama, bkz. server.mjs presence). */
   const online = () => conns.size + presence();
@@ -213,7 +214,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
   function joinRoom(conn, r) {
     if (r.seats.includes(conn)) { broadcastLobby(r); if (r.world) send(conn, startMsg(r, conn)); return; }
     const slot = freeSeat(r);
-    if (slot < 0) return error(conn, 'Oda dolu');
+    if (slot < 0) return error(conn, 'oda.dolu', 'Oda dolu');
     if (conn.room) leaveRoom(conn);
     conn.input = blankInput();
     seat(r, conn, slot); conn.room = r;
@@ -265,7 +266,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
       case C2S.CREATE: { createRoom(conn, Boolean(msg.priv)); return; }
       case C2S.JOIN: {
         const r = rooms.get(normCode(msg.code));
-        if (!r) return error(conn, 'Böyle bir oda yok');
+        if (!r) return error(conn, 'oda.yok', 'Böyle bir oda yok');
         joinRoom(conn, r);
         return;
       }
@@ -281,7 +282,7 @@ export function createRooms({ log = console.log, presence = () => 0 } = {}) {
         // Boş koltuğa otur (lobide ya da maç sürerken).
         const slot = Math.round(+msg.slot);
         if (!room || !(slot >= 0 && slot < NET.seats)) return;
-        if (room.seats[slot]) return error(conn, 'Koltuk dolu: kuran yerini değiştirebilir');
+        if (room.seats[slot]) return error(conn, 'koltuk.dolu', 'Koltuk dolu: kuran yerini değiştirebilir');
         seat(room, conn, slot);
         broadcastLobby(room);
         if (room.world) roster(room);

@@ -26,7 +26,7 @@ try {
     for (const b of w.players.slice(1)) b.stun = 99;
   });
 
-  await page.goto(url + '/?test=1');
+  await page.goto(url + '/?dil=tr&test=1');
   await page.waitForFunction(() => !!window.__yakarGol);
   assert.ok(await game(() => document.getElementById('yakar-gol').classList.contains('touch')), 'dokunmatik kip açılmalı');
   await page.tap('#yg-start');

@@ -36,6 +36,7 @@ test('oda kurulur, katılan boş koltuğa oturur, istediği koltuğa geçer', ()
   assert.equal(lobby.seats[3].nick, 'Ayşe'); assert.equal(lobby.seats[5], null);
   b.say({ t: 'seat', slot: 0 });
   assert.match(b.last(S2C.ERROR).msg, /dolu/);
+  assert.equal(b.last(S2C.ERROR).kod, 'koltuk.dolu', 'hata dil bağımsız kodla gelmeli (dil standardı)');
   rooms.close();
 });
 
@@ -242,6 +243,7 @@ test('oda kodu küçük harfle ve tiresiz de yazılır (kprt4 → KPRT-4); yanl�
   assert.equal(b.last(S2C.LOBBY)?.code, code);
   c.say({ t: 'join', code: 'ZZZZ-1' });
   assert.equal(c.last(S2C.ERROR).msg, 'Böyle bir oda yok');
+  assert.equal(c.last(S2C.ERROR).kod, 'oda.yok');
   rooms.close();
 });
 

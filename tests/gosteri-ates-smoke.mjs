@@ -40,7 +40,7 @@ try {
   /** Sahne saati verilen saniyeyi geçene kadar bekler (gerçek zamanla değil sahnenin saatiyle). */
   const saniyeyeKadar = (sn, ms = 40000) => page.waitForFunction(s => window.__gosteri.saniye >= s, sn, { timeout: ms, polling: 50 });
 
-  await page.goto(sunucu.url + '/?gosteri=ruzgar-ates&muzik=0');
+  await page.goto(sunucu.url + '/?dil=tr&gosteri=ruzgar-ates&muzik=0');
   await bekle(() => window.__yakarGol && window.__yakarGol.state().started);
   await bekle(() => window.__gosteri && window.__gosteri.evre);
 

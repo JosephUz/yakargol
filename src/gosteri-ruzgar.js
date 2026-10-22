@@ -1,6 +1,7 @@
 import { GOSTERI, GOSTERI_RUZGAR as R, KICK, PITCH } from './config.js';
 import { KEEPER } from './lineup.js';
 import { clamp } from './math.js';
+import { t } from './dil.js';
 
 /**
  * **Rüzgar şutu gösteri sahnesi** (`?gosteri=ruzgar`, yalnız tarayıcıda): içerik videosu için sahnelenmiş tek bir
@@ -22,7 +23,7 @@ import { clamp } from './math.js';
  * Arayüzün gizlenmesi, girdinin okunmaması, ölçümün gitmemesi ve sunucuya bağlanılmaması `?gosteri=1` ile ortaktır
  * (bkz. main.js, style.css `.gosteri`). `?gosteri=1` ve normal oyun bu dosyadan hiç etkilenmez.
  */
-const YAZI = { yukleme: 'Sol tık 1 sn basılı: RÜZGAR ŞUTU', carpma: 'Önüne çıkanı savurur!' };
+const YAZI = { yukleme: t('gosteri.yukleme'), carpma: t('gosteri.carpma') };
 
 export function createRuzgarGosteri(root) {
   const yaziEl = root.querySelector('#yg-gosteri-yazi');

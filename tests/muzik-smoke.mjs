@@ -54,7 +54,7 @@ async function muzikYokDenetle() {
   const page = await ctx.newPage(), errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
-  await page.goto(url + '/?test=1&muzik=1');
+  await page.goto(url + '/?dil=tr&test=1&muzik=1');
   await hazir(page);
   await page.locator('#yg-home h1').click();
   await page.waitForTimeout(1000);
@@ -94,7 +94,7 @@ try {
   page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
 
   // 1) Açılış: oyun kurulur, müzik açıktır ama kullanıcı daha dokunmadığı için hiçbir şey çalmaz.
-  await page.goto(url + '/?test=1&muzik=1');
+  await page.goto(url + '/?dil=tr&test=1&muzik=1');
   await hazir(page);
   const ilk = await durumu(page);
   assert.equal(ilk.kapali, false, 'müzik açık (?muzik=1)');
@@ -205,7 +205,7 @@ try {
 
   // 6b) Ayar sayfa yenilenince korunur ve kapalıyken hiç ses öğesi kurulmaz.
   await page.locator('#yg-pause-muzik').click(); // yeniden kapat
-  await page.goto(url + '/?test=1&muzik=1');
+  await page.goto(url + '/?dil=tr&test=1&muzik=1');
   await hazir(page);
   assert.equal((await durumu(page)).acik, false, 'yenilemeden sonra müzik kapalı');
   assert.equal(await page.locator('#yg-muzik').textContent(), 'Müzik: kapalı', 'yenilemeden sonra düğme de kapalı yazar');
@@ -222,7 +222,7 @@ try {
   await bekleCalsin(page, 'yakar-6-mactan-sonra');
 
   // 7) Gösteri kipi: video betiği müziğini kendi ekler, oyun hiç ses öğesi kurmaz.
-  await page.goto(url + '/?gosteri=1');
+  await page.goto(url + '/?dil=tr&gosteri=1');
   await hazir(page);
   await page.mouse.click(640, 360);
   await page.waitForTimeout(2000);
@@ -240,7 +240,7 @@ try {
   const telPage = await telCtx.newPage(), telHata = [];
   telPage.on('pageerror', e => telHata.push(e.message));
   telPage.on('console', e => { if (e.type() === 'error') telHata.push(e.text()); });
-  await telPage.goto(url + '/?test=1&muzik=1');
+  await telPage.goto(url + '/?dil=tr&test=1&muzik=1');
   await hazir(telPage);
   assert.equal(await calan(telPage), null, 'dokunmadan önce telefonda da hiçbir şey çalmaz');
 

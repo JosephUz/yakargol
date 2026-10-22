@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#193d39">
 <title>Yakar Gol · Mahalle Ligi</title>
+<meta name="description" content="Yakar Gol: 5v5 mahalle futbolu. Pas ver, duvardan sektir, yakar pasla rakibi kenara yolla. Tek başına ya da çevrim içi." data-i18n-content="sayfa.aciklama">
 <!-- Ana ekrana eklenince (Android: "Uygulama olarak yükle", iOS: Paylaş → Ana Ekrana Ekle) oyun tam ekran ve yatay
      açılır: adres çubuğu hiç çıkmaz, üst kısım hiçbir çubuğun altında kalmaz. -->
 <link rel="manifest" href="/manifest.webmanifest">
@@ -26,80 +27,82 @@
     <div class="grain"></div>
 
     <header>
-      <a class="logo" href="/">YAKAR<span>GOL</span><small>MAHALLE LİGİ / İLK DENEME</small></a>
+      <a class="logo" href="/">YAKAR<span>GOL</span><small data-i18n="arac.altBaslik">MAHALLE LİGİ / İLK DENEME</small></a>
       <!-- STANDART üst araç çubuğu (bütün JosephUz oyunlarında aynı sıra ve aynı yazılar):
            ← josephuz.com · Ses: açık/kapalı · Müzik: açık/kapalı · Kontroller F1.
            Oyuna özgü düğmeler (duraklat, kamera, tam ekran) standart dörtlünün ardına gelir. -->
       <div class="header-actions">
         <a id="yg-site" class="btn" href="https://www.josephuz.com/">← josephuz.com</a>
-        <button id="yg-sound" aria-label="Ses efektlerini aç veya kapat">Ses: açık</button>
-        <button id="yg-muzik" aria-label="Oyun müziğini aç veya kapat" title="Oyun müziği (ses düzeyi Esc menüsünde)">Müzik: açık</button>
-        <button id="yg-help-open">Kontroller <kbd>F1</kbd></button>
-        <button id="yg-pause-open" hidden>Duraklat <kbd>Esc</kbd></button>
-        <button id="yg-cam" aria-label="Kamera: izometrik / omuz">🎥 Omuz</button>
-        <button id="yg-full" aria-label="Tam ekran">⛶ Tam ekran</button>
+        <button id="yg-sound" aria-label="Ses efektlerini aç veya kapat" data-i18n-aria-label="arac.sesAria" data-i18n="arac.sesAcik">Ses: açık</button>
+        <button id="yg-muzik" aria-label="Oyun müziğini aç veya kapat" data-i18n-aria-label="arac.muzikAria" title="Oyun müziği (ses düzeyi Esc menüsünde)" data-i18n-title="arac.muzikTitle" data-i18n="arac.muzikAcik">Müzik: açık</button>
+        <button id="yg-help-open" data-i18n-html="arac.kontroller"></button>
+        <button id="yg-pause-open" hidden data-i18n-html="arac.duraklat"></button>
+        <button id="yg-cam" aria-label="Kamera: izometrik / omuz" data-i18n-aria-label="arac.kameraAria">🎥 Omuz</button>
+        <button id="yg-full" aria-label="Tam ekran" data-i18n-aria-label="arac.tamEkranAria">⛶ Tam ekran</button>
+        <!-- Dil düğmesi (josephuz docs/dil-standardi.md): çubuğun sonunda, öbür dili gösterir; maçta gizli (ui.js → hud). -->
+        <button id="dil"></button>
       </div>
     </header>
 
     <div id="yg-scoreboard" hidden>
-      <div class="team blue-text"><span class="pips"><span class="fires" id="yg-blue-fire"></span><span class="winds" id="yg-blue-wind"></span></span>MAVİ <b id="yg-blue-score">0</b></div>
-      <div class="clock"><span id="yg-timer">05:00</span><small id="yg-period">5v5 · TEK MAÇ</small></div>
-      <div class="team orange-text"><b id="yg-orange-score">0</b> TURUNCU<span class="pips"><span class="fires" id="yg-orange-fire"></span><span class="winds" id="yg-orange-wind"></span></span></div>
+      <div class="team blue-text"><span class="pips"><span class="fires" id="yg-blue-fire"></span><span class="winds" id="yg-blue-wind"></span></span><span data-i18n="takim.0">MAVİ</span> <b id="yg-blue-score">0</b></div>
+      <div class="clock"><span id="yg-timer">05:00</span><small id="yg-period" data-i18n="mac.tekMac">5v5 · TEK MAÇ</small></div>
+      <div class="team orange-text"><b id="yg-orange-score">0</b> <span data-i18n="takim.1">TURUNCU</span><span class="pips"><span class="fires" id="yg-orange-fire"></span><span class="winds" id="yg-orange-wind"></span></span></div>
     </div>
 
     <section id="yg-home" class="home">
       <div class="home-content">
-        <div class="eyebrow"><i></i> 5v5 FUTBOL + YAKAR PAS</div>
-        <h1>Mahalle senin.<br><span>Oyun kızışsın.</span></h1>
-        <p>Pas ver, duvardan sektir, kaleyi bul.<br>Ya da rakibi yakıp takımına yol aç.</p>
+        <div class="eyebrow"><i></i> <span data-i18n="ana.ust">5v5 FUTBOL + YAKAR PAS</span></div>
+        <h1 data-i18n-html="ana.baslik"></h1>
+        <p data-i18n-html="ana.alt"></p>
         <!-- Oda standardı (josephuz docs/oda-standardi.md): ADIN · TEK BAŞINA ↗ · ÇEVRİM İÇİ (HIZLI KATIL → / ODA KUR / ODAYA KATIL) · AÇIK ODALAR -->
         <div class="home-online home-nick">
-          <label class="nick"><span>ADIN</span><input id="yg-nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Oyuncu adı"></label>
+          <label class="nick"><span data-i18n="ana.adin">ADIN</span><input id="yg-nick" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Oyuncu adı" data-i18n-aria-label="ana.adAria"></label>
         </div>
-        <button id="yg-start" class="primary">TEK BAŞINA <span>↗</span></button>
-        <div class="home-meta"><span>01 OYUNCU + 09 BOT</span><span>05 DAKİKA</span></div>
+        <button id="yg-start" class="primary" data-i18n-html="ana.tek"></button>
+        <div class="home-meta"><span data-i18n="ana.metaOyuncu">01 OYUNCU + 09 BOT</span><span data-i18n="ana.metaSure">05 DAKİKA</span></div>
         <div class="home-online">
-          <div class="online-head"><b>ÇEVRİM İÇİ</b><span id="yg-online"></span></div>
-          <button id="yg-quick" class="primary quick">HIZLI KATIL <span>→</span></button>
+          <div class="online-head"><b data-i18n="ana.cevrimIci">ÇEVRİM İÇİ</b><span id="yg-online"></span></div>
+          <button id="yg-quick" class="primary quick" data-i18n-html="oda.hizli"></button>
           <div class="online-row">
-            <button id="yg-create">ODA KUR</button>
-            <button id="yg-join">ODAYA KATIL</button>
+            <button id="yg-create" data-i18n="oda.kur">ODA KUR</button>
+            <button id="yg-join" data-i18n="oda.katil">ODAYA KATIL</button>
           </div>
-          <div id="yg-joinrow" class="join-row" hidden><input id="yg-code" placeholder="ODA KODU" maxlength="6" autocomplete="off" spellcheck="false" aria-label="Oda kodu"><button id="yg-join-go">KATIL</button></div>
+          <div id="yg-joinrow" class="join-row" hidden><input id="yg-code" placeholder="ODA KODU" data-i18n-placeholder="oda.kodYer" maxlength="6" autocomplete="off" spellcheck="false" aria-label="Oda kodu" data-i18n-aria-label="oda.kodAria"><button id="yg-join-go" data-i18n="oda.katilKisa">KATIL</button></div>
           <div class="home-status"><span id="yg-home-status" role="status"></span></div>
         </div>
         <aside id="yg-rooms" class="rooms" hidden aria-labelledby="yg-rooms-title">
-          <div class="rooms-head"><b id="yg-rooms-title">AÇIK ODALAR</b><span id="yg-rooms-count"></span></div>
+          <div class="rooms-head"><b id="yg-rooms-title" data-i18n="oda.acikOdalar">AÇIK ODALAR</b><span id="yg-rooms-count"></span></div>
           <div id="yg-rooms-list" class="rooms-list"></div>
         </aside>
         <div class="rule-cards">
-          <div><b>01 / GOL</b><span>Skoru goller belirler.</span></div>
-          <div><b>02 / YAK</b><span>Rakibi 4 saniye kenara al.</span></div>
-          <div><b>03 / KAY</b><span>Kayarak topu mutlaka çal.</span></div>
+          <div><b data-i18n="ana.kural1">01 / GOL</b><span data-i18n="ana.kural1Metin">Skoru goller belirler.</span></div>
+          <div><b data-i18n="ana.kural2">02 / YAK</b><span data-i18n="ana.kural2Metin">Rakibi 4 saniye kenara al.</span></div>
+          <div><b data-i18n="ana.kural3">03 / KAY</b><span data-i18n="ana.kural3Metin">Kayarak topu mutlaka çal.</span></div>
         </div>
       </div>
-      <div class="pitch-note"><i></i> MAHALLE SAHASI <span>Duvarlar oyunun bir parçası.</span></div>
+      <div class="pitch-note" data-i18n-html="ana.saha"></div>
     </section>
 
     <div id="yg-speed" hidden></div>
     <div id="yg-crosshair" hidden>+</div>
     <div id="yg-charge" hidden><div class="charge-ring"></div><span id="yg-charge-text"></span></div>
     <div id="yg-overhead" hidden>
-      <div id="yg-over-stun" class="over-row stun" hidden><span id="yg-over-stun-text">SERSEM</span><div class="over-bar"><i id="yg-over-stun-fill"></i></div></div>
-      <div id="yg-over-energy" class="over-row energy" hidden><span id="yg-over-energy-text">ENERJİ</span><div class="over-bar"><i id="yg-over-energy-fill"></i></div></div>
+      <div id="yg-over-stun" class="over-row stun" hidden><span id="yg-over-stun-text" data-i18n="mac.sersem">SERSEM</span><div class="over-bar"><i id="yg-over-stun-fill"></i></div></div>
+      <div id="yg-over-energy" class="over-row energy" hidden><span id="yg-over-energy-text" data-i18n="mac.enerji">ENERJİ</span><div class="over-bar"><i id="yg-over-energy-fill"></i></div></div>
     </div>
-    <div id="yg-cine" hidden><i class="cine-bar top"></i><i class="cine-bar bottom"></i><div class="cine-title"><strong id="yg-cine-title">YAKAR PAS!</strong><span id="yg-cine-who"></span><div id="yg-cine-aim" class="cine-aim" hidden><i id="yg-cine-aim-fill"></i></div></div></div>
+    <div id="yg-cine" hidden><i class="cine-bar top"></i><i class="cine-bar bottom"></i><div class="cine-title"><strong id="yg-cine-title" data-i18n="mac.yakarPas">YAKAR PAS!</strong><span id="yg-cine-who"></span><div id="yg-cine-aim" class="cine-aim" hidden><i id="yg-cine-aim-fill"></i></div></div></div>
     <div id="yg-ballmark" hidden aria-hidden="true"><i></i></div>
     <div id="yg-message" role="status" hidden></div>
-    <div id="yg-burn" hidden><strong>YANDIN!</strong><span id="yg-burn-count"></span><small>Birazdan kenardan oyuna döneceksin.</small></div>
+    <div id="yg-burn" hidden><strong data-i18n="mac.yandin">YANDIN!</strong><span id="yg-burn-count"></span><small data-i18n="mac.yandinMetin">Birazdan kenardan oyuna döneceksin.</small></div>
 
     <aside id="yg-player" hidden>
-      <span class="eyebrow" id="yg-side">SEN / MAVİ TAKIM</span>
-      <strong id="yg-ball-status">TOPU KAZAN</strong>
-      <div class="meter-label"><span>ENERJİ</span><span id="yg-energy-text">HAZIR</span></div>
+      <span class="eyebrow" id="yg-side"></span>
+      <strong id="yg-ball-status" data-i18n="mac.topuKazan">TOPU KAZAN</strong>
+      <div class="meter-label"><span data-i18n="mac.enerji">ENERJİ</span><span id="yg-energy-text" data-i18n="mac.hazir">HAZIR</span></div>
       <div class="meter"><i id="yg-energy-fill"></i></div>
-      <div class="meter-label fire-row"><span>TAKIMIN YAKAR PASI</span><span id="yg-fire-left">5 / 5</span></div>
-      <div class="meter-label wind-row"><span>TAKIMIN RÜZGAR ŞUTU</span><span id="yg-wind-left">5 / 5</span></div>
+      <div class="meter-label fire-row"><span data-i18n="mac.takiminYakar">TAKIMIN YAKAR PASI</span><span id="yg-fire-left">5 / 5</span></div>
+      <div class="meter-label wind-row"><span data-i18n="mac.takiminRuzgar">TAKIMIN RÜZGAR ŞUTU</span><span id="yg-wind-left">5 / 5</span></div>
     </aside>
 
     <div id="yg-touch" hidden>
@@ -107,13 +110,13 @@
       <div class="touch-zone right" data-t="look"></div>
       <div id="yg-stick" hidden><i></i></div>
       <div class="touch-buttons">
-        <div id="yg-t-shoot" class="tbtn shoot" data-t="shoot" role="button" aria-label="Şut ya da pas iste"><b class="when-ball">ŞUT</b><small class="when-ball">TUT: RÜZGAR</small><b class="when-free">PAS İSTE</b></div>
-        <div id="yg-t-pass" class="tbtn pass" data-t="pass" role="button" aria-label="Pas, yakar pas ya da kay"><b class="when-ball">PAS</b><small class="when-ball">TUT: YAKAR</small><b class="when-free">KAY</b></div>
-        <div id="yg-t-jump" class="tbtn jump" data-t="jump" role="button" aria-label="Zıpla"><b>ZIPLA</b></div>
-        <div id="yg-t-sprint" class="tbtn sprint" data-t="sprint" role="button" aria-label="Hızlı koş"><b>KOŞ</b></div>
+        <div id="yg-t-shoot" class="tbtn shoot" data-t="shoot" role="button" aria-label="Şut ya da pas iste" data-i18n-aria-label="dokun.sutAria"><b class="when-ball" data-i18n="dokun.sut">ŞUT</b><small class="when-ball" data-i18n="dokun.tutRuzgar">TUT: RÜZGAR</small><b class="when-free" data-i18n="dokun.pasIste">PAS İSTE</b></div>
+        <div id="yg-t-pass" class="tbtn pass" data-t="pass" role="button" aria-label="Pas, yakar pas ya da kay" data-i18n-aria-label="dokun.pasAria"><b class="when-ball" data-i18n="dokun.pas">PAS</b><small class="when-ball" data-i18n="dokun.tutYakar">TUT: YAKAR</small><b class="when-free" data-i18n="dokun.kay">KAY</b></div>
+        <div id="yg-t-jump" class="tbtn jump" data-t="jump" role="button" aria-label="Zıpla" data-i18n-aria-label="dokun.ziplaAria"><b data-i18n="dokun.zipla">ZIPLA</b></div>
+        <div id="yg-t-sprint" class="tbtn sprint" data-t="sprint" role="button" aria-label="Hızlı koş" data-i18n-aria-label="dokun.kosAria"><b data-i18n="dokun.kos">KOŞ</b></div>
       </div>
     </div>
-    <div id="yg-rotate"><strong>Telefonu yan çevir</strong><span>Yakar Gol yatay ekranda oynanır.</span></div>
+    <div id="yg-rotate"><strong data-i18n="ana.cevir">Telefonu yan çevir</strong><span data-i18n="ana.cevirMetin">Yakar Gol yatay ekranda oynanır.</span></div>
     <!-- Gösteri kipi (?gosteri=1): arayüz gizliyken köşede duran küçük oyun adı. -->
     <div id="yg-gosteri" hidden aria-hidden="true">YAKAR GOL</div>
     <!-- Rüzgar şutu gösteri sahnesi (?gosteri=ruzgar): içerik videosundaki büyük açıklama yazısı (bkz. src/gosteri-ruzgar.js). -->
@@ -122,92 +125,92 @@
     <div id="yg-gosteri-baslik" hidden aria-hidden="true"></div>
 
     <div id="yg-controls" hidden>
-      <span><kbd>W A S D</kbd> Hareket</span>
-      <span><kbd>FARE</kbd> Bak / nişan</span>
-      <span><kbd>SOL TIK</kbd> Şut · 1 sn tut: Rüzgar · topsuz: Pas iste</span>
-      <span><kbd>SAĞ TIK</kbd> Pas · 1 sn tut: Yakar pas · topsuz: Kay</span>
-      <span><kbd>SHIFT</kbd> Hızlı koş</span>
-            <span><kbd>BOŞLUK</kbd> Zıpla</span>
-      <span><kbd>V</kbd> Kamera</span>
+      <span data-i18n-html="tus.hareket"></span>
+      <span data-i18n-html="tus.fare"></span>
+      <span data-i18n-html="tus.solTik"></span>
+      <span data-i18n-html="tus.sagTik"></span>
+      <span data-i18n-html="tus.shift"></span>
+      <span data-i18n-html="tus.bosluk"></span>
+      <span data-i18n-html="tus.kamera"></span>
     </div>
 
     <section id="yg-help" class="overlay" hidden>
       <div class="card">
-        <span class="eyebrow">MAHALLE KURALLARI</span>
-        <h2>Top sende.<br>Karar da sende.</h2>
+        <span class="eyebrow" data-i18n="yardim.ust">MAHALLE KURALLARI</span>
+        <h2 data-i18n-html="yardim.baslik"></h2>
         <dl class="touch-only">
-          <dt>Sol yarı</dt><dd>Parmağını koy, joystick belirir: sürükleyerek koş. Hızlı koşu yalnız KOŞ düğmesiyle.</dd>
-          <dt>Kamera 🎥</dt><dd>Telefonda izometrik (sabit yan açı) başlar: nişan koştuğun yöndür, rakip kaleye dönüksen kaleye kilitlenir (yerdeki ok gösterir). 🎥 ile omuz kamerasına geçersin (ortadaki artı nişangahtır).</dd>
-          <dt>Sağ yarı</dt><dd>Parmağını kaydırarak kamerayı çevir (omuzda bakış ve nişan).</dd>
-          <dt>ŞUT</dt><dd>Dokun: şut. 1 saniye basılı tut: oyun ağır çekime geçer, 2 saniye içinde nişan al (izometrikte joystick, omuzda parmak kaydırarak), bırakınca rüzgar şutu çıkar (takım başına 5 hak). Kaleye nişanlıysan nereden vurursan vur gol olur; değilse ilk duvarda biter. Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
-          <dt>PAS İSTE</dt><dd>Top sende değilken ŞUT düğmesi PAS İSTE olur: dokun, başında "PAS!" çıkar; topu taşıyan bot arkadaşın sana pas verir.</dd>
-          <dt>PAS / KAY</dt><dd>Top sendeyken dokun: pas. 1 saniye basılı tut: oyun ağır çekime geçer, top alev alır; bir takım arkadaşına nişan al (başında "YAKAR PAS" yazar), bırakınca alevli top ona gider ve yol boyunca değdiği bütün rakipleri yakıp kenara yollar (takım başına 5 hak). Yakar pastan zıplayarak kurtulunur. Topsuzken: topa doğru kay, topu mutlaka çal; rakip nişan alırken kayarak vuruşunu engelle.</dd>
-          <dt>ZIPLA / KOŞ</dt><dd>Havadayken yakar pas seni yakamaz. Koşu 3 saniye sürer; kayma ve koşu aynı enerjiyi kullanır (düğmelerde dolum). Yakar pas ve rüzgar şutu enerji istemez.</dd>
-          <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, kaptıran sersemler. Arkadan düz koşuyla alınmaz; koş ya da kay.</dd>
+          <dt data-i18n="yardim.d.solYari">Sol yarı</dt><dd data-i18n="yardim.d.solYariMetin">Parmağını koy, joystick belirir: sürükleyerek koş. Hızlı koşu yalnız KOŞ düğmesiyle.</dd>
+          <dt data-i18n="yardim.d.kamera">Kamera 🎥</dt><dd data-i18n="yardim.d.kameraMetin">Telefonda izometrik (sabit yan açı) başlar: nişan koştuğun yöndür, rakip kaleye dönüksen kaleye kilitlenir (yerdeki ok gösterir). 🎥 ile omuz kamerasına geçersin (ortadaki artı nişangahtır).</dd>
+          <dt data-i18n="yardim.d.sagYari">Sağ yarı</dt><dd data-i18n="yardim.d.sagYariMetin">Parmağını kaydırarak kamerayı çevir (omuzda bakış ve nişan).</dd>
+          <dt data-i18n="yardim.d.sut">ŞUT</dt><dd data-i18n="yardim.d.sutMetin">Dokun: şut. 1 saniye basılı tut: oyun ağır çekime geçer, 2 saniye içinde nişan al (izometrikte joystick, omuzda parmak kaydırarak), bırakınca rüzgar şutu çıkar (takım başına 5 hak). Kaleye nişanlıysan nereden vurursan vur gol olur; değilse ilk duvarda biter. Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
+          <dt data-i18n="yardim.d.pasIste">PAS İSTE</dt><dd data-i18n="yardim.d.pasIsteMetin">Top sende değilken ŞUT düğmesi PAS İSTE olur: dokun, başında "PAS!" çıkar; topu taşıyan bot arkadaşın sana pas verir.</dd>
+          <dt data-i18n="yardim.d.pasKay">PAS / KAY</dt><dd data-i18n="yardim.d.pasKayMetin">Top sendeyken dokun: pas. 1 saniye basılı tut: oyun ağır çekime geçer, top alev alır; bir takım arkadaşına nişan al (başında "YAKAR PAS" yazar), bırakınca alevli top ona gider ve yol boyunca değdiği bütün rakipleri yakıp kenara yollar (takım başına 5 hak). Yakar pastan zıplayarak kurtulunur. Topsuzken: topa doğru kay, topu mutlaka çal; rakip nişan alırken kayarak vuruşunu engelle.</dd>
+          <dt data-i18n="yardim.d.ziplaKos">ZIPLA / KOŞ</dt><dd data-i18n="yardim.d.ziplaKosMetin">Havadayken yakar pas seni yakamaz. Koşu 3 saniye sürer; kayma ve koşu aynı enerjiyi kullanır (düğmelerde dolum). Yakar pas ve rüzgar şutu enerji istemez.</dd>
+          <dt data-i18n="yardim.d.kapma">Top kapma</dt><dd data-i18n="yardim.d.kapmaMetin">Taşınan topa yaklaşınca kaparsın, kaptıran sersemler. Arkadan düz koşuyla alınmaz; koş ya da kay.</dd>
         </dl>
         <dl class="desktop-only">
-          <dt>WASD / Oklar</dt><dd>Baktığın yöne göre hareket et. Topa yaklaşınca otomatik alırsın.</dd>
-          <dt>Fare + sol tık</dt><dd>Kamera omzunun üstünde; fareyle bak, nişangaha doğru beyaz şut çek (bırakınca çıkar). Gol atmanın yolu bu!</dd>
-          <dt>Sol tık basılı</dt><dd>1 saniye tut (camgöbeği halka dolar): oyun ağır çekime geçer, 2 saniye fareyle nişan al ve bırak: rüzgar şutu. Durdurulamaz, kimse tutamaz, yolundakileri savurur; kaleye nişanlıysa her yerden gol olur, değilse ilk duvarda biter. Takım başına maçta 5 rüzgar şutu (skor tabelasında camgöbeği damlalar). Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
-          <dt>Sol tık (topsuz)</dt><dd>Pas iste: başında "PAS!" çıkar, topu taşıyan bot arkadaşın sana pas verir.</dd>
-          <dt>Sağ tık</dt><dd>Top sendeyken kısa bas: pas. 1 saniye basılı tut (turuncu halka dolar): oyun ağır çekime geçer, top alev alır, fareyle bir takım arkadaşına nişan al (başında "YAKAR PAS" yazar) ve bırak: kırmızı alevli top ağır çekimde mutlaka o arkadaşa gider, yol boyunca değdiği bütün rakipleri yakıp kenara yollar, durmaz (takım başına maçta 5 kez; kalan haklar skor tabelasında). Yakar pas gol olmaz; zıplayan kurtulur. Topsuzken topa doğru kay (hangi yöne basarsan bas). Top taşıyana kayarak dokunursan topu mutlaka çalarsın; rakip nişan alırken kayarak vuruşunu engellersin.</dd>
-          <dt>Top kapma</dt><dd>Taşınan topa yaklaşınca kaparsın, boştaki topa yaklaşınca yakalarsın. Topu yürüyerek kaptıran 2 saniye, kayarak kaptıran 1,5 saniye sersemler: kıpırdayamaz, şut atamaz, topu geri kapamaz. Arkadan düz koşuyla alınmaz; hızlı koş ya da kay.</dd>
-          <dt>Shift</dt><dd>3 saniye hızlı koşu, sonra yorulur normale dönersin (enerji koşu bitince dolmaya başlar).</dd>
-          <dt>Enerji</dt><dd>Kayma ve hızlı koşu aynı enerjiyi kullanır: biri kullanılınca ikisi de 3 saniye bekler. Yakar pas ve rüzgar şutu enerji istemez, yalnız takımın hakkı (5'er) sayılır. Geri sayım karakterinin sırtında görünür.</dd>
-          <dt>Boşluk</dt><dd>Zıpla. Havadayken yakar pas seni yakamaz.</dd>
-          <dt>V</dt><dd>Kamera: omuz ↔ izometrik (futbol yayını gibi sabit yan açı, kaleler sağda ve solda). İzometrikte fare kilitlenmez: şut, pas ve yakar pas imlecin sahada gösterdiği yere gider (yerdeki ok).</dd>
-          <dt>Esc</dt><dd>Fareyi bırakır ve oyunu durdurur. Devam edince fare yeniden kilitlenir.</dd>
+          <dt data-i18n="yardim.m.wasd">WASD / Oklar</dt><dd data-i18n="yardim.m.wasdMetin">Baktığın yöne göre hareket et. Topa yaklaşınca otomatik alırsın.</dd>
+          <dt data-i18n="yardim.m.fare">Fare + sol tık</dt><dd data-i18n="yardim.m.fareMetin">Kamera omzunun üstünde; fareyle bak, nişangaha doğru beyaz şut çek (bırakınca çıkar). Gol atmanın yolu bu!</dd>
+          <dt data-i18n="yardim.m.solBasili">Sol tık basılı</dt><dd data-i18n="yardim.m.solBasiliMetin">1 saniye tut (camgöbeği halka dolar): oyun ağır çekime geçer, 2 saniye fareyle nişan al ve bırak: rüzgar şutu. Durdurulamaz, kimse tutamaz, yolundakileri savurur; kaleye nişanlıysa her yerden gol olur, değilse ilk duvarda biter. Takım başına maçta 5 rüzgar şutu (skor tabelasında camgöbeği damlalar). Nişan alırken rakip kayarak topu alırsa vuruş olmaz.</dd>
+          <dt data-i18n="yardim.m.solTopsuz">Sol tık (topsuz)</dt><dd data-i18n="yardim.m.solTopsuzMetin">Pas iste: başında "PAS!" çıkar, topu taşıyan bot arkadaşın sana pas verir.</dd>
+          <dt data-i18n="yardim.m.sag">Sağ tık</dt><dd data-i18n="yardim.m.sagMetin">Top sendeyken kısa bas: pas. 1 saniye basılı tut (turuncu halka dolar): oyun ağır çekime geçer, top alev alır, fareyle bir takım arkadaşına nişan al (başında "YAKAR PAS" yazar) ve bırak: kırmızı alevli top ağır çekimde mutlaka o arkadaşa gider, yol boyunca değdiği bütün rakipleri yakıp kenara yollar, durmaz (takım başına maçta 5 kez; kalan haklar skor tabelasında). Yakar pas gol olmaz; zıplayan kurtulur. Topsuzken topa doğru kay (hangi yöne basarsan bas). Top taşıyana kayarak dokunursan topu mutlaka çalarsın; rakip nişan alırken kayarak vuruşunu engellersin.</dd>
+          <dt data-i18n="yardim.m.kapma">Top kapma</dt><dd data-i18n="yardim.m.kapmaMetin">Taşınan topa yaklaşınca kaparsın, boştaki topa yaklaşınca yakalarsın. Topu yürüyerek kaptıran 2 saniye, kayarak kaptıran 1,5 saniye sersemler: kıpırdayamaz, şut atamaz, topu geri kapamaz. Arkadan düz koşuyla alınmaz; hızlı koş ya da kay.</dd>
+          <dt data-i18n="yardim.m.shift">Shift</dt><dd data-i18n="yardim.m.shiftMetin">3 saniye hızlı koşu, sonra yorulur normale dönersin (enerji koşu bitince dolmaya başlar).</dd>
+          <dt data-i18n="yardim.m.enerji">Enerji</dt><dd data-i18n="yardim.m.enerjiMetin">Kayma ve hızlı koşu aynı enerjiyi kullanır: biri kullanılınca ikisi de 3 saniye bekler. Yakar pas ve rüzgar şutu enerji istemez, yalnız takımın hakkı (5'er) sayılır. Geri sayım karakterinin sırtında görünür.</dd>
+          <dt data-i18n="yardim.m.bosluk">Boşluk</dt><dd data-i18n="yardim.m.boslukMetin">Zıpla. Havadayken yakar pas seni yakamaz.</dd>
+          <dt data-i18n="yardim.m.v">V</dt><dd data-i18n="yardim.m.vMetin">Kamera: omuz ↔ izometrik (futbol yayını gibi sabit yan açı, kaleler sağda ve solda). İzometrikte fare kilitlenmez: şut, pas ve yakar pas imlecin sahada gösterdiği yere gider (yerdeki ok).</dd>
+          <dt data-i18n="yardim.m.esc">Esc</dt><dd data-i18n="yardim.m.escMetin">Fareyi bırakır ve oyunu durdurur. Devam edince fare yeniden kilitlenir.</dd>
         </dl>
-        <p>Aut yok: top duvarlardan seker. Yanan oyuncu 4 saniye sonra geri döner. Beraberlikte sonraki gol kazanır. Çok oyunculu: giriş ekranından oda kur, kodu ya da linki paylaş; herkes boş koltuğa oturur, kuran yerleri değiştirebilir.</p>
-        <button id="yg-help-close" class="primary">ANLADIM</button>
+        <p data-i18n="yardim.not">Aut yok: top duvarlardan seker. Yanan oyuncu 4 saniye sonra geri döner. Beraberlikte sonraki gol kazanır. Çok oyunculu: giriş ekranından oda kur, kodu ya da linki paylaş; herkes boş koltuğa oturur, kuran yerleri değiştirebilir.</p>
+        <button id="yg-help-close" class="primary" data-i18n="yardim.anladim">ANLADIM</button>
       </div>
     </section>
 
     <section id="yg-lobby" class="overlay" hidden>
       <div class="card lobby-card">
         <span class="eyebrow" id="yg-lobby-eyebrow">ODA · 5v5 · 5 dk</span>
-        <div class="lobby-head"><h2 id="yg-lobby-code">----</h2><span id="yg-lobby-vis" class="lobby-vis"></span><button id="yg-lobby-copy">Linki kopyala</button></div>
+        <div class="lobby-head"><h2 id="yg-lobby-code">----</h2><span id="yg-lobby-vis" class="lobby-vis"></span><button id="yg-lobby-copy" data-i18n="oda.linkKopyala">Linki kopyala</button></div>
         <p id="yg-lobby-hint"></p>
         <div class="lobby-teams">
-          <div class="lobby-team blue"><b>MAVİ</b><ol id="yg-seats-0"></ol></div>
-          <div class="lobby-team orange"><b>TURUNCU</b><ol id="yg-seats-1"></ol></div>
+          <div class="lobby-team blue"><b data-i18n="takim.0">MAVİ</b><ol id="yg-seats-0"></ol></div>
+          <div class="lobby-team orange"><b data-i18n="takim.1">TURUNCU</b><ol id="yg-seats-1"></ol></div>
         </div>
-        <div class="lobby-settings"><span>ODA</span><div class="seg" role="group" aria-label="Oda görünürlüğü"><button id="yg-lobby-pub" data-priv="0">Herkese açık</button><button id="yg-lobby-priv" data-priv="1">Özel</button></div><span id="yg-lobby-info" class="lobby-info"></span></div>
+        <div class="lobby-settings"><span data-i18n="oda.ayar">ODA</span><div class="seg" role="group" aria-label="Oda görünürlüğü" data-i18n-aria-label="oda.gorunurlukAria"><button id="yg-lobby-pub" data-priv="0" data-i18n="oda.herkeseAcik">Herkese açık</button><button id="yg-lobby-priv" data-priv="1" data-i18n="oda.ozelKisa">Özel</button></div><span id="yg-lobby-info" class="lobby-info"></span></div>
         <p id="yg-lobby-status" class="lobby-status" role="status"></p>
-        <button id="yg-lobby-start" class="primary">MAÇI BAŞLAT <span>↗</span></button>
-        <button id="yg-lobby-leave" class="lobby-leave">Odadan çık</button>
+        <button id="yg-lobby-start" class="primary" data-i18n-html="oda.baslat"></button>
+        <button id="yg-lobby-leave" class="lobby-leave" data-i18n="oda.cik">Odadan çık</button>
       </div>
     </section>
 
     <section id="yg-pause" class="overlay" hidden>
       <div class="card small">
-        <span class="eyebrow">MOLA</span>
-        <h2>Bir nefes al.</h2>
+        <span class="eyebrow" data-i18n="menu.ust">MOLA</span>
+        <h2 data-i18n="menu.baslik">Bir nefes al.</h2>
         <!-- STANDART duraklatma menüsü: DEVAM ET → · Kontroller F1 · Ses · Müzik · Ana menü / Odadan çık · josephuz.com'a dön.
              "Yeniden başlat" oyuna özgü ek (çevrim içinde gizli). Müzik ses düzeyi sabit, sürgü yok. -->
-        <button id="yg-resume" class="primary">DEVAM ET →</button>
-        <button id="yg-pause-help">Kontroller <kbd>F1</kbd></button>
-        <button id="yg-pause-sound" aria-label="Ses efektlerini aç veya kapat">Ses: açık</button>
-        <button id="yg-pause-muzik" aria-label="Oyun müziğini aç veya kapat">Müzik: açık</button>
-        <button id="yg-restart">Yeniden başlat</button>
-        <button id="yg-menu">Ana menü</button>
-        <p id="yg-pause-note" class="pause-note" hidden>Çevrim içi maç durmaz: sen moladayken oyuncunu bot oynamaz, yerinde durur.</p>
-        <a class="btn" href="https://www.josephuz.com/">josephuz.com'a dön</a>
+        <button id="yg-resume" class="primary" data-i18n="menu.devam">DEVAM ET →</button>
+        <button id="yg-pause-help" data-i18n-html="arac.kontroller"></button>
+        <button id="yg-pause-sound" aria-label="Ses efektlerini aç veya kapat" data-i18n-aria-label="arac.sesAria" data-i18n="arac.sesAcik">Ses: açık</button>
+        <button id="yg-pause-muzik" aria-label="Oyun müziğini aç veya kapat" data-i18n-aria-label="arac.muzikAria" data-i18n="arac.muzikAcik">Müzik: açık</button>
+        <button id="yg-restart" data-i18n="menu.yenidenBaslat">Yeniden başlat</button>
+        <button id="yg-menu" data-i18n="menu.anaMenu">Ana menü</button>
+        <p id="yg-pause-note" class="pause-note" hidden data-i18n="menu.cevrimIciNot">Çevrim içi maç durmaz: sen moladayken oyuncunu bot oynamaz, yerinde durur.</p>
+        <a class="btn" href="https://www.josephuz.com/" data-i18n="menu.siteyeDon">josephuz.com'a dön</a>
       </div>
     </section>
 
     <section id="yg-results" class="overlay" hidden>
       <div class="card result-card">
-        <span class="eyebrow">MAÇ SONU</span>
+        <span class="eyebrow" data-i18n="sonuc.ust">MAÇ SONU</span>
         <h2 id="yg-result-title"></h2>
         <div id="yg-final-score"></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Oyuncu</th><th>Gol</th><th>Pas</th><th>Yakma</th><th>Top kapma</th><th>Kurtarış</th></tr></thead>
+            <thead><tr><th data-i18n="sonuc.oyuncu">Oyuncu</th><th data-i18n="sonuc.gol">Gol</th><th data-i18n="sonuc.pas">Pas</th><th data-i18n="sonuc.yakma">Yakma</th><th data-i18n="sonuc.kapma">Top kapma</th><th data-i18n="sonuc.kurtaris">Kurtarış</th></tr></thead>
             <tbody id="yg-stats"></tbody>
           </table>
         </div>
-        <button id="yg-again" class="primary">BİR MAÇ DAHA</button>
+        <button id="yg-again" class="primary" data-i18n="sonuc.birMacDaha">BİR MAÇ DAHA</button>
       </div>
     </section>
   </div>

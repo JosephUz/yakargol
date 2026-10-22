@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { CAMERA, GOAL_BLAST, TOUCH } from '../config.js';
+import { t } from '../dil.js';
 import { createActor, syncActors } from './actors.js';
 import { createBallView, syncBall } from './ballview.js';
 import { createShoulderCamera } from './camera.js';
@@ -20,7 +21,7 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? TOUCH.pixelRatio : 1.5));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = mobile ? T.PCFShadowMap : T.PCFSoftShadowMap;
   renderer.outputColorSpace = T.SRGBColorSpace;
-  renderer.domElement.setAttribute('aria-label', 'Yakar Gol oyun sahası');
+  renderer.domElement.setAttribute('aria-label', t('saha.aria'));
   container.insertBefore(renderer.domElement, container.firstChild);
 
   const scene = new T.Scene();

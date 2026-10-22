@@ -16,7 +16,7 @@ const open = async (query = '?test') => {
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(url + '/' + query);
+  await page.goto(url + '/' + query + '&dil=tr');
   return page;
 };
 try {

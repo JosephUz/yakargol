@@ -30,7 +30,7 @@ try {
   const game = fn => page.evaluate(fn);
   const bekle = (fn, ms = 20000) => page.waitForFunction(fn, null, { timeout: ms });
 
-  await page.goto(url + '/?gosteri=ruzgar');
+  await page.goto(url + '/?dil=tr&gosteri=ruzgar');
   await bekle(() => window.__yakarGol && window.__yakarGol.state().started);
 
   // 1) Menü atlanır, sahne kurulur, kamera omuz üstüdür (sahne 3B anlatım ister, izometrik yayın kamerası değil).
@@ -136,7 +136,7 @@ try {
   const sayfa2 = await ctx.newPage(), hata2 = [];
   sayfa2.on('pageerror', e => hata2.push(e.message));
   sayfa2.on('console', e => { if (e.type() === 'error') hata2.push(e.text()); });
-  await sayfa2.goto(url + '/?gosteri=1');
+  await sayfa2.goto(url + '/?dil=tr&gosteri=1');
   await sayfa2.waitForFunction(() => window.__yakarGol && window.__yakarGol.state().started, null, { timeout: 20000 });
   assert.equal(await sayfa2.evaluate(() => window.__yakarGol.view().cameraMode), 'iso', '?gosteri=1 izometrik kalır');
   assert.equal(await sayfa2.evaluate(() => window.__yakarGol.world().players.filter(p => p.human).length), 0, '?gosteri=1 maçında insan oyuncu yok');

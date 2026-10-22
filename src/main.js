@@ -1,6 +1,6 @@
 import { createAudio } from './audio.js';
 import { createCinema } from './cinema.js';
-import { CINEMA, GOSTERI, KICK, TEAMS } from './config.js';
+import { CINEMA, GOSTERI, KICK } from './config.js';
 import { createAtesGosteri } from './gosteri-ates.js';
 import { createRuzgarGosteri } from './gosteri-ruzgar.js';
 import { createGosteri, gosteriKip } from './gosteri.js';
@@ -15,6 +15,7 @@ import { enterFullscreen, fullscreenOn, fullscreenSupported, toggleFullscreen, t
 import { createUI, onTap } from './ui.js';
 import { createView } from './view/view.js';
 import { canPower, createWorld, startAim, step } from './world.js';
+import { t } from './dil.js';
 
 /**
  * İstemci uygulaması: dünya, görünüm, girdi, arayüz ve ekran akışı (giriş → maç ↔ mola / yardım → maç sonu).
@@ -71,7 +72,7 @@ export async function start(root) {
     view.setCamera(mode);
     if (mode !== 'iso' && input && active()) input.lock();
     root.classList.toggle('iso', mode === 'iso');
-    camButton.innerHTML = (mode === 'iso' ? '🎥 Omuz' : '🎥 İzometrik') + ' <kbd>V</kbd>';
+    camButton.innerHTML = t(mode === 'iso' ? 'arac.kameraOmuz' : 'arac.kameraIzo') + ' <kbd>V</kbd>';
     // Gösteri kipinin zorunlu izometriği oyuncunun kayıtlı seçimini bozmasın.
     if (!gosteri) try { localStorage.setItem('yg.cam', mode); } catch { /* yok */ }
   };
@@ -96,8 +97,8 @@ export async function start(root) {
   const syncFull = () => {
     const on = fullscreenOn();
     fullButton.classList.toggle('on', on);
-    fullButton.textContent = on ? '⤡ Tam ekrandan çık' : '⛶ Tam ekran';
-    fullButton.setAttribute('aria-label', on ? 'Tam ekrandan çık' : 'Tam ekran');
+    fullButton.textContent = t(on ? 'arac.tamEkranCik' : 'arac.tamEkran');
+    fullButton.setAttribute('aria-label', t(on ? 'arac.tamEkranCikAria' : 'arac.tamEkranAria'));
   };
   onTap(fullButton, toggleFullscreen);
   // Yazı ve simge yalnız buradan güncellenir: tarayıcının kendi yolundan (Esc, F11) girip çıkmak da böyle sayılır.
@@ -135,9 +136,9 @@ export async function start(root) {
     input.clear();
     // Çevrim içinde mola yalnız bir perdedir: yeniden başlatma yok, çıkış odadan çıkar (standart menüdeki ad da değişir).
     root.querySelector('#yg-restart').hidden = online;
-    root.querySelector('#yg-menu').textContent = online ? 'Odadan çık' : 'Ana menü';
+    root.querySelector('#yg-menu').textContent = t(online ? 'oda.cik' : 'menu.anaMenu');
     root.querySelector('#yg-pause-note').hidden = !online;
-    root.querySelector('#yg-again').textContent = online ? 'LOBİYE DÖN' : 'BİR MAÇ DAHA';
+    root.querySelector('#yg-again').textContent = t(online ? 'sonuc.lobiyeDon' : 'sonuc.birMacDaha');
     refresh();
   }
   function begin() {
@@ -210,7 +211,7 @@ export async function start(root) {
       if (pending) { const go = pending; pending = null; go(); return; }
       // Sayfa yenilendi (lobideydik) ya da davet linki: odaya gir.
       const code = inviteCode || (!net.world && net.rememberedRoom());
-      if (code && !net.lobby) { lobby.status(inviteCode ? 'Odaya bağlanıyor…' : 'Odaya geri bağlanıyor…'); net.join(code); }
+      if (code && !net.lobby) { lobby.status(t(inviteCode ? 'oda.baglaniyor' : 'oda.geriBaglaniyor')); net.join(code); }
       inviteCode = null;
     },
     // Maçta ya da maç sonu karnesindeyken lobi yalnız güncellenir (karneden "Lobiye dön" ile görünür).
@@ -219,9 +220,11 @@ export async function start(root) {
       if (screen === 'lobby') lobby.render(msg);
       else if (!started && screen !== 'results') showLobby(msg);
     },
-    onError(msg) {
-      lobby.status(msg);
-      if (msg === 'Böyle bir oda yok' && screen !== 'lobby') { net.leave(); odaUrl(null); }
+    // Sunucu yazısı kodla gelir (dil standardı): etkin dildeki karşılığı gösterilir, sözlükte yoksa sunucunun yazısı.
+    onError(msg, kod) {
+      const anahtar = 'sunucu.' + kod, yazi = kod ? t(anahtar) : msg;
+      lobby.status(yazi === anahtar ? msg : yazi);
+      if (kod === 'oda.yok' && screen !== 'lobby') { net.leave(); odaUrl(null); }
     },
     onStart(msg, first) {
       if (!first) return;
@@ -244,7 +247,7 @@ export async function start(root) {
     onOnline: n => lobby.setOnline(n),
     onDisconnect(was) {
       lobby.setServer(false);
-      if (was && online && started) ui.message('BAĞLANTI KOPTU · YENİDEN BAĞLANIYOR', 3);
+      if (was && online && started) ui.message(t('mac.baglantiKoptu'), 3);
     },
   }) : null;
   let pending = null, inviteCode = null;
@@ -288,12 +291,12 @@ export async function start(root) {
     net.connect(lobby.nick());
   }
 
-  const who = p => (p.id === w.me ? 'SEN' : TEAMS.names[p.team] + ' · ' + p.name);
+  const who = p => (p.id === w.me ? t('mac.sen') : t('mac.kim', { takim: ui.teamName(p.team), ad: p.name }));
   const mine = () => w.players[w.me];
   /** Yakar pas / rüzgar şutu neden atılamıyor (null: atılabilir). Enerji gerekmez, yalnız takımın hakkı. */
   const powerBlocked = kind => {
     const p = mine(), left = (kind === 'fire' ? w.fireLeft : w.windLeft)[p.team];
-    return left <= 0 ? (kind === 'fire' ? 'TAKIMIN YAKAR PAS HAKKI BİTTİ' : 'TAKIMIN RÜZGAR HAKKI BİTTİ') : null;
+    return left <= 0 ? t(kind === 'fire' ? 'mac.yakarBitti' : 'mac.ruzgarBitti') : null;
   };
   const myAim = () => (w.aim && w.aim.id === w.me ? w.aim : null);
   /**
@@ -329,15 +332,15 @@ export async function start(root) {
   function chargeState() {
     if (!active()) return null;
     const p = mine(), aim = myAim();
-    if (aim) return { kind: aim.kind, p: 1 - (cine?.phase === 'aim' ? cine.t : 0) / CINEMA.aim, text: aim.kind === 'wind' ? 'BIRAK: RÜZGAR ŞUTU' : 'BIRAK: YAKAR PAS', full: true };
+    if (aim) return { kind: aim.kind, p: 1 - (cine?.phase === 'aim' ? cine.t : 0) / CINEMA.aim, text: t(aim.kind === 'wind' ? 'mac.birakRuzgar' : 'mac.birakYakar'), full: true };
     if (cine) return null;
     if (rightHold) {
       const why = powerBlocked('fire'), full = rightHold.t >= CINEMA.hold;
-      return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? why + ' · BIRAK: PAS' : 'BIRAK: PAS · TUT: YAKAR PAS' };
+      return { kind: why ? 'blocked' : 'fire', p: rightHold.t / CINEMA.hold, full: full && !why, text: why ? t('mac.engelPas', { neden: why }) : t('mac.birakPasTutYakar') };
     }
     if (p.charge > 0 && w.ball.owner === w.me) {
       const why = powerBlocked('wind'), full = p.charge >= KICK.windCharge;
-      return { kind: why && full ? 'blocked' : 'wind', p: p.charge / KICK.windCharge, full: full && !why, text: why && full ? why + ' · BIRAK: ŞUT' : 'BIRAK: ŞUT · TUT: RÜZGAR' };
+      return { kind: why && full ? 'blocked' : 'wind', p: p.charge / KICK.windCharge, full: full && !why, text: why && full ? t('mac.engelSut', { neden: why }) : t('mac.birakSutTutRuzgar') };
     }
     return null;
   }
@@ -364,7 +367,7 @@ export async function start(root) {
       if (s.phase === 'aim') {
         view.event({ type: s.kind === 'fire' ? 'ignite' : 'blow', x: w.ball.x, z: w.ball.z });
         audio.play('ignite');
-        ui.cinema(true, self ? 'NİŞAN AL · BIRAK: ŞUT' : who(p) + ' NİŞAN ALIYOR', self ? 1 : null, s.kind);
+        ui.cinema(true, self ? t('mac.nisanAl') : t('mac.nisanAliyor', { kim: who(p) }), self ? 1 : null, s.kind);
       } else if (s.phase === 'impact') {
         view.event({ type: 'impact', x: w.ball.x, z: w.ball.z }); audio.play('impact');
       } else {
@@ -419,15 +422,15 @@ export async function start(root) {
       if (touch && !gosteri) buzz(e, me);
       // Tek başına oyunda sinemayı bu sayfa yürütür; çevrim içinde evre sunucudan gelir.
       if (!online) cinema.event(e);
-      if (e.type === 'goal') { ui.message(ui.teamName(e.team) + ' TAKIM · GOOOL!', 2.2); audio.play('boom'); view.faceBall(w); }
+      if (e.type === 'goal') { ui.message(t('mac.gol', { takim: ui.teamName(e.team) }), 2.2); audio.play('boom'); view.faceBall(w); }
       if (e.type === 'lineup') view.faceBall(w);
       if (e.type === 'return' && e.id === me) view.faceBall(w);
-      if (e.type === 'burn' && e.attacker === me) ui.message('YAKALADIN! Şimdi golü bul.', 1.8);
-      if (e.type === 'receive' && e.id === me) ui.message('TOP SENDE', 0.75);
-      if (e.type === 'steal' && e.from === me && e.stun) ui.message('TOPU KAPTIRDIN · SERSEMLEDİN', 1.4);
-      if (e.type === 'aimLost' && e.id === me) ui.message('KAYARAK TOPU ALDILAR · VURUŞ YOK', 1.6);
-      if (e.type === 'aimLost' && e.by === me) ui.message('KAYARAK ALDIN · VURUŞU ENGELLEDİN', 1.6);
-      if (e.type === 'overtime') ui.message('ALTIN GOL · Sonraki gol kazanır', 3);
+      if (e.type === 'burn' && e.attacker === me) ui.message(t('mac.yakaladin'), 1.8);
+      if (e.type === 'receive' && e.id === me) ui.message(t('mac.topSende'), 0.75);
+      if (e.type === 'steal' && e.from === me && e.stun) ui.message(t('mac.kaptirdin'), 1.4);
+      if (e.type === 'aimLost' && e.id === me) ui.message(t('mac.vurusYok'), 1.6);
+      if (e.type === 'aimLost' && e.by === me) ui.message(t('mac.vurusEngel'), 1.6);
+      if (e.type === 'overtime') ui.message(t('mac.altinGolMesaj'), 3);
     }
     w.events.length = 0;
     // Gösteride ve otopilotta karne açılmaz, ölçüm gitmez: birkaç saniye sonra yeni maç kurulur

@@ -1,5 +1,6 @@
-import { ENERGY, KICK, MATCH, STEAL, TEAMS } from './config.js';
+import { ENERGY, KICK, MATCH, STEAL } from './config.js';
 import { benchX, lift } from './view/actors.js';
+import { t } from './dil.js';
 
 /**
  * Arayüz (DOM): ekranlar (giriş, yardım, mola, maç sonu), skor tabelası ve saat, sol alttaki oyuncu kartı, yanma
@@ -50,7 +51,7 @@ export function createUI(root) {
     over: $('overhead'), overEnergy: $('over-energy'), overEnergyText: $('over-energy-text'), overEnergyFill: $('over-energy-fill'),
     charge: $('charge'), chargeText: $('charge-text'), speed: $('speed'), overStun: $('over-stun'), overStunText: $('over-stun-text'), overStunFill: $('over-stun-fill'),
     ballmark: $('ballmark'), cine: $('cine'), cineWho: $('cine-who'), cineAim: $('cine-aim'), cineAimFill: $('cine-aim-fill'), fireLeft: $('fire-left'), windLeft: $('wind-left'), cineTitle: $('cine-title'),
-    site: $('site'), full: $('full'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
+    site: $('site'), full: $('full'), dil: root.querySelector('#dil'), resultTitle: $('result-title'), finalScore: $('final-score'), stats: $('stats'), sound: $('sound'), pauseSound: $('pause-sound'),
     muzik: $('muzik'), pauseMuzik: $('pause-muzik'),
   };
   // Skor tabelasındaki alev damlaları hak sayısı kadar (KICK.fireShots).
@@ -65,7 +66,7 @@ export function createUI(root) {
 
     /** Ses (efekt) düğmeleri — üst çubuk ve mola menüsü aynı durumu, standart yazıyla gösterir. */
     setSound(on) {
-      const yazi = on ? 'Ses: açık' : 'Ses: kapalı';
+      const yazi = t(on ? 'arac.sesAcik' : 'arac.sesKapali');
       for (const b of [el.sound, el.pauseSound]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
     },
 
@@ -74,7 +75,7 @@ export function createUI(root) {
      * menüde sürgü yok (oyuncu cihazın sesinden ayarlar). Gösteri kiplerinde müzik hiç kurulmaz: `setMuzikVar(false)` düğmeleri gizler.
      */
     setMuzik(on) {
-      const yazi = on ? 'Müzik: açık' : 'Müzik: kapalı';
+      const yazi = t(on ? 'arac.muzikAcik' : 'arac.muzikKapali');
       for (const b of [el.muzik, el.pauseMuzik]) { b.textContent = yazi; b.classList.toggle('muted', !on); }
     },
     /** Müzik ayarı var mı (gösteri kiplerinde ve hiç parça yokken yok): düğmeler büsbütün gizlenir. */
@@ -86,7 +87,7 @@ export function createUI(root) {
     tickMessage(dt, w, active) {
       if (messageTime > 0 && active) { messageTime -= dt; if (messageTime <= 0) el.message.hidden = true; }
       if (messageTime > 0) return;
-      if (active && w.kickoff > 0) { el.message.hidden = false; el.message.textContent = 'HAZIR OL · ' + Math.ceil(w.kickoff); }
+      if (active && w.kickoff > 0) { el.message.hidden = false; el.message.textContent = t('mac.hazirOl', { n: Math.ceil(w.kickoff) }); }
       else el.message.hidden = true;
     },
 
@@ -97,6 +98,8 @@ export function createUI(root) {
       // düğmesi zaten yalnız telefon tarayıcısında görünür (style.css → `#yakar-gol.tam-ekran #yg-full`).
       el.site.hidden = playing;
       el.full.hidden = playing;
+      // Dil düğmesi (josephuz docs/dil-standardi.md) dili değiştirirken sayfayı yeniden yükler: maçta gizli, yalnız giriş ekranı ve lobide.
+      if (el.dil) el.dil.hidden = playing;
       // Müzik düğmesi standart çubuğun parçasıdır; telefonda maç sırasında gizlenir, çünkü üst çubuktaki beşinci
       // simge skor tabelasının üstüne biner (bkz. tests/mobil-tam-ekran.mjs). Müzik o sırada ☰ → mola menüsünden
       // açılıp kapatılır; masaüstünde çubukta durmaya devam eder.
@@ -104,27 +107,27 @@ export function createUI(root) {
       el.crosshair.hidden = !playing || !!screen;
       el.blue.textContent = w.score[0]; el.orange.textContent = w.score[1];
       el.fires.forEach((node, team) => {
-        node.title = TEAMS.names[team] + ' takımının yakar pas hakkı: ' + w.fireLeft[team];
+        node.title = t('mac.yakarHakki', { takim: takimAdi(team), n: w.fireLeft[team] });
         [...node.children].forEach((pip, i) => pip.classList.toggle('used', i >= w.fireLeft[team]));
       });
       el.winds.forEach((node, team) => {
-        node.title = TEAMS.names[team] + ' takımının rüzgar şutu hakkı: ' + w.windLeft[team];
+        node.title = t('mac.ruzgarHakki', { takim: takimAdi(team), n: w.windLeft[team] });
         [...node.children].forEach((pip, i) => pip.classList.toggle('used', i >= w.windLeft[team]));
       });
       const left = Math.max(0, Math.ceil(MATCH.duration - w.time));
       el.timer.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-      el.period.textContent = w.overtime ? 'ALTIN GOL' : '5v5 · TEK MAÇ';
+      el.period.textContent = t(w.overtime ? 'mac.altinGol' : 'mac.tekMac');
       const p = w.players[w.me], owner = w.players[w.ball.owner];
-      el.side.textContent = 'SEN / ' + TEAMS.names[p.team] + ' TAKIM';
-      el.ball.textContent = p.burn > 0 ? 'KENARDASIN' : p.stun > 0 ? 'SERSEMLEDİN' : w.ball.owner === w.me ? 'TOP SENDE' : owner?.team === p.team ? 'PAS İÇİN AÇIL' : 'TOPU KAZAN';
-      el.energyText.textContent = p.energyCd > 0 ? p.energyCd.toFixed(1) + ' sn' : 'HAZIR';
+      el.side.textContent = t('mac.senTakim', { takim: takimAdi(p.team) });
+      el.ball.textContent = t(p.burn > 0 ? 'mac.kenardasin' : p.stun > 0 ? 'mac.sersemledin' : w.ball.owner === w.me ? 'mac.topSende' : owner?.team === p.team ? 'mac.pasIcinAcil' : 'mac.topuKazan');
+      el.energyText.textContent = p.energyCd > 0 ? t('mac.sn', { n: p.energyCd.toFixed(1) }) : t('mac.hazir');
       el.energyFill.style.width = (1 - p.energyCd / ENERGY.cooldown) * 100 + '%';
       el.fireLeft.textContent = w.fireLeft[p.team] + ' / ' + KICK.fireShots;
       el.fireLeft.classList.toggle('empty', w.fireLeft[p.team] <= 0);
       el.windLeft.textContent = w.windLeft[p.team] + ' / ' + KICK.windShots;
       el.windLeft.classList.toggle('empty', w.windLeft[p.team] <= 0);
       el.burn.hidden = !playing || !!screen || p.burn <= 0;
-      el.burnCount.textContent = p.burn.toFixed(1) + ' sn';
+      el.burnCount.textContent = t('mac.sn', { n: p.burn.toFixed(1) });
     },
 
     /**
@@ -159,10 +162,10 @@ export function createUI(root) {
       el.over.style.transform = `translate(${at.x}px,${at.y}px) translate(-50%,-50%)`;
       el.overEnergy.hidden = !cooling && readyTime <= 0;
       el.overEnergy.classList.toggle('ready', !cooling);
-      el.overEnergyText.textContent = cooling ? 'ENERJİ ' + p.energyCd.toFixed(1) : 'ENERJİ HAZIR';
+      el.overEnergyText.textContent = cooling ? t('mac.enerjiSayi', { n: p.energyCd.toFixed(1) }) : t('mac.enerjiHazir');
       el.overEnergyFill.style.width = (1 - p.energyCd / ENERGY.cooldown) * 100 + '%';
       el.overStun.hidden = !dazed;
-      el.overStunText.textContent = 'SERSEM ' + p.stun.toFixed(1);
+      el.overStunText.textContent = t('mac.sersemSayi', { n: p.stun.toFixed(1) });
       el.overStunFill.style.width = p.stun / STEAL.stun * 100 + '%';
     },
 
@@ -184,7 +187,7 @@ export function createUI(root) {
     cinema(on, who = '', aim = null, kind = 'fire') {
       el.cine.hidden = !on;
       el.cine.classList.toggle('wind', kind === 'wind');
-      el.cineTitle.textContent = kind === 'wind' ? 'RÜZGAR ŞUTU!' : 'YAKAR PAS!';
+      el.cineTitle.textContent = t(kind === 'wind' ? 'mac.ruzgarSutu' : 'mac.yakarPas');
       el.cineWho.textContent = who;
       el.cineAim.hidden = aim === null;
       if (aim !== null) el.cineAimFill.style.width = aim * 100 + '%';
@@ -193,15 +196,19 @@ export function createUI(root) {
     cinemaAim(left) { el.cineAimFill.style.width = Math.max(0, left) * 100 + '%'; },
 
     results(w) {
-      el.resultTitle.textContent = w.winner === w.players[w.me].team ? 'Mahallenin galibi sizsiniz!' : 'Rövanşta görüşürüz.';
+      el.resultTitle.textContent = t(w.winner === w.players[w.me].team ? 'sonuc.kazandin' : 'sonuc.kaybettin');
       el.finalScore.textContent = w.score[0] + ' : ' + w.score[1];
       el.stats.innerHTML = w.players.map(p =>
-        `<tr class="${p.team === 0 ? 'blue-text' : 'orange-text'}${p.id === w.me ? ' me' : ''}"><td>${esc(p.name)}${p.role === 4 ? ' · Kaleci' : ''}</td>` +
+        `<tr class="${p.team === 0 ? 'blue-text' : 'orange-text'}${p.id === w.me ? ' me' : ''}"><td>${esc(adi(p))}${p.role === 4 ? t('sonuc.kaleciEk') : ''}</td>` +
         STATS.map(k => `<td>${p.stats[k]}</td>`).join('') + '</tr>').join('');
     },
 
-    teamName: team => TEAMS.names[team],
+    teamName: team => takimAdi(team),
   };
 }
 
+/** Tek başına oyunda senin adın dünyada 'Sen' durur (world.js, sunucuyla ortak); ekranda etkin dilde yazılır. */
+/** Takım adı etkin dilde (0: mavi, 1: turuncu). */
+const takimAdi = team => t(team ? 'takim.1' : 'takim.0');
+const adi = p => (p.human && p.name === 'Sen' ? t('mac.senAd') : p.name);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

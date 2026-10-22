@@ -27,7 +27,7 @@ try {
   page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
   const game = fn => page.evaluate(fn);
 
-  await page.goto(url + '/?gosteri=1');
+  await page.goto(url + '/?dil=tr&gosteri=1');
   await page.waitForFunction(() => window.__yakarGol && window.__yakarGol.state().started, null, { timeout: 20000 });
 
   // 1) Menü atlanır, on koltuğu da bot oynar.

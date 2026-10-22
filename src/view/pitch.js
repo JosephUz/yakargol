@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { PITCH } from '../config.js';
+import { t } from '../dil.js';
 import { box, cyl, line, mat, ring, sign } from './builders.js';
 
 /**
@@ -37,7 +38,7 @@ function goalEnd(scene, side, X, Z, G, E) {
   }
   for (let y = 0.2; y <= 3.3; y += 0.4) box(scene, 2 * G, 0.018, 0.018, '#ddd7bd', 0, y, side * (Z + 2));
   for (const x of [-1, 1]) box(scene, X + 0.4 - G - 0.1, 1.1, 0.35, '#d6bc91', x * (G + 0.1 + X + 0.4) / 2, 0.55, side * (Z + 0.4));
-  const board = sign(side === -1 ? 'MAHALLE LİGİ' : 'YAKAR GOL', 11, 2, '#173a39', '#f7dc9f');
+  const board = sign(side === -1 ? t('saha.tabela') : 'YAKAR GOL', 11, 2, '#173a39', '#f7dc9f');
   board.position.set(0, 5.2, side * (Z + 4));
   if (side === 1) board.rotation.y = Math.PI;
   scene.add(board);

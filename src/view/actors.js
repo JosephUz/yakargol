@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { BURN, CINEMA, DASH, GOAL_BLAST, JUMP, KICK, PITCH, TEAMS } from '../config.js';
+import { t } from '../dil.js';
 import { box, mat } from './builders.js';
 
 /**
@@ -126,7 +127,7 @@ export function syncActors(actors, w, time, playing, project, real = time) {
     const fireTo = !burned && ((w.aim && w.aim.kind === 'fire' && w.aim.to === p.id) || (b.kind === 'fire' && b.owner === null && b.to === p.id));
     v.label.classList.toggle('call', calling && !fireTo);
     v.label.classList.toggle('fire-to', fireTo);
-    v.label.textContent = burned ? 'YANDI · ' + p.burn.toFixed(1) : fireTo ? 'YAKAR PAS ▼' : calling ? 'PAS!' : mine ? '' : w.online && p.human ? p.name + (p.role === 4 ? ' · KALECİ' : '') : p.role === 4 ? 'KALECİ' : '';
+    v.label.textContent = burned ? t('mac.yandi', { n: p.burn.toFixed(1) }) : fireTo ? t('mac.yakarPasOk') : calling ? t('mac.pasIste') : mine ? '' : w.online && p.human ? p.name + (p.role === 4 ? t('mac.kaleciEk') : '') : p.role === 4 ? t('mac.kaleci') : '';
     const screen = project(v.root.position.x, 2.6, v.root.position.z);
     v.label.hidden = !playing || !v.label.textContent || screen.behind;
     v.label.style.transform = `translate(${screen.x}px,${screen.y}px) translate(-50%,-100%)`;

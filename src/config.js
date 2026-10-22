@@ -150,7 +150,8 @@ export const CAMERA = { fov: 66, sprintFov: 77, far: 240, back: 4.6, side: 0.65,
  */
 export const TOUCH = { stick: 60, dead: 0.14, look: 1.9, pixelRatio: 1.35, shadow: 1024 };
 
-export const TEAMS = { names: ['MAVİ', 'TURUNCU'], colors: ['#39c2cf', '#f5825b'] };
+/** Takım renkleri. Takım adları (MAVİ / TURUNCU) sözlükte: t('takim.0'), t('takim.1') (src/diller/). */
+export const TEAMS = { colors: ['#39c2cf', '#f5825b'] };
 
 /**
  * Çok oyunculu özellikler hangi platformda açık: tarayıcıda (web) açık; Android uygulamasında (app) kapalı, giriş
