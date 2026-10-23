@@ -30,8 +30,10 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .header-actions button,#yakar-gol .header-actions a.btn{background:#183d37e8;font-size:11px}
 
 /* Giriş ekranı. */
-#yakar-gol .home{position:absolute;inset:0;background:linear-gradient(90deg,#153c37fc 0%,#153c37ef 28%,#153c3766 52%,transparent 74%);display:flex;align-items:center}
-#yakar-gol .home-content{width:530px;margin-left:7vw;padding-top:60px}
+/* Ana ekran: içerik dikeyde ortalanır ama üst çubuğun (logo) altından başlar; sığmazsa üstten hizalanır (safe center),
+   böylece "5v5 …" üst yazısı logonun üstüne binmez. */
+#yakar-gol .home{position:absolute;inset:0;background:linear-gradient(90deg,#153c37fc 0%,#153c37ef 28%,#153c3766 52%,transparent 74%);display:flex;align-items:safe center;box-sizing:border-box;padding:104px 0 20px}
+#yakar-gol .home-content{width:530px;margin-left:7vw}
 #yakar-gol .home h1{font-size:clamp(40px,4.4vw,72px);letter-spacing:-3px;line-height:1.05;margin:25px 0;color:#f3ecd8;font-weight:900}
 #yakar-gol .home h1 span{color:#f0bc76}
 #yakar-gol .home p{font-size:16px;line-height:1.8;color:#c5d3be;margin:24px 0 32px}
@@ -226,7 +228,8 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 #yakar-gol .clock span{font-size:15px}
 #yakar-gol .clock small{font-size:6px}
 #yakar-gol #yg-message{top:62px;padding:9px 18px;font-size:12px}
-#yakar-gol .home-content{padding-top:34px;margin-left:calc(5vw + env(safe-area-inset-left));width:min(440px,70vw)}
+#yakar-gol .home{padding:calc(50px + env(safe-area-inset-top)) 0 10px}
+#yakar-gol .home-content{margin-left:calc(5vw + env(safe-area-inset-left));width:min(440px,70vw)}
 #yakar-gol .home h1{font-size:30px;letter-spacing:-1px;margin:10px 0}
 #yakar-gol .home p{font-size:12px;line-height:1.5;margin:8px 0 14px}
 #yakar-gol .home .primary{min-height:44px;padding:12px 18px;width:230px}
@@ -469,3 +472,12 @@ html,body{margin:0;height:100%;background:#193d39;overflow:hidden}
 @keyframes ygCall{to{margin-top:-4px}}
 /* Yakar pasın gideceği arkadaş: başında alev renginde "YAKAR PAS". */
 #yakar-gol .actor-label.fire-to{background:#e2522f;color:#fff3df;text-shadow:none;font-size:12px;animation:ygCall .4s ease-in-out infinite alternate}
+
+/* Kısa masaüstü pencereleri (720–820 px): ana ekran sıkışır, üst yazı logonun altında kalır. */
+@media(max-height:820px) and (min-height:561px){
+#yakar-gol .home{padding-top:96px}
+#yakar-gol .home h1{margin:14px 0}
+#yakar-gol .home p{margin:12px 0 16px}
+#yakar-gol .home-online.home-nick{margin:12px 0 8px}
+#yakar-gol .home .rule-cards{margin-top:18px}
+}
