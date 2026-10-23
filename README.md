@@ -1,5 +1,11 @@
 # Yakar Gol
 
+> **EN:** 5v5 neighbourhood football meets dodgeball, played from an over-the-shoulder camera in the browser (Three.js); bots fill empty seats, online rooms for up to ten players.
+>
+> **TR:** Tarayıcıda (Three.js) omuz kamerasından oynanan 5v5 mahalle futbolu + yakar pas; boş koltukları botlar doldurur, çevrim içi odada on kişiye kadar.
+
+**Play / Oyna:** https://yakargol.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/yakargol
+
 Three.js ile tarayıcıda çalışan, omuz kamerasından oynanan **5v5 mahalle futbolu + yakar pas**. Bir insan ve dört takım
 botu, beş rakip bota karşı; her takımda bir bot kaleci var. Webde **çok oyunculu** oynanır: oda kurulur, en çok on kişi
 istediği koltuğa oturur, boş koltukları botlar oynar (bkz. Çok oyunculu).
@@ -272,3 +278,18 @@ olayları `w.events`'e yazar; tarayıcıda `src/view/` dünyayı çizer, `src/ma
 | `tests/ortam.mjs` | Tarayıcı testlerinin ortak kurulumu: Playwright'ı bul, oyun sunucusunu boş portta aç |
 | `capacitor.config.json`, `android/` | Android uygulaması (Capacitor): kimlik, yatay tam ekran, titreşim izni, simgeler |
 | `scripts/build-web.mjs`, `scripts/apk.mjs`, `scripts/icons.mjs` | Uygulama dosyalarını toplama, APK derleme, simge / açılış / mağaza görselleri |
+
+## Lisans / License
+
+- **Kod:** [MIT](LICENSE), Copyright (c) 2026 JosephUz. Kodu kullanabilir, değiştirebilir, dağıtabilirsin.
+- **MIT dışında, tüm hakları saklıdır:** "Yakar Gol" ve "JosephUz" adları; `muzik/` altındaki müzikler; logo ve simgeler (`icon.svg`, `icon-*.png`, `apple-touch-icon.png`, `store/`, `android/app/src/main/res/`). Ayrıntı: [TRADEMARKS.md](TRADEMARKS.md). Müzik için `muzik/LISANS.txt`.
+- **Fork'lar** başka bir ad ve logo kullanmalı, resmî sürüm olduğunu ima etmemeli.
+- **Üçüncü taraf:** [three.js](https://github.com/mrdoob/three.js) ve [ws](https://github.com/websockets/ws) npm bağımlılığıdır (ikisi de MIT), depoda değil, kendi lisanslarıyla gelir. Müziklerdeki enstrüman örnekleri VSCO 2 Community Edition (CC0).
+
+> **In English:** The code is licensed under [MIT](LICENSE). The name "Yakar Gol", the name "JosephUz", the music in `muzik/`, the logo and icons (`icon.svg`, `icon-*.png`, `apple-touch-icon.png`, `store/`, `android/app/src/main/res/`) are **not** covered by MIT and are all rights reserved; see [TRADEMARKS.md](TRADEMARKS.md). Forks must use a different name and logo.
+
+## Katkı / Contributing
+
+Hata bildirimi, öneri ve pull request'e açığız. Büyük bir değişiklikten önce bir [issue](https://github.com/JosephUz/yakargol/issues) açıp konuşalım; oyunun dengesi ve yönü JosephUz'da. Kod ve oyun Türkçe: değişken, işlev ve mesaj adları Türkçe, çevresindeki kodun düzenine uy; `npm test` geçmeli. Gönderdiğin katkı bu deponun MIT lisansıyla yayımlanır. Müzik, ses ya da görsel eklemeden önce issue'da sor. Güvenlik açıklarını issue yerine [SECURITY.md](SECURITY.md)'deki yoldan bildir.
+
+> **In English:** Issues and pull requests are welcome; please open an issue before large changes. Contributions are accepted under the MIT license of this repository. Report security issues privately as described in [SECURITY.md](SECURITY.md).
