@@ -154,10 +154,10 @@ export const TOUCH = { stick: 60, dead: 0.14, look: 1.9, pixelRatio: 1.35, shado
 export const TEAMS = { colors: ['#39c2cf', '#f5825b'] };
 
 /**
- * Çok oyunculu özellikler hangi platformda açık: tarayıcıda (web) açık; Android uygulamasında (app) kapalı, giriş
- * ekranında oda düğmeleri "Yakında" yazar. Webde de sunucuya bağlanılamazsa (evdeki PC ya da tünel kapalı) "Yakında".
+ * Çok oyunculu özellikler hangi platformda açık: tarayıcıda (web) ve Android uygulamasında (app) açık; kapalı olan
+ * platformda giriş ekranında oda düğmeleri "Yakında" yazar. Webde de sunucuya bağlanılamazsa (evdeki PC ya da tünel kapalı) "Yakında".
  */
-export const ONLINE = Object.freeze({ web: true, app: false });
+export const ONLINE = Object.freeze({ web: true, app: true });
 /**
  * Çevrim içi oyun sunucusu (WebSocket, Cloudflare Tunnel ile evdeki PC). Oyun dosyaları Cloudflare'deki statik siteden
  * (yakargol.josephuz.com) gelir; sayfa sunucunun kendisinden açıldıysa (yerelde, Docker, aynı ağ) aynı adres kullanılır.
