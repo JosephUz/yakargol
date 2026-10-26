@@ -4,7 +4,10 @@
 >
 > **TR:** Tarayıcıda (Three.js) omuz kamerasından oynanan 5v5 mahalle futbolu + yakar pas; boş koltukları botlar doldurur, çevrim içi odada on kişiye kadar.
 
-**Play / Oyna:** https://yakargol.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/yakargol
+**Play / Oyna:** https://yakargol.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/yakargol · **Android:** [Google Play](https://play.google.com/store/apps/details?id=com.josephuz.yakargol)
+
+<p align="center"><img src="docs/ekran/1.jpg" alt="Yakar Gol" width="100%"></p>
+<p align="center"><img src="docs/ekran/2.jpg" alt="Yakar Gol" width="49%"> <img src="docs/ekran/3.jpg" alt="Yakar Gol" width="49%"></p>
 
 Three.js ile tarayıcıda çalışan, omuz kamerasından oynanan **5v5 mahalle futbolu + yakar pas**. Bir insan ve dört takım
 botu, beş rakip bota karşı; her takımda bir bot kaleci var. Webde **çok oyunculu** oynanır: oda kurulur, en çok on kişi
