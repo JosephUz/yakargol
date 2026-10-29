@@ -197,7 +197,7 @@ export default {
   'yardim.d.pasKay': 'PASS / SLIDE',
   'yardim.d.pasKayMetin': 'With the ball, tap: pass. Hold for 1 second: slow-mo, the ball catches fire; aim at a teammate ("FIRE PASS" over their head), release and the flaming ball flies to them, burning every rival it touches off to the sideline (5 per team). Jump to dodge a fire pass. Without the ball: slide at it and you always win it; slide into a rival who is aiming to block the shot.',
   'yardim.d.ziplaKos': 'JUMP / RUN',
-  'yardim.d.ziplaKosMetin': 'A fire pass can\'t burn you in the air. A sprint lasts 3 seconds; slide and sprint share the same energy (the buttons fill up). Fire passes and wind shots need no energy.',
+  'yardim.d.ziplaKosMetin': 'Jump with the ball and it rises with you; a sliding opponent can\'t take it while you\'re in the air. A fire pass can\'t burn you in the air. A sprint lasts 3 seconds; slide and sprint share the same energy (the buttons fill up). Fire passes and wind shots need no energy.',
   'yardim.d.kapma': 'Steals',
   'yardim.d.kapmaMetin': 'Get close to the ball carrier to steal it; whoever loses it is dazed. You can\'t take it from behind at a jog; sprint or slide.',
   'yardim.m.wasd': 'WASD / Arrows',

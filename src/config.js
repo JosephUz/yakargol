@@ -29,8 +29,12 @@ export const LINEUP = { shiftX: 0.22, shiftZ: 0.12 };
 /** Koşu, topla sürme hızı (top taşıyan yavaşlamaz), hedef hıza yaklaşma katsayısı (1/sn) ve oyuncunun duvara en çok yaklaşması. */
 export const MOVE = { speed: 7, dribble: 7, accel: 16, margin: 0.6 };
 
-/** Zıplama: havada kalma süresi ve tepe yüksekliği. Havadaki oyuncuya top değmez (yakar pas da). */
-export const JUMP = { time: 0.7, height: 1.8 };
+/**
+ * Zıplama: havada kalma süresi ve tepe yüksekliği. Havadaki oyuncuya top değmez (yakar pas da). Top sendeyken zıplarsan
+ * top da seninle havalanır (tepesi zıplama yüksekliğinin `ball` katı, kayan rakibin üstünden aşırtma gibi) ve havadayken
+ * kayan rakip topu alamaz: kaymadan zıplayarak kurtulursun.
+ */
+export const JUMP = { time: 0.7, height: 1.8, ball: 2.2 };
 
 /**
  * Enerji: kayma (sağ tık, topsuz) ve hızlı koşu (Shift) tek bir enerjiyi paylaşır; hangisi kullanılırsa kullanılsın

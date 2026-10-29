@@ -44,7 +44,8 @@ function windOut(w) { if (w.ball.kind === 'wind') { w.ball.kind = 'normal'; w.ba
 /**
  * Taşınan top. Yürüyen rakip **topa** STEAL.reach kadar yakınsa, taşıyanın arkasında değilse (arkadan ancak hızlı
  * koşuyla), iki taraf da yerdeyse, kapan şut beklemesinde değilse ve taşıyan korunmuyorsa topu kapar; taşıyan STEAL.stun
- * kadar sersemler. Kayan rakip DASH.steal içindeyse her koşulda kapar; taşıyan STEAL.dashStun kadar sersemler.
+ * kadar sersemler. Kayan rakip DASH.steal içindeyse kapar (taşıyan topla zıplıyorsa alamaz, bkz. JUMP); taşıyan
+ * STEAL.dashStun kadar sersemler.
  * Sersem oyuncu topu kapamaz. Nişan alan (yakar pas / rüzgar, w.aim) yürüyerek soyulamaz: yalnız kayarak.
  */
 function carry(w) {
@@ -57,7 +58,7 @@ function carry(w) {
     if (rival.team === p.team || rival.burn > 0 || rival.stun > 0 || rival.air > 0) continue;
     const reach = distance(rival, p);
     const steals = rival.dash > 0
-      ? reach <= DASH.steal
+      ? reach <= DASH.steal && p.jump <= 0
       : !aiming && distance(rival, b) <= STEAL.reach && (rival.sprint > 0 || !behind(p, rival, reach)) && rival.jump <= 0 && p.jump <= 0 && rival.kickCd <= 0 && p.guard <= 0;
     if (!steals) continue;
     b.owner = rival.id; b.last = rival.id;

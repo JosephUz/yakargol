@@ -195,7 +195,7 @@ export default {
   'yardim.d.pasKay': 'PAS / KAY',
   'yardim.d.pasKayMetin': 'Top sendeyken dokun: pas. 1 saniye basılı tut: oyun ağır çekime geçer, top alev alır; bir takım arkadaşına nişan al (başında "YAKAR PAS" yazar), bırakınca alevli top ona gider ve yol boyunca değdiği bütün rakipleri yakıp kenara yollar (takım başına 5 hak). Yakar pastan zıplayarak kurtulunur. Topsuzken: topa doğru kay, topu mutlaka çal; rakip nişan alırken kayarak vuruşunu engelle.',
   'yardim.d.ziplaKos': 'ZIPLA / KOŞ',
-  'yardim.d.ziplaKosMetin': 'Havadayken yakar pas seni yakamaz. Koşu 3 saniye sürer; kayma ve koşu aynı enerjiyi kullanır (düğmelerde dolum). Yakar pas ve rüzgar şutu enerji istemez.',
+  'yardim.d.ziplaKosMetin': 'Top sendeyken zıplarsan top da seninle havalanır; havadayken kayan rakip topu alamaz. Havadayken yakar pas seni yakamaz. Koşu 3 saniye sürer; kayma ve koşu aynı enerjiyi kullanır (düğmelerde dolum). Yakar pas ve rüzgar şutu enerji istemez.',
   'yardim.d.kapma': 'Top kapma',
   'yardim.d.kapmaMetin': 'Taşınan topa yaklaşınca kaparsın, kaptıran sersemler. Arkadan düz koşuyla alınmaz; koş ya da kay.',
   'yardim.m.wasd': 'WASD / Oklar',

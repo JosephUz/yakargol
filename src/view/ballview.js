@@ -1,5 +1,12 @@
 import * as T from 'three';
 import { mat } from './builders.js';
+import { JUMP } from '../config.js';
+
+/** Taşıyan zıplıyorsa top onunla havalanır: o anki yükseklik (zıplama yayı × JUMP.ball), değilse 0. */
+export function topKalkisi(w) {
+  const p = w.ball.owner === null ? null : w.players[w.ball.owner];
+  return p && p.jump > 0 ? Math.sin(p.jump / JUMP.time * Math.PI) * JUMP.height * JUMP.ball : 0;
+}
 
 /**
  * Top görseli. Normal ve pas topu beyaz; yakar pas kırmızı, parlayan ve arkasında alev dilleri; rüzgar topu açık
@@ -55,14 +62,16 @@ export function createBallView(scene) {
   return { group, core, materials, flames, flameBits, gusts, gustRings, floor, light };
 }
 
-export function syncBall(v, b, time, dt, heat = 0, charge = null) {
+export function syncBall(v, b, time, dt, heat = 0, charge = null, kalk = 0) {
   const look = LOOK[b.kind] || LOOK.normal, loose = b.owner === null;
   /**
    * `b.yuk` topun yerden yüksekliği (birim). Oyunun topu hep yerde yuvarlanır, bu yüzden simülasyonda böyle bir alan
    * yoktur ve normal oyunda hep 0'dır; yalnız baştan sona sahnelenmiş gösteri sahnesi doldurur (bkz. gosteri-ates.js):
    * top gökten iner ve kameranın lensine yapışır. Yerdeki halka yükselmez — düşen topun gölgesi gibi durur.
    */
-  const yuk = b.yuk || 0;
+  // kalk: taşıyanla birlikte zıplayan top (topKalkisi); top elden havada çıkarsa yere süzülür.
+  v.kalk = kalk > 0 ? kalk : Math.max(0, (v.kalk || 0) - dt * 6);
+  const yuk = (b.yuk || 0) + v.kalk;
   /**
    * `charge.ates` yine yalnız o sahnede dolu gelir: aynı topta **iki yükleme birden** görünür (soldaki rüzgar şutu,
    * sağdaki yakar pas yüklerken top hem camgöbeği halkalara hem aleve bürünür). Normal oyunda şarj tek türdür ve

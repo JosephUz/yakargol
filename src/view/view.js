@@ -2,7 +2,7 @@ import * as T from 'three';
 import { CAMERA, GOAL_BLAST, TOUCH } from '../config.js';
 import { t } from '../dil.js';
 import { createActor, syncActors } from './actors.js';
-import { createBallView, syncBall } from './ballview.js';
+import { createBallView, syncBall, topKalkisi } from './ballview.js';
 import { createShoulderCamera } from './camera.js';
 import { createEffects } from './effects.js';
 import { buildPitch } from './pitch.js';
@@ -91,7 +91,7 @@ export function createView(container, { mobile = false, iso = null, omuz = null 
       if (shoulder.mode === 'shoulder') shoulder.zoom(wide, dt);
       shoulder.follow(hero, dt);
       syncActors(actors, w, time, playing, shoulder.project, real);
-      syncBall(ball, w.ball, real, dt * scale, cine ? cine.heat : 0, w.ball.owner === w.me ? charge : null);
+      syncBall(ball, w.ball, real, dt * scale, cine ? cine.heat : 0, w.ball.owner === w.me ? charge : null, topKalkisi(w));
       effects.update(cine ? dt * Math.max(scale, 0.3) : dt);
       arrow.visible = !!aimAt && shoulder.mode === 'iso' && hero.burn <= 0;
       if (arrow.visible) { arrow.position.set(hero.x, 0.2, hero.z); arrow.rotation.y = Math.atan2(aimAt.x - hero.x, aimAt.z - hero.z); }

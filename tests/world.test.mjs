@@ -139,15 +139,27 @@ test('yakar top enerji harcamaz ve enerji beklerken de atılır', () => {
   assert.equal(ENERGY.cooldown, 3);
 });
 
-test('top taşıyana kayan oyuncu topu mutlaka çalar', () => {
+test('top taşıyana kayan oyuncu topu mutlaka çalar (korunsa da)', () => {
   const w = setup(), h = w.players[5], p = w.players[0];
-  Object.assign(h, { x: 0, z: -3, guard: 5, jump: 0.5, think: 9, kickCd: 5, energyCd: 9 });
+  Object.assign(h, { x: 0, z: -3, guard: 5, think: 9, kickCd: 5, energyCd: 9 });
   Object.assign(p, { x: 0, z: 0, angle: Math.PI, kickCd: 1 });
   w.ball.owner = 5; w.ball.last = 5;
   step(w, 1 / 60, { secondary: true });
   assert.ok(p.dash > 0);
   run(w, 20);
   assert.equal(w.ball.owner, 0); assert.equal(p.stats.steals, 1);
+});
+
+test('topla zıplayan taşıyana kayma işlemez: top onda kalır', () => {
+  const w = setup(), h = w.players[5], p = w.players[0];
+  Object.assign(h, { x: 0, z: -3, think: 9, kickCd: 5, energyCd: 9 });
+  Object.assign(p, { x: 0, z: 0, angle: Math.PI, kickCd: 1 });
+  w.ball.owner = 5; w.ball.last = 5;
+  assert.ok(jump(w, 5));
+  step(w, 1 / 60, { secondary: true });
+  assert.ok(p.dash > 0);
+  run(w, 30);
+  assert.equal(w.ball.owner, 5, 'zıplayan kaymadan kurtuldu'); assert.equal(p.stats.steals, 0);
 });
 
 test('kayan oyuncu boştaki normal topu alır', () => {
