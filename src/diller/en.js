@@ -26,8 +26,8 @@ export default {
   'arac.tamEkranCikAria': 'Exit fullscreen',
 
   // Teams
-  'takim.0': 'BLUE',
-  'takim.1': 'ORANGE',
+  'takim.0': 'BOZOK',
+  'takim.1': 'ÜÇOK',
 
   // Home
   'ana.ust': '5v5 FOOTBALL + FIRE PASS',

@@ -24,8 +24,8 @@ export default {
   'arac.tamEkranCikAria': 'Tam ekrandan çık',
 
   // Takımlar
-  'takim.0': 'MAVİ',
-  'takim.1': 'TURUNCU',
+  'takim.0': 'BOZOK',
+  'takim.1': 'ÜÇOK',
 
   // Ana ekran
   'ana.ust': '5v5 FUTBOL + YAKAR PAS',
